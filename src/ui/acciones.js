@@ -16,13 +16,17 @@ const DE_LA_PARTIDA = [["endtp", ""], ["undo", ""], ["rulerbtn", ""], ["iasugeri
 
 let alQuitarSeleccion = () => {};
 // un modo que pone sus propios botones (p. ej. el despliegue): { html() -> string|null, click(boton) }
+// modos que ponen sus propios botones (despliegue, reacción): el primero que devuelva html manda
+const especiales = [];
 let especial = null;
-export const setModoEspecial = m => { especial = m; };
+export const setModoEspecial = m => { especiales.push(m); };
 
 export function renderAcciones() {
   const bar = document.getElementById("acciones");
   if (!bar) return;
-  const propio = especial && especial.html();
+  let propio = null;
+  especial = null;
+  for (const m of especiales) { const h = m.html(); if (h != null) { propio = h; especial = m; break; } }
   if (propio != null) {
     for (const id of ["quitarsel", "fichasel"]) { const b = document.getElementById(id); if (b) b.hidden = true; }
     bar.classList.remove("con-agente");

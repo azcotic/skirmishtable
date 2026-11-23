@@ -120,10 +120,15 @@ export function accionesLegales(op, ops) {
 // A quién le toca activar: se alterna, empezando por quien tiene la iniciativa; si un bando no
 // tiene agentes apostados, el otro sigue. ultimo = el bando que activó por última vez (o null
 // al empezar la fase de tiroteo). Devuelve 0, 1 o null si el punto de inflexión terminó.
+// Reaccionar: un agente usado, con orden de trabarse, que no reaccionó en este punto de inflexión.
+export const puedeReaccionar = o => o.alive && !o.ready && o.deployed !== false && o.order === "engage" && !o.reacciono;
+
 export function turnoDeActivacion(ops, ini, ultimo = null) {
   const apostados = s => ops.some(o => o.alive && o.team === s && o.ready);
   const quiere = ultimo === null ? (ini === 1 ? 1 : 0) : 1 - ultimo;
   if (apostados(quiere)) return quiere;
+  // sin apostados, pero el rival sí: le toca igual si puede reaccionar (o pasar)
+  if (apostados(1 - quiere) && ops.some(o => o.team === quiere && puedeReaccionar(o))) return quiere;
   if (apostados(1 - quiere)) return 1 - quiere;
   return null;
 }

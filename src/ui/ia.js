@@ -13,6 +13,8 @@ import { state } from '../state.js';
 import { decidirActivacion } from '../ai/facil.js';
 import { doFight, doShoot, endActivation, refreshSight, snapshot } from './panels.js';
 import { moverA } from './input.js';
+import { iniciarReaccion, pasar, reaccionables, ventanaReaccion } from './reaccion.js';
+import { mejorDisparo } from '../ai/facil.js';
 import { control, esDeLaIA } from './control.js';
 import { bandoEnTurno } from './turno.js';
 import { flashOp2D, renderAll } from './board.js';
@@ -68,6 +70,27 @@ export async function jugarTurnoIA() {
   enCurso = true;
   control.jugando = true;
   try {
+    // sin agentes apostados: solo puede reaccionar. La IA fácil reacciona disparando si tiene
+    // un buen disparo desde donde está; si no, pasa.
+    if (ventanaReaccion() === bando) {
+      await esperar(control.pausa / 2);
+      let mejor = null;
+      for (const o of reaccionables(bando)) {
+        const d = mejorDisparo(o, o.x, o.y);
+        if (d && d.puntos >= 3 && (!mejor || d.puntos > mejor.d.puntos)) mejor = { o, d };
+      }
+      if (!mejor) { pasar(bando); return; }
+      iniciarReaccion(mejor.o);
+      mejor.o.weapon = mejor.d.arma;
+      state.sel = mejor.o; state.target = mejor.d.blanco;
+      refreshSight(); renderAll();
+      hint(T.ia.activa(nombre(mejor.o), T.reaccion.iaDispara(nombre(mejor.d.blanco))));
+      await esperar(control.pausa);
+      doShoot();
+      await esperar(control.pausa);
+      if (mejor.o.alive && mejor.o.ready) endActivation(mejor.o);
+      return;
+    }
     hint(T.ia.pensando);
     await esperar(80);                       // deja que la pista se pinte antes de pensar
     const plan = decidirActivacion(bando);

@@ -53,7 +53,8 @@ export function armDrag(op, ev, from3d = false) {
 // the wall early burns the spare inches as "wait").
 function plansFor(op, type = state.moveType) {
   const M = RULES.moves, used = t => op.used.includes(t);
-  const phase = (type, spec) => ({type, allow: spec.allow(op), climb: spec.climb});
+  // reaccionando, no mueve más de 2″ (Reglas breves)
+  const phase = (type, spec) => ({type, allow: op.reaccion ? Math.min(2, spec.allow(op)) : spec.allow(op), climb: spec.climb});
   const prim = phase("reposition", M.primary), sec = phase("dash", M.secondary);
   const plan = (p1, p2) => {
     const cap = p1.allow + (p2 ? p2.allow : 0);
@@ -63,6 +64,11 @@ function plansFor(op, type = state.moveType) {
     else if (p2 && p2.climb) { lo = p1.allow; hi = cap; }
     return {p1, p2, lo, hi, cap};
   };
+  // reaccionando: una sola acción, sin encadenar un segundo movimiento
+  if (op.reaccion) {
+    const spec = type === "dash" ? M.secondary : type === "charge" && M.charge ? M.charge : M.primary;
+    return [plan(phase(type === "fallBack" ? "reposition" : type, spec), null)];
+  }
   const primAvail = !used("reposition") && !used("charge"), secAvail = !used("dash");
   if (type === "charge" && M.charge) return [plan(phase("charge", M.charge), null)];
   // Retroceder: el movimiento del agente (2 PA); puede salir de la zona de control donde empieza

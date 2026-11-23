@@ -564,6 +564,18 @@ export const T = {
     irMesa: 'Ir a la mesa',
   },
 
+  // Reaccionar (src/ui/reaccion.js)
+  reaccion: {
+    boton: `${G.reaccionar.es}`,
+    titulo: `Hace gratis una acción de 1 ${G.pa.abrev} (moviendo como mucho 2″). Una vez por punto de inflexión.`,
+    pasar: 'Pasar',
+    pista: equipo => `Turno de ${equipo}: todos sus agentes están usados. Puede ${G.reaccionar.es.toLowerCase()} con un agente con orden de trabarse (una acción gratis de 1 ${G.pa.abrev}) o pasar.`,
+    empieza: n => `${n} reacciona: haz una acción de 1 ${G.pa.abrev} (moviendo como mucho 2″) y termina su activación.`,
+    log: n => `<b>${n}</b> reacciona.`,
+    pasa: equipo => `<b>${equipo}</b> pasa (no reacciona).`,
+    iaDispara: b => `reacciona y dispara a ${b}.`,
+  },
+
   // activaciones alternas (src/ui/turno.js)
   turno: {
     noEsTuTurno: equipo => `Turno de ${equipo}: las activaciones se alternan, activa uno de sus agentes.`,

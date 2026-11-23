@@ -146,6 +146,7 @@ export function cleanOps(incoming, local) {
       wounds: Math.max(0, Math.min(l.maxW, num(o.wounds, l.wounds))), ap: num(o.ap, l.ap),
       order: o.order === "engage" ? "engage" : "conceal",
       ready: !!o.ready, alive: !!o.alive, deployed: o.deployed === false ? false : undefined,
+      reacciono: o.reacciono ? true : undefined, reaccion: o.reaccion ? true : undefined,
       base: BASE_SIZES.includes(o.base) ? o.base : undefined,
       weapon: l.weapons.includes(o.weapon) ? o.weapon : l.weapon,
       used: Array.isArray(o.used) ? o.used.filter(u => ACTS.includes(u)).slice(0, 12) : [] });

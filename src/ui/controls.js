@@ -141,7 +141,7 @@ export function wireControls() {
     snapshot();
     if (tray.tp >= 4) { logLine(T.partida.finBatalla); control.alFinBatalla("pi"); return; }
     tray.tp += 1; tray.ardides = [[], []]; reiniciarActivaciones();
-    OPS.forEach(o => { o.ready = true; o.ap = o.apl; o.used = []; });
+    OPS.forEach(o => { o.ready = true; o.ap = o.apl; o.used = []; delete o.reacciono; delete o.reaccion; });
     logLine(T.partida.nuevoPI(tray.tp));
     renderAll();
     alNuevoPI();                  // fase de estrategia: iniciativa, PM y ardides (inicio.js)

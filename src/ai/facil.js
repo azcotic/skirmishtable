@@ -36,7 +36,7 @@ const ARMAS_CC = op => op.weapons.filter(k => WPN[k] && WPN[k].type === "M");
 const alcance = w => { const r = (w.rules || []).find(x => x.startsWith("Range ")); return r ? parseFloat(r.slice(6)) : Infinity; };
 
 // El mejor disparo de `op` desde (x, y): {blanco, arma, r, puntos} o null
-function mejorDisparo(op, x, y) {
+export function mejorDisparo(op, x, y) {
   let mejor = null;
   const eye = { x, y, z: op.z || 0, team: op.team, op: { ...op, x, y, order: "engage" } };
   if (foesNear(x, y, op.team, op.id, opR(op)).length) return null;          // trabado: no dispara

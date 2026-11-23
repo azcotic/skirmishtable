@@ -152,7 +152,7 @@ function moveButtons(repoUsed, dashUsed, chargeUsed) {
   const M = RULES.moves, op = state.sel, out = [];
   const btn = (t, spec, used, prefix, title, extraCls = "") =>
     `<button id="mv-${t}" class="${state.moveType === t ? "active" : ""} ${used ? "used" : ""} ${extraCls}" title="${title}">` +
-    `${used ? "✓ " + T.mover.nombre[t] : `${prefix}${T.mover.nombre[t]} ${pulg(spec.allow(op))}`}</button>`;
+    `${used ? "✓ " + T.mover.nombre[t] : `${prefix}${T.mover.nombre[t]} ${pulg(op.reaccion ? Math.min(2, spec.allow(op)) : spec.allow(op))}`}</button>`;
   out.push(btn("reposition", M.primary, repoUsed, "① ", T.ficha.movTitulo(M.primary.allow(op), M.primary.climb)));
   out.push(btn("dash", M.secondary, dashUsed, "② ", T.ficha.movTitulo(M.secondary.allow(op), M.secondary.climb)));
   // Retroceder: solo aparece con un enemigo en su zona de control (en la barra, en lugar de Correr)
@@ -390,12 +390,14 @@ export function allowance() {
 // el bando que activó por última vez en este punto de inflexión (para saber a quién le toca)
 export let ultimoBando = null;
 export const reiniciarActivaciones = () => { ultimoBando = null; };
+// Pasar (ventana de reacción): cuenta como si ese bando hubiera activado, le toca al rival
+export const pasarTurno = team => { ultimoBando = team; };
 conectarTurno({ tray, ultimo: () => ultimoBando });   // turno.js consulta el marcador sin importar este módulo
 // Mark an operative expended: its activation is over for this turning point.
 export function endActivation(op) {
   if (!op || !op.alive || !op.ready || !mayControl(op) || !puedeActuar(op)) return;
   ultimoBando = op.team;
-  snapshot(); op.ready = false; op.ap = op.apl; op.used = [];
+  snapshot(); op.ready = false; op.ap = op.apl; op.used = []; op.reaccion = false;
   if (state.sel === op) state.moveType = "reposition";
   logLine(T.activacion.termina(op.name)); cancelMode(); renderAll();
   const p = pistaDeTurno();          // activaciones alternas: a quién le toca ahora

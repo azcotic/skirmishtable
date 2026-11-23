@@ -55,5 +55,6 @@ export function pistaDeTurno() {
   if (!alternasObligatorias()) return null;
   const t = bandoEnTurno();
   if (t !== null && esDeLaIA(t)) return T.ia.pensando;
+  if (t !== null && !OPS.some(o => o.alive && o.team === t && o.ready)) return T.reaccion.pista(TEAMNAME[t]);
   return t === null ? T.turno.finPI : T.turno.siguiente(TEAMNAME[t]);
 }
