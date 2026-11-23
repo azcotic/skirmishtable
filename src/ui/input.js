@@ -353,7 +353,18 @@ export function wireInput() {
     const d = state.drag;
     if (!d || ev.pointerId !== d.pid) return;
     state.drag = null;
-    if (!d.active) { if (d.from3d) clickOp(d.op.id); return; } // a tap: the 2D board's click handler covers its own
+    if (!d.active) {
+      // un toque. Con ratón, el clic del mapa 2D se encarga. En pantallas táctiles (y con lápiz) el
+      // navegador no manda el clic: arriba se cancela touchstart para que la página no se desplace
+      // mientras arrastras, y eso también lo anula. Así que el toque se resuelve aquí, y si el clic
+      // llega de todos modos se ignora para no contarlo dos veces.
+      if (d.from3d) clickOp(d.op.id);
+      else if (ev.pointerType !== "mouse") {
+        clickOp(d.op.id);
+        state.suppressClick = true; setTimeout(() => { state.suppressClick = false; }, 400);
+      }
+      return;
+    }
     state.suppressClick = true; setTimeout(() => { state.suppressClick = false; }, 0);
     landDrag(d);
   });

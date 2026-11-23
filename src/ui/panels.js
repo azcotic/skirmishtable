@@ -2,7 +2,8 @@
  * Side panels (operative card, verdict, tray), actions (shoot, fight, undo) and UI state.
  */
 import { state } from '../state.js';
-import { CTRL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
+import { CTRL, TEAMCOL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
+import { retrato } from '../view3d/units.js';
 import { aplicarCombate, bloquear, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
   armaPara, distanciaRegla, isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
 import { elegirCombate, elegirDestino, elegirRepeticion, elegirSigilosos, preguntarHabilidad } from './tirada.js';
@@ -432,6 +433,8 @@ function comprobarVeneno() {
     if (why) tirandoVeneno = false;
   }, 0);
 }
+// El retrato del agente para su tarjeta (el mismo de su ficha 2D), o nada mientras no esté
+const retratoHtml = op => { const u = retrato(op); return u ? `<img class="opretrato" src="${u}" alt="" style="border-color:${TEAMCOL[op.team]}">` : ""; };
 export function renderCard() {
   comprobarVeneno();                 // ¿alguien con terrotoxinas acaba de empezar su activación?
   const c = document.getElementById("opcard");
@@ -444,8 +447,9 @@ export function renderCard() {
   const repoUsed = state.sel.used.includes("reposition"), dashUsed = state.sel.used.includes("dash"), chargeUsed = state.sel.used.includes("charge");
   const slot1Used = repoUsed || chargeUsed;
   c.innerHTML = `
+    <div class="opcabeza">${retratoHtml(state.sel)}
     <div class="opname" style="color:${TEAMCOL_LT[state.sel.team]}">${state.sel.id} · ${state.sel.name} ${KINDS[state.sel.kind] && KINDS[state.sel.kind].comando ? (KINDS[state.sel.kind].lider ? `<span class="tag">${T.fichaDatos.lider}</span>` : "") : `<span class="tag">${T.tipos[state.sel.kind] || state.sel.kind}</span>`}
-      ${inj ? `<span class="tag warn">${T.ficha.lesionado}</span>` : ''}${state.sel.terrotoxinas ? ` <span class="tag warn">${T.ficha.terrotoxinas}</span>` : ''}${state.sel.aturdido ? ` <span class="tag warn">${T.ficha.aturdido}</span>` : ''}${state.sel.quemarMente ? ` <span class="tag warn">${T.ficha.quemarMente}</span>` : ''} ${state.sel.ready ? '' : `<span class="tag">${T.ficha.usado}</span>`}</div>
+      ${inj ? `<span class="tag warn">${T.ficha.lesionado}</span>` : ''}${state.sel.terrotoxinas ? ` <span class="tag warn">${T.ficha.terrotoxinas}</span>` : ''}${state.sel.aturdido ? ` <span class="tag warn">${T.ficha.aturdido}</span>` : ''}${state.sel.quemarMente ? ` <span class="tag warn">${T.ficha.quemarMente}</span>` : ''} ${state.sel.ready ? '' : `<span class="tag">${T.ficha.usado}</span>`}</div></div>
     <div class="stats">
       <div><div class="v">${state.sel.apl}</div><div class="k">${T.ficha.stat.lpa}</div></div>
       <div><div class="v">${pulg(RULES.moves.primary.allow(state.sel))}</div><div class="k">${T.ficha.stat.mov}</div></div>

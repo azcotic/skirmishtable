@@ -151,6 +151,7 @@ export const T = {
     registro: 'Registro',
     mas: 'Más',
     cerrar: 'Cerrar',
+    info: 'Información del agente',
   },
   acciones: {
     titulo: 'Acciones',

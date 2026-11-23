@@ -739,3 +739,43 @@ dialog.ficha::backdrop { background: rgba(10, 8, 6, .7); }
 #options .optpartida:has(> [hidden]:only-child), #options .optpartida:not(:has(> :not([hidden]))) { display: none; }
 #options .optpartida .mini { min-height: 44px; flex: 1 1 160px; }
 #options .optpartida [hidden] { display: none; }
+
+/* ======================================================================================
+   Escritorio ancho (≥ 1100 px, src/ui/columnas.js): izquierda info del agente, centro el
+   tablero, derecha acciones y menú. Se activa con la clase .ancho que pone columnas.js.
+   ====================================================================================== */
+.main.ancho, .main.ancho.folded { grid-template-columns: 310px minmax(0, 1fr) 340px; grid-template-rows: minmax(0, 1fr); }
+.main.ancho > .boardwrap { grid-column: 2; grid-row: 1; }
+.main.ancho > .colinfo { grid-column: 1; grid-row: 1; }
+.main.ancho > .hoja { grid-column: 3; grid-row: 1; }
+body.ancho .abajo { display: none; }
+body.ancho #panelbtn { display: none; }
+
+/* izquierda: lo que estás haciendo y el agente */
+.colinfo { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: 10px; background: #191510; border-right: 1px solid #2e2921; }
+.colinfo .filapista { flex-wrap: wrap; align-items: flex-start; min-height: 0; }
+.colinfo .filapista .pasel { order: 1; }
+.colinfo .filapista #volarsel, .colinfo .filapista #fichasel, .colinfo .filapista #quitarsel { order: 2; }
+.colinfo .filapista .hint { order: 3; flex: 1 0 100%; height: auto; display: block; -webkit-line-clamp: unset; overflow: visible;
+  font-size: 13px; line-height: 1.45; color: #cfc4b0; }
+.colinfo > * { flex: none; }   /* nada se encoge: si no cabe, la columna se desplaza */
+.colinfo .panel { padding: 0; margin: 0; }
+/* la tarjeta del agente: su retrato a la izquierda del nombre; los botones de acción ya están a la derecha */
+.opcabeza { display: flex; align-items: center; gap: 10px; }
+.opcabeza .opname { flex: 1 1 auto; min-width: 0; }
+.opretrato { flex: none; width: 64px; height: 64px; border-radius: 50%; border: 3px solid #e8722e; background: #26301f; object-fit: cover; }
+.main.ancho #opcard .btnrow:not(.woundbtns) { display: none; }
+
+/* derecha: acciones del agente y el menú con pestañas */
+.main.ancho > .hoja { display: flex !important; flex-direction: column; overflow: hidden; }
+.main.ancho .hoja .acciones { flex: none; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: 48px;
+  min-height: 0; justify-content: stretch; padding: 10px; border-bottom: 1px solid #2e2921; }
+.main.ancho .hoja .acciones.con-agente { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: 48px; }
+.main.ancho .hoja .hojatabs { display: flex; flex: none; padding: 6px 8px 0; }
+.main.ancho .hoja .hojatabs [data-tab="agente"] { display: none; }
+.main.ancho .hoja .hojacuerpo { flex: 1 1 auto; }
+.main.ancho .hoja .panel[data-tab] { display: none; }
+.main.ancho .hoja[data-tab=partida] .panel[data-tab=partida], .main.ancho .hoja[data-tab=mision] .panel[data-tab=mision],
+.main.ancho .hoja[data-tab=registro] .panel[data-tab=registro], .main.ancho .hoja[data-tab=mas] .panel[data-tab=mas] { display: block; }
+.main.ancho .hoja .panel[hidden] { display: none !important; }
