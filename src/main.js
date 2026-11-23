@@ -31,7 +31,9 @@ import { minis, onMinisChange } from './view3d/units.js';
 import { TTS_TEAMS } from './data/tts-teams.js';
 import { aplicarTextos } from './i18n/aplicar.js';
 import { T } from './i18n/es.js';
+import { traducirCatalogo } from './i18n/nombres.js';
 
+traducirCatalogo(TTS_TEAMS);     // nombres de comandos y agentes en español oficial (src/i18n/nombres.js)
 aplicarTextos();                 // textos de index.html desde src/i18n/es.js
 wireInput();
 wireOpMenu();

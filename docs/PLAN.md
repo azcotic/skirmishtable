@@ -194,8 +194,10 @@ Seguimos la regla del repo original: **no copiamos texto de reglas, cartas ni im
 - UI 100% en español.
 - Ambas vistas: 3D (modelos de Steam) y 2D (fichas con imagen de la miniatura).
 - Equipos iniciales: Angels of Death (Space Marines de Kill Team 2024) y Warpcoven.
+- Nombres de comandos, agentes y armas siempre en español oficial, según las reglas de equipo de GW
+  en español: Ángeles de la Muerte, Aquelarre Disforme, Tirador Intercesor… (`src/i18n/nombres.js`).
 
 ## 9. Decisiones pendientes
 - ¿Qué versión de modelos de Warpcoven: la clásica o la de Space Marine 2?
 - ¿Con qué roster de cada equipo aprendemos? (sugerencia: uno fijo y pequeño para empezar).
-- ¿Nombres de comandos y agentes en español oficial (Ángeles de la Muerte, Aquelarre Disforme, Tirador Intercesor) o en inglés (Angels of Death, Warpcoven, Intercessor Gunner)?
+

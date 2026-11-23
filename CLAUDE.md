@@ -13,7 +13,8 @@ No tocamos `src/engine/` salvo que la interfaz lo exija.
 ## Reglas de la interfaz
 
 - **Todo texto visible en español.** Nada de cadenas sueltas en el código: van en `src/i18n/es.js`.
-  Los nombres de equipos y agentes se quedan como en el juego; las acciones y conceptos se traducen
+  Los nombres de comandos, agentes y armas van **siempre en español oficial**, tal como aparecen en
+  las reglas de equipo de GW en español (`src/i18n/nombres.js`); las acciones y conceptos se traducen
   según el glosario de ese archivo.
 - **Terminología oficial de GW en español.** El glosario (`G` en `src/i18n/es.js`) sigue las Reglas
   breves y las reglas de equipo oficiales en español (PDF gratuitos de warhammer-community.com):
@@ -27,7 +28,7 @@ No tocamos `src/engine/` salvo que la interfaz lo exija.
 - **Solo Kill Team.** Los rulesets Infinity y Ashfall no se muestran.
 - **Dos vistas:** 3D con modelos de Steam y 2D con fichas circulares con la imagen de cada miniatura
   (estilo VTT). Las imágenes se generan en el navegador desde el modelo 3D (ver §3b del plan).
-- **Equipos:** Angels of Death y Warpcoven.
+- **Comandos:** Ángeles de la Muerte (Angels of Death) y Aquelarre Disforme (Warpcoven).
 
 ## Licencia y contenido de terceros (heredado del original, obligatorio)
 
