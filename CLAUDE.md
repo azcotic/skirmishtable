@@ -13,8 +13,13 @@ No tocamos `src/engine/` salvo que la interfaz lo exija.
 ## Reglas de la interfaz
 
 - **Todo texto visible en español.** Nada de cadenas sueltas en el código: van en `src/i18n/es.js`.
-  Los nombres de equipos y operativos se quedan como en el juego; las acciones y conceptos se traducen
+  Los nombres de equipos y agentes se quedan como en el juego; las acciones y conceptos se traducen
   según el glosario de ese archivo.
+- **Terminología oficial de GW en español.** El glosario (`G` en `src/i18n/es.js`) sigue las Reglas
+  breves y las reglas de equipo oficiales en español (PDF gratuitos de warhammer-community.com):
+  agente, comando, zona de aniquilación, orden de trabarse / ocultarse, apostado / usado, Combatir,
+  lesionado, PM, PA, LPA. No inventar traducciones de términos del juego: buscarlos ahí. Solo se usan
+  los términos; nunca se copia texto de reglas.
 - **Mobile-first.** Diseñar primero para teléfono vertical (~390 px), después tablet (~768–1024 px),
   después escritorio. Botones de al menos 44×44 px. Respetar `env(safe-area-inset-*)` y usar `100dvh`.
 - **El tablero ocupa la pantalla.** Lo demás va en barra superior, barra de acciones contextual,
@@ -34,7 +39,7 @@ licencia que exija aviso.
 - Los recursos de terceros llegan al jugador de una sola forma: su navegador los descarga del origen
   (CDN de Steam, imgur) a partir de los catálogos de enlaces en `src/data/tts-*.js`.
 - Las fichas 2D generadas desde los modelos se guardan **solo en la caché del navegador**.
-- Las reglas y perfiles de operativos se escriben como números y explicaciones con nuestras palabras.
+- Las reglas y perfiles de agentes se escriben como números y explicaciones con nuestras palabras.
 - Copias locales solo en carpetas ignoradas por git (`cache/`, `public/models/`,
   `public/meshpack.json`). Revisar `git status` antes de cada commit.
 - "Kill Team", "Warpcoven", "Angels of Death", "Volkus" y similares son marcas de Games Workshop;

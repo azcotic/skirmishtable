@@ -29,7 +29,9 @@ import * as table3d from './view3d/table3d.js';
 import * as rules from './rules/index.js';
 import { minis, onMinisChange } from './view3d/units.js';
 import { TTS_TEAMS } from './data/tts-teams.js';
+import { aplicarTextos } from './i18n/aplicar.js';
 
+aplicarTextos();                 // textos de index.html desde src/i18n/es.js
 wireInput();
 wireOpMenu();
 wireHud();

@@ -1,9 +1,10 @@
 /**
  * DOM helpers: the SVG board, element factory, hint line and battle log.
  */
+import { T } from '../i18n/es.js';
 export const capName = s => s[0].toUpperCase() + s.slice(1);
 export function fmtDice(dice) { return dice.map(v => v===6?`<span class="crit">${v}</span>`:v).join(" "); }
-export const HINT0 = "Drag an operative to move — the app paths around or over terrain and prices the move by the current rules. Click to select.";
+export const HINT0 = T.ayuda.inicio;
 export const logEl = document.getElementById("log");
 // tap: online play collects this browser's lines to send; rec: the replay recorder's
 // copy of every game line (replayer.js); mute: lines that stay local

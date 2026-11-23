@@ -34,10 +34,10 @@ Base: fork de [jfreal/skirmishtable](https://github.com/jfreal/skirmishtable) (l
 ## 2. Principios de diseño
 
 - **El tablero es la app.** Ocupa toda la pantalla; todo lo demás aparece encima, cuando hace falta, y se va.
-- **Contexto, no paneles.** Si seleccionas un operativo, ves sus acciones. Si disparas, ves el veredicto y los dados. Nada más.
+- **Contexto, no paneles.** Si seleccionas un agente, ves sus acciones. Si disparas, ves el veredicto y los dados. Nada más.
 - **Un pulgar.** Botones de al menos 44×44 px, acciones principales en la mitad inferior de la pantalla.
 - **Solo Kill Team.** Quitamos los otros rulesets de la interfaz (el código puede quedarse).
-- **100% en español.** Todo texto visible (botones, ayudas, log, veredictos, tooltips) en español. Los nombres propios de equipos y operativos se quedan como en el juego (Warpcoven, Gunner…), pero las acciones y conceptos se traducen (Reposicionar, Correr, Cargar, Disparar, Pelear, Ocultar/Enfrentar). Un glosario fijo en `src/i18n/es.js` para que la traducción sea consistente.
+- **100% en español.** Todo texto visible (botones, ayudas, log, veredictos, tooltips) en español. Los nombres propios de equipos y agentes se quedan como en el juego (Warpcoven, Gunner…), pero las acciones y conceptos se traducen (Reposicionarse, Correr, Cargar, Disparar, Combatir, orden de trabarse / ocultarse), con la terminología oficial de GW en español. Un glosario fijo en `src/i18n/es.js` para que la traducción sea consistente.
 
 ---
 
@@ -47,7 +47,7 @@ Base: fork de [jfreal/skirmishtable](https://github.com/jfreal/skirmishtable) (l
 
 ```
 ┌─────────────────────────┐
-│ TP 1 · CP 3|3 · VP 0|0 ☰│  ← barra superior compacta (battle tray resumido)
+│ PI 1 · PM 3|3 · PV 0|0 ☰│  ← barra superior compacta (battle tray resumido)
 ├─────────────────────────┤
 │                         │
 │                         │
@@ -55,10 +55,10 @@ Base: fork de [jfreal/skirmishtable](https://github.com/jfreal/skirmishtable) (l
 │                         │
 │                         │
 ├─────────────────────────┤
-│ [Mover][Disparar][Pelear]│  ← barra de acciones contextual (solo con operativo seleccionado)
-│ [Ocultar/Enfrentar][Fin]│
+│ [Mover] [Disparar]      │  ← barra de acciones contextual (solo con agente seleccionado)
+│ [Combatir] [Orden] [Fin]│  ← [Orden] alterna trabarse / ocultarse
 └─────────────────────────┘
-      ↑ hoja inferior deslizable: ficha del operativo, veredicto, dados, log
+      ↑ hoja inferior deslizable: ficha del agente, veredicto, dados, log
 ```
 
 ### Tablet (horizontal)
@@ -69,7 +69,7 @@ Tablero a la izquierda (~70%) y un panel lateral **plegable** a la derecha con p
 
 | Panel actual | Destino |
 |---|---|
-| Battle tray | Barra superior compacta (TP, CP, VP) + botones en menú ☰ |
+| Battle tray | Barra superior compacta (PI, PM, PV) + botones en menú ☰ |
 | Operative, Valid shots, Verdict | Hoja inferior contextual al seleccionar/apuntar |
 | Dice box (x2) | Hoja de dados que aparece al tirar |
 | Log | Pestaña dentro de la hoja inferior |
@@ -86,7 +86,7 @@ Tablero a la izquierda (~70%) y un panel lateral **plegable** a la derecha con p
 
 **3D:** como hoy, con los modelos reales que el navegador descarga de Steam.
 
-**2D:** tablero cenital con **fichas redondas con la imagen de cada miniatura**, como en un VTT de D&D (Roll20, Foundry, Owlbear Rodeo), para que cada operativo se reconozca de un vistazo.
+**2D:** tablero cenital con **fichas redondas con la imagen de cada miniatura**, como en un VTT de D&D (Roll20, Foundry, Owlbear Rodeo), para que cada agente se reconozca de un vistazo.
 
 De dónde salen las imágenes (sin romper la regla de "no guardar contenido de terceros en el repo"):
 
@@ -94,7 +94,7 @@ De dónde salen las imágenes (sin romper la regla de "no guardar contenido de t
 2. **Respaldo:** si no se han cargado los modelos, ficha con iniciales + icono del rol (líder, francotirador, pesado…) en el color del equipo.
 3. **Opcional:** que el usuario suba su propia foto de la miniatura (se queda solo en su navegador).
 
-Sobre la ficha: anillo de estado (listo / activado), contador de heridas, marcador de orden (Ocultar/Enfrentar) y número del operativo.
+Sobre la ficha: anillo de estado (apostado / usado), contador de heridas, marcador de orden (trabarse / ocultarse) y número del agente.
 
 ---
 
@@ -105,7 +105,7 @@ Sobre la ficha: anillo de estado (listo / activado), contador de heridas, marcad
 | **Warpcoven** | Ya está en el catálogo (`src/data/tts-teams.js`), en dos versiones de modelos (la normal y la de Space Marine 2). Hay que elegir una. |
 | **Angels of Death** | **No está** en el catálogo. Hay que buscar su mod en el Steam Workshop (serie Yellowscribed u otra) y añadir su id a `TEAMS` en `scripts/tts-teams.mjs`, luego `npm run tts:teams`. |
 
-**Perfiles reales:** hoy todos los operativos usan perfiles genéricos inventados (`KINDS` en `src/engine/world.js`: leader, marksman, brawler, trooper). Para aprender necesitamos las fichas de estos dos equipos (APL, movimiento, salvación, heridas, armas con ataques/impacto/daño y reglas de arma). Se escriben a mano como **números** en `src/data/teams/warpcoven.js` y `src/data/teams/angels-of-death.js`, con descripciones en nuestras palabras; nada de copiar el texto de las cartas. Las reglas especiales de cada equipo (psíquicos del Warpcoven, etc.) quedan para la fase del motor de partida.
+**Perfiles reales:** hoy todos los agentes usan perfiles genéricos inventados (`KINDS` en `src/engine/world.js`: leader, marksman, brawler, trooper). Para aprender necesitamos las fichas de estos dos equipos (APL, movimiento, salvación, heridas, armas con ataques/impacto/daño y reglas de arma). Se escriben a mano como **números** en `src/data/teams/warpcoven.js` y `src/data/teams/angels-of-death.js`, con descripciones en nuestras palabras; nada de copiar el texto de las cartas. Las reglas especiales de cada equipo (psíquicos del Warpcoven, etc.) quedan para la fase del motor de partida.
 
 ---
 
@@ -158,7 +158,7 @@ Sobre la ficha: anillo de estado (listo / activado), contador de heridas, marcad
 
 ### Fase 4 — Interacción táctil (1–2 días)
 - Tocar para seleccionar, arrastrar para mover (ya existe; revisar), mantener pulsado para info.
-- Pellizcar para zoom y dos dedos para rotar en 3D, sin conflictos con el arrastre de operativos.
+- Pellizcar para zoom y dos dedos para rotar en 3D, sin conflictos con el arrastre de agentes.
 - Selector de vista 3D / 2D siempre visible. En teléfono, sugerir 2D al inicio (más ligero), con el 3D a un toque.
 
 ### Fase 5 — Pruebas (continuo)
@@ -177,7 +177,7 @@ Sobre la ficha: anillo de estado (listo / activado), contador de heridas, marcad
 
 ## 6. Lo que viene después (para tenerlo en mente)
 
-1. **Motor de partida** (`src/game/`): secuencia de Turning Points, iniciativa, activaciones alternas, APL, órdenes, acciones legales por operativo, fin de partida. Sin DOM, como el motor actual, con tests.
+1. **Motor de partida** (`src/game/`): secuencia de Turning Points, iniciativa, activaciones alternas, APL, órdenes, acciones legales por agente, fin de partida. Sin DOM, como el motor actual, con tests.
 2. **Modo aprendizaje**: lecciones cortas en escenarios pequeños (mover, cobertura, disparar, pelear, objetivos), con explicaciones en nuestras propias palabras.
 3. **IA**: primero una heurística simple (puntuar acciones legales: daño esperado, cobertura, control de objetivos), sobre el motor de partida.
 4. **Contra un amigo**: reaprovechar `src/net/` (ya existe P2P).
@@ -198,3 +198,4 @@ Seguimos la regla del repo original: **no copiamos texto de reglas, cartas ni im
 ## 9. Decisiones pendientes
 - ¿Qué versión de modelos de Warpcoven: la clásica o la de Space Marine 2?
 - ¿Con qué roster de cada equipo aprendemos? (sugerencia: uno fijo y pequeño para empezar).
+- ¿Nombres de comandos y agentes en español oficial (Ángeles de la Muerte, Aquelarre Disforme, Tirador Intercesor) o en inglés (Angels of Death, Warpcoven, Intercessor Gunner)?

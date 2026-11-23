@@ -3,6 +3,8 @@
  * fill the screen. It starts folded; the choice is remembered in this browser. While folded,
  * End TP, Undo and Ruler sit in the view bar, and the table is sized to fit the window.
  */
+import { T } from '../i18n/es.js';
+
 const KEY = "skirmishtable.sidebar";
 
 let open = false;
@@ -22,7 +24,7 @@ function fit() {
 function apply() {
   const main = document.querySelector(".main"), btn = document.getElementById("panelbtn");
   main.classList.toggle("folded", !open);
-  btn.textContent = open ? "Hide panel" : "Show panel";
+  btn.textContent = open ? T.app.ocultarPanel : T.app.mostrarPanel;
   btn.setAttribute("aria-expanded", String(open));
   fit();
   window.dispatchEvent(new Event("resize"));   // the 3D table and the dice boxes size from their box

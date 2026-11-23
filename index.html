@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,136 +9,137 @@
   <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
+<!-- Los textos visibles salen de src/i18n/es.js (data-t, data-t-title, data-t-aria; ver src/i18n/aplicar.js) -->
 
 <div class="app">
 <header>
   <h1>Skirmish<span>Table</span></h1>
-  <span class="hint" id="hint">Drag an operative to move — the app paths around or over terrain and prices the move by the current rules.</span>
-  <button id="panelbtn" class="mini" aria-controls="sidepanel" aria-expanded="false" title="Fold the side panel away so the table fills the screen (remembered in this browser)">Show panel</button>
-  <button id="optionsbtn" class="mini" title="Settings, remembered in this browser">Options</button>
+  <span class="hint" id="hint" data-t="ayuda.inicio"></span>
+  <button id="panelbtn" class="mini" aria-controls="sidepanel" aria-expanded="false" data-t="app.mostrarPanel" data-t-title="app.panelTitulo"></button>
+  <button id="optionsbtn" class="mini" data-t="app.opciones" data-t-title="app.opcionesTitulo"></button>
 </header>
 
 <dialog id="options" aria-labelledby="optionstitle">
-  <h2 id="optionstitle">Options</h2>
+  <h2 id="optionstitle" data-t="app.opciones"></h2>
   <div id="optionrows"></div>
-  <div class="btnrow"><button id="optionsclose" class="mini">Done</button></div>
+  <div class="btnrow"><button id="optionsclose" class="mini" data-t="app.hecho"></button></div>
 </dialog>
 
 <div class="main">
   <div class="boardwrap">
     <div class="viewbar">
-      <button id="view3d" class="mini active" title="The table in 3D — scanned TTS terrain where available. Drag operatives to move them; drag the table to orbit.">3D table</button>
-      <button id="view2d" class="mini" title="Top-down map with the ruler and line-of-sight shadows">2D map</button>
-      <button id="view3dtop" class="mini" style="display:none" title="Look straight down at the table (click again for the angled view)">Top-down</button>
-      <span id="ringpick" class="ringpick" style="display:none" title="Base ring styles to try: for ready operatives, and for the active one (selected or mid-activation)">
-        <label>Ready <select id="ringready"></select></label>
-        <label>Active <select id="ringactive"></select></label>
+      <button id="view3d" class="mini active" data-t="vista.mesa3d" data-t-title="vista.mesa3dTitulo"></button>
+      <button id="view2d" class="mini" data-t="vista.mapa2d" data-t-title="vista.mapa2dTitulo"></button>
+      <button id="view3dtop" class="mini" style="display:none" data-t="vista.cenital" data-t-title="vista.cenitalTitulo"></button>
+      <span id="ringpick" class="ringpick" style="display:none" data-t-title="anillos.titulo">
+        <label><span data-t="anillos.apostado"></span> <select id="ringready"></select></label>
+        <label><span data-t="anillos.activo"></span> <select id="ringactive"></select></label>
       </span>
-      <span id="threatpick" class="ringpick" title="While you drag: where the enemies that haven't activated yet could reach your model">
-        <label>Threats <select id="threatstyle"></select></label>
-        <label title="How strongly the threat zones are tinted">Zones <select id="threatstrength"></select></label>
-        <label title="How the route each enemy could charge your landing spot along is drawn, moving from the enemy towards you">Charge paths <select id="threatpaths"></select></label>
-        <span class="threatkey" id="threatkey"><i class="ch"></i>charge <i class="cl"></i>no cover</span>
+      <span id="threatpick" class="ringpick" data-t-title="amenazas.titulo">
+        <label><span data-t="amenazas.nombre"></span> <select id="threatstyle"></select></label>
+        <label data-t-title="amenazas.zonasTitulo"><span data-t="amenazas.zonas"></span> <select id="threatstrength"></select></label>
+        <label data-t-title="amenazas.rutasTitulo"><span data-t="amenazas.rutas"></span> <select id="threatpaths"></select></label>
+        <span class="threatkey" id="threatkey"><i class="ch"></i><span data-t="amenazas.leyendaCarga"></span> <i class="cl"></i><span data-t="amenazas.leyendaSinCobertura"></span></span>
       </span>
       <span class="foldonly">
-        <button class="mini" data-press="endtp" title="Ready all operatives, next turning point">End TP</button>
-        <button class="mini" data-press="undo" title="Undo last committed action">Undo</button>
-        <button class="mini" data-press="rulerbtn" title="Free measurement: click two points">Ruler</button>
+        <button class="mini" data-press="endtp" data-t="bandeja.finPI" data-t-title="bandeja.finPITitulo"></button>
+        <button class="mini" data-press="undo" data-t="bandeja.deshacer" data-t-title="bandeja.deshacerTitulo"></button>
+        <button class="mini" data-press="rulerbtn" data-t="bandeja.regla" data-t-title="bandeja.reglaTitulo"></button>
       </span>
       <span class="hint" id="v3dnote"></span>
-      <button id="loadtts" class="mini" style="display:none" title="Download the exact Tabletop Simulator scans and textures from the Steam Workshop CDN into this browser. This site doesn't host them.">Load from Steam</button>
+      <button id="loadtts" class="mini" style="display:none" data-t="vista.descargarSteam" data-t-title="vista.descargarSteamTitulo"></button>
     </div>
     <div id="replaybar" class="replaybar" hidden></div>
     <div class="stage">
-      <svg id="board" viewBox="0 0 960 704" aria-label="Top-down wargame table, 30 by 22 inches"></svg>
+      <svg id="board" viewBox="0 0 960 704" data-t-aria="mesa.tablero"></svg>
       <div id="board3d"></div>
-      <div class="hud hudtop" id="hudtop" aria-label="Operatives: click one to find it on the table"></div>
+      <div class="hud hudtop" id="hudtop" data-t-aria="mesa.agentes"></div>
       <div class="hud hudbot" id="hudbot"></div>
       <div class="hudsheet" id="hudsheet" hidden></div>
       <div class="hudtip" id="hudtip" role="tooltip" hidden></div>
       <!-- each side's status cards on its own edge of the table (src/ui/statuscards.js) -->
-      <div class="scards s0" id="scards0" aria-label="Ash status cards"></div>
-      <div class="scards s1" id="scards1" aria-label="Slate status cards"></div>
+      <div class="scards s0" id="scards0" data-t-equipo="0" data-t-aria="mesa.tarjetas"></div>
+      <div class="scards s1" id="scards1" data-t-equipo="1" data-t-aria="mesa.tarjetas"></div>
       <!-- a dice box per side, behind a die icon in the bottom corners of the table (src/ui/dicebox.js) -->
-      <div class="dicedock s0" id="dicedock0">
-        <button class="diceicon" title="Ash dice box" aria-label="Ash dice box" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.6"/><circle cx="16" cy="8" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="8" cy="16" r="1.6"/><circle cx="16" cy="16" r="1.6"/></svg><span class="dicebadge"></span></button>
+      <div class="dicedock s0" id="dicedock0" data-t-equipo="0">
+        <button class="diceicon" data-t-title="mesa.cajaDados" data-t-aria="mesa.cajaDados" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.6"/><circle cx="16" cy="8" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="8" cy="16" r="1.6"/><circle cx="16" cy="16" r="1.6"/></svg><span class="dicebadge"></span></button>
       </div>
-      <div class="dicedock s1" id="dicedock1">
-        <button class="diceicon" title="Slate dice box" aria-label="Slate dice box" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.6"/><circle cx="16" cy="8" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="8" cy="16" r="1.6"/><circle cx="16" cy="16" r="1.6"/></svg><span class="dicebadge"></span></button>
+      <div class="dicedock s1" id="dicedock1" data-t-equipo="1">
+        <button class="diceicon" data-t-title="mesa.cajaDados" data-t-aria="mesa.cajaDados" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.6"/><circle cx="16" cy="8" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="8" cy="16" r="1.6"/><circle cx="16" cy="16" r="1.6"/></svg><span class="dicebadge"></span></button>
       </div>
     </div>
   </div>
 
   <aside id="sidepanel">
     <div class="panel">
-      <h2>Battle tray</h2>
+      <h2 data-t="bandeja.titulo"></h2>
       <div class="tray">
-        <div class="cell"><div class="v" id="tpv">1</div><div class="k">Turning pt</div></div>
-        <div class="cell"><div class="v teamA" id="cpa">3</div><div class="k">CP · Ash</div></div>
-        <div class="cell"><div class="v teamB" id="cpb">3</div><div class="k">CP · Slate</div></div>
-        <div class="cell"><div class="v teamA" id="vpa">0</div><div class="k">VP · Ash</div></div>
-        <div class="cell"><div class="v teamB" id="vpb">0</div><div class="k">VP · Slate</div></div>
-        <button class="mini" id="endtp" title="Ready all operatives, next turning point">End TP</button>
-        <button class="mini" id="undo" title="Undo last committed action">Undo</button>
-        <button class="mini" id="reset">Reset</button>
-        <button class="mini" id="rulerbtn" title="Free measurement: click two points">Ruler</button>
+        <div class="cell"><div class="v" id="tpv">1</div><div class="k" data-t="bandeja.puntoInflexion"></div></div>
+        <div class="cell"><div class="v teamA" id="cpa">3</div><div class="k" data-t-equipo="0" data-t="bandeja.pm"></div></div>
+        <div class="cell"><div class="v teamB" id="cpb">3</div><div class="k" data-t-equipo="1" data-t="bandeja.pm"></div></div>
+        <div class="cell"><div class="v teamA" id="vpa">0</div><div class="k" data-t-equipo="0" data-t="bandeja.pv"></div></div>
+        <div class="cell"><div class="v teamB" id="vpb">0</div><div class="k" data-t-equipo="1" data-t="bandeja.pv"></div></div>
+        <button class="mini" id="endtp" data-t="bandeja.finPI" data-t-title="bandeja.finPITitulo"></button>
+        <button class="mini" id="undo" data-t="bandeja.deshacer" data-t-title="bandeja.deshacerTitulo"></button>
+        <button class="mini" id="reset" data-t="bandeja.reiniciar"></button>
+        <button class="mini" id="rulerbtn" data-t="bandeja.regla" data-t-title="bandeja.reglaTitulo"></button>
       </div>
     </div>
 
     <div class="panel">
-      <h2>Ops &amp; score</h2>
+      <h2 data-t="paneles.operaciones"></h2>
       <div id="opsbox"></div>
     </div>
 
     <div class="panel">
-      <h2>Play online</h2>
+      <h2 data-t="paneles.enLinea"></h2>
       <div id="netbox"></div>
       <div id="sharebox"></div>
     </div>
 
     <div class="panel">
-      <h2>Replay</h2>
+      <h2 data-t="paneles.grabacion"></h2>
       <div id="replaybox"></div>
     </div>
 
     <div class="panel">
-      <h2>Rules</h2>
+      <h2 data-t="paneles.reglas"></h2>
       <div class="btnrow" id="rulebtns"></div>
       <div class="hint" id="rulenote"></div>
     </div>
 
     <div class="panel">
-      <h2>Map <span class="tag" id="buildtag" title="Which build of SkirmishTable this is" style="margin-left:6px;letter-spacing:.06em">build 28 · touch drags fixed</span></h2>
+      <h2><span data-t="paneles.zona"></span> <span class="tag" id="buildtag" style="margin-left:6px;letter-spacing:.06em" data-t="zona.version" data-t-title="zona.versionTitulo"></span></h2>
       <div id="mapbtns"></div>
       <div class="btnrow">
-        <button class="mini" id="importbtn" title="Open a Tabletop Simulator save (.json) or WorkshopUpload (BSON) containing a Gallowdark map">Import TTS map…</button>
+        <button class="mini" id="importbtn" data-t="zona.importar" data-t-title="zona.importarTitulo"></button>
         <input type="file" id="importfile" style="display:none">
       </div>
       <div class="hint" id="mapnote"></div>
     </div>
 
     <div class="panel">
-      <h2>Miniatures</h2>
+      <h2 data-t="paneles.miniaturas"></h2>
       <div id="minis"></div>
     </div>
 
     <div class="panel" id="oppanel">
-      <h2>Operative</h2>
-      <div id="opcard"><span class="hint">Nothing selected.</span></div>
+      <h2 data-t="paneles.agente"></h2>
+      <div id="opcard"><span class="hint" data-t="ficha.vacia"></span></div>
     </div>
 
     <div class="panel">
-      <h2>Valid shots</h2>
-      <div id="shots"><span class="hint">Select or drag an operative to see what it could shoot.</span></div>
+      <h2 data-t="paneles.blancos"></h2>
+      <div id="shots"><span class="hint" data-t="blancos.ayuda"></span></div>
     </div>
 
     <div class="panel">
-      <h2>Verdict</h2>
-      <div id="verdict"><span class="hint">Select an operative, press Target, then click an enemy.</span></div>
+      <h2 data-t="paneles.veredicto"></h2>
+      <div id="verdict"><span class="hint" data-t="veredicto.ayuda"></span></div>
     </div>
 
     <div class="panel">
-      <h2>Log</h2>
+      <h2 data-t="paneles.registro"></h2>
       <div id="log"></div>
     </div>
   </aside>

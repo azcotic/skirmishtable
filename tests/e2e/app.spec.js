@@ -2,6 +2,7 @@
 // real mouse — on the 3D table (the default) and the 2D map: dragging into a nook,
 // climbing, targeting, switching maps and rulesets, undo.
 import { test, expect } from '@playwright/test';
+import { T } from '../../src/i18n/es.js';
 
 const kz = (page, fn, arg) => page.evaluate(fn, arg);
 // board inches -> screen pixels (recomputed each time: the side panel can scroll the page)
@@ -50,7 +51,7 @@ test('loads Volkus AO 1 on the 3D table, with the grouped map and rules pickers'
     .toEqual(['Volkus AO 1', true, true, 'killteam']);
   await expect(page.locator('#board3d canvas')).toBeVisible();
   await expect(page.locator('#rulebtns button')).toHaveCount(3);
-  await expect(page.locator('#buildtag')).toContainText('build');
+  await expect(page.locator('#buildtag')).toHaveText(T.zona.version);
   await expect(page.locator('.maprow')).toHaveCount(4);
   await expect(page.locator('#mapbtns button')).toHaveCount(15);
 });

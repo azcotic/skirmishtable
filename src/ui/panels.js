@@ -15,6 +15,7 @@ import { mayControl, online } from '../net/sync.js';
 import { showRoll } from './dicetray.js';
 import { fairNote, rollFor } from '../net/roll.js';
 import { renderMinis } from './minis.js';
+import { T } from '../i18n/es.js';
 
 /* ---------- state / undo / log ---------- */
 export let tray = {tp:1, cp:[3,3], vp:[0,0]};
@@ -161,7 +162,7 @@ export function defaultMoveType(op) {
 }
 export function renderCard() {
   const c = document.getElementById("opcard");
-  if (!state.sel || !state.sel.alive) { c.innerHTML = '<span class="hint">Nothing selected.</span>'; return; }
+  if (!state.sel || !state.sel.alive) { c.innerHTML = `<span class="hint">${T.ficha.vacia}</span>`; return; }
   const inj = isInjured(state.sel);
   const meleeFoes = OPS.filter(o => o.alive && o.team !== state.sel.team && opGap(state.sel, o) <= CTRL);
   const repoUsed = state.sel.used.includes("reposition"), dashUsed = state.sel.used.includes("dash"), chargeUsed = state.sel.used.includes("charge");
@@ -230,7 +231,7 @@ export function renderCard() {
 export function renderVerdict() {
   const v = document.getElementById("verdict");
   if (!state.sel || !state.target || !state.lastShot || !state.target.alive) {
-    v.innerHTML = '<span class="hint">Select an operative, press Target, then click an enemy.</span>'; return;
+    v.innerHTML = `<span class="hint">${T.veredicto.ayuda}</span>`; return;
   }
   const shot = state.lastShot, s = shot.sight, c = s.coverBy, o = s.obscBy;
   let big, cls, why = [];
@@ -281,7 +282,7 @@ export function renderShots(eye) {
   let html;
   if (!eye) html = state.drag && state.drag.active
     ? '<span class="hint">No legal landing spot — no shots to show.</span>'
-    : '<span class="hint">Select or drag an operative to see what it could shoot.</span>';
+    : `<span class="hint">${T.blancos.ayuda}</span>`;
   else {
     const list = [...shotsFrom(eye)].sort((p, q) => SHOT_ORDER.indexOf(p.kind) - SHOT_ORDER.indexOf(q.kind) || p.range - q.range);
     const valid = list.filter(s => SHOT_KINDS[s.kind].valid).length, no = cannotShoot(eye);
