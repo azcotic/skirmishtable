@@ -14,15 +14,17 @@ const TEAMS = [
 ];
 // Mods de otros autores, sin el formato "w/w Nombre": qué modelo (por su nombre en el mod) es
 // cada agente, con sus heridas. Un modelo puede servir para varios agentes (el mod no los trae
-// todos: el Tirador Intercesor usa el Intercesor). `nombre`: el del equipo en el catálogo.
+// todos: el Tirador Intercesor usa el Intercesor), pero cada escaneo se asigna a uno solo: el tercer dato
+// de cada agente es qué variantes (0, 1, 2… por orden de aparición en el mod) le tocan; así el Granadero y el
+// Combatiente no salen con la misma figura. `nombre`: el del equipo en el catálogo.
 const MAPEOS = {
   // Akalonian's Primaris Ultramarines: escaneos pintados de azul, para los Ángeles de la Muerte
   '2272196183': { nombre: 'Angels of Death', agentes: {
     'Captain': [['Space Marine Captain', 15]],
     'Intercessor Sergeant': [['Intercessor Sergeant', 15]],
-    'Intercessor': [['Intercessor Warrior', 14], ['Intercessor Gunner', 14]],
+    'Intercessor': [['Intercessor Warrior', 14, [2, 3, 4, 5]], ['Intercessor Gunner', 14, [0, 1]]],
     'Assault Intercessor Sergeant': [['Assault Intercessor Sergeant', 15]],
-    'Assault Intercessor': [['Assault Intercessor Warrior', 14], ['Assault Intercessor Grenadier', 14]],
+    'Assault Intercessor': [['Assault Intercessor Warrior', 14, [1, 2, 3]], ['Assault Intercessor Grenadier', 14, [0]]],
     'Heavy Intercessor': [['Heavy Intercessor Gunner', 18]],
     'Eliminator': [['Eliminator Sniper', 12]],
   } },
@@ -75,7 +77,7 @@ for (const d of await details(TEAMS)) {
   const root = await save(d);
   const mapeo = MAPEOS[d.publishedfileid];
   const name = mapeo ? mapeo.nombre : clean(d.title).replace(/\s*\(Yellowscribed\)\s*/i, '').replace(/\s*Kill Team\b/i, '').trim();
-  const models = [], seen = new Set();
+  const models = [], seen = new Set(), variante = {};   // variante: cuántos modelos con ese nombre se han visto
   // el nombre de la miniatura: "14/14 Nombre", "{14/14} Nombre", "E {14/14} Nombre" o, con
   // mapeo, el nombre del mod; devuelve [[nombre, heridas], …] (varios si el modelo hace de varios)
   const agentesDe = nick => {
@@ -94,7 +96,8 @@ for (const d of await details(TEAMS)) {
       if (!seen.has(key)) {
         seen.add(key);
         const t = o.Transform || {};
-        for (const [n, w] of agentes) models.push({ name: n, w, s: [r4(t.scaleX), r4(t.scaleY), r4(t.scaleZ)], base, parts });
+        const nick = clean(o.Nickname), i = variante[nick] = (variante[nick] ?? -1) + 1;
+        for (const [n, w, solo] of agentes) if (!solo || solo.includes(i)) models.push({ name: n, w, s: [r4(t.scaleX), r4(t.scaleY), r4(t.scaleZ)], base, parts });
       }
     }
     for (const k in o) if (k !== 'LuaScript' && k !== 'XmlUI' && k !== 'ChildObjects') visit(o[k]);
