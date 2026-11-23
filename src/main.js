@@ -40,6 +40,7 @@ import { cancelMode } from './ui/panels.js';
 import * as table3d from './view3d/table3d.js';
 import * as rules from './rules/index.js';
 import { minis, onMinisChange } from './view3d/units.js';
+import { onRetrato } from './view3d/retratos.js';
 import { TTS_TEAMS } from './data/tts-teams.js';
 import { aplicarTextos } from './i18n/aplicar.js';
 import { T } from './i18n/es.js';
@@ -63,6 +64,7 @@ wireReaccion();
 wireVuelo();
 // ✕ en la barra de acciones: quitar la selección
 wireAcciones(() => { state.sel = null; state.target = null; state.lastShot = null; cancelMode(); renderAll(); });
+onRetrato(() => renderAll());      // un retrato de ficha 2D terminó de generarse
 onMinisChange(bases => { if (bases) { renderAll(); renderMinis(); } });   // a model measured: rings, reach and fit follow its base
 
 /* ---------- go ---------- */

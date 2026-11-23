@@ -46,7 +46,7 @@ Pasa a ser el equipo principal de la app. Modelos: los azules (Ultramarines, mod
 
 ## 5. Interfaz
 
-- [ ] Fichas 2D con la imagen de cada miniatura, generadas desde el modelo 3D.
+- [x] Fichas 2D con la imagen de cada miniatura, generadas desde el modelo 3D (`src/view3d/retratos.js`; falta verlas en pantalla con modelos reales y en el teléfono).
 - [ ] Modo aprendizaje.
 
 ## 6. Tests y entrega

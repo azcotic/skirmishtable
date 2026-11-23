@@ -25,6 +25,7 @@ import { TTS_OPS } from '../data/tts-ops.js';
 import { THREAT_COL, dragThreat, threatImageURL, threatLabel, threatLevel } from './threat.js';
 export const MARKER_R = 0.45;   // marker tokens on the table (about 23mm across)
 import { sync3DOps, sync3DOverlay, three, view3D } from '../view3d/table3d.js';
+import { retrato } from '../view3d/units.js';
 
 let gStatic, gObj, gOps, gOverlay, gTags;
 // how climbing this terrain is priced under the current ruleset
@@ -279,7 +280,22 @@ function renderOps() {
     }
     el("circle", {cx:px(op.x), cy:px(op.y), r:px(R), fill,
       stroke:"#14110e", "stroke-width":1.5, opacity: op.ready ? 1 : 0.55}, g);
-    el("text", {x:px(op.x), y:px(op.y)+4, "text-anchor":"middle", fill:"#14110e",
+    // la imagen de la miniatura (generada desde su modelo 3D, solo en este navegador); sin ella, el número
+    const img = retrato(op);
+    if (img) {
+      const cid = `retrato-${op.id}`;
+      const cp = el("clipPath", {id: cid}, g);
+      el("circle", {cx:px(op.x), cy:px(op.y), r:px(R)}, cp);
+      const im = el("image", {x:px(op.x-R), y:px(op.y-R), width:px(2*R), height:px(2*R), "clip-path":`url(#${cid})`,
+        "pointer-events":"none", opacity: op.ready ? 1 : 0.55, preserveAspectRatio:"xMidYMid slice"}, g);
+      im.setAttribute("href", img);
+      el("circle", {cx:px(op.x), cy:px(op.y), r:px(R)-1.5, fill:"none", stroke:fill, "stroke-width":3,
+        opacity: op.ready ? 1 : 0.55, "pointer-events":"none"}, g);
+      // número del agente en una chapita abajo a la izquierda
+      el("circle", {cx:px(op.x-R*0.78), cy:px(op.y+R*0.78), r:8, fill, stroke:"#14110e", "stroke-width":1, opacity: op.ready ? 1 : 0.55}, g);
+      el("text", {x:px(op.x-R*0.78), y:px(op.y+R*0.78)+3.5, "text-anchor":"middle", fill:"#14110e",
+        "font-family":"'Big Shoulders',sans-serif", "font-size":10, "font-weight":800}, g).textContent = op.id;
+    } else el("text", {x:px(op.x), y:px(op.y)+4, "text-anchor":"middle", fill:"#14110e",
       "font-family":"'Big Shoulders',sans-serif", "font-size":13, "font-weight":800,
       opacity: op.ready ? 1 : 0.55}, g).textContent = op.id;
     // order token, official style: orange chip with a white icon while ready
@@ -295,7 +311,7 @@ function renderOps() {
       el("polygon", {points: star4(tx, ty, tr - 1.8, 2.1), fill:icon}, g);
     else
       el("path", {d:`M ${(tx-4.2).toFixed(1)} ${(ty+2.4).toFixed(1)} a 4.2 4.2 0 0 1 8.4 0 z`, fill:icon}, g);
-    if (isInjured(op)) el("circle", {cx:px(op.x-R*0.8), cy:px(op.y+R*0.8), r:4, fill:"#d3a04a", stroke:"#14110e", "stroke-width":1}, g);
+    if (isInjured(op)) el("circle", {cx:px(op.x+R*0.8), cy:px(op.y+R*0.8), r:4, fill:"#d3a04a", stroke:"#14110e", "stroke-width":1}, g);
     if (op.z) {                       // up on a floor: a pale double rim and its height
       el("circle", {cx:px(op.x), cy:px(op.y), r:px(R)+4.5, fill:"none", stroke:"#cfe3ff", "stroke-width":1.6,
         "stroke-dasharray":"2 2", "pointer-events":"none"}, g);

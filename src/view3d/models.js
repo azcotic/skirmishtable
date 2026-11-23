@@ -41,8 +41,34 @@ export function useSteamSource() {
   fromSteam = true; manifestBase = "";
   manifest = { models: {}, textures: steamTex };
   for (const [k, e] of Object.entries(TTS_SOURCES)) manifest.models[k] = { ...e, bytes: e.bytes || 0 };
-  progress.loaded = 0; progress.total = steamBytes;
+  // el total crece con lo que pide la mesa en pantalla (addModels): solo se baja el terreno del mapa actual
+  progress.loaded = 0; progress.total = 0;
   return manifest;
+}
+// Lo que necesita el mapa en pantalla: [{ url, bytes }] sin repetir (modelos y texturas)
+function recursosDeMapa(map) {
+  const por = new Map();
+  for (const m of (map && map.models3d) || []) {
+    const e = TTS_SOURCES[m.k];
+    if (!e) continue;
+    por.set(e.obj || e.bundle, e.bytes || 0);
+    if (e.tex) por.set(e.tex, e.texBytes || 0);
+  }
+  return [...por].map(([url, bytes]) => ({ url, bytes }));
+}
+// Cuántos bytes del mapa en pantalla faltan por descargar: lo que ya está en la caché del
+// navegador (Cache API) no cuenta, y si no queda nada no hace falta botón.
+export async function faltaDelMapa(map) {
+  const todo = recursosDeMapa(map);
+  let cache = null;
+  try { cache = await caches.open(STEAM_CACHE); } catch (e) {}
+  let falta = 0;
+  for (const r of todo) {
+    let esta = false;
+    try { esta = !!(cache && await cache.match(r.url)); } catch (e) {}
+    if (!esta) falta += r.bytes;
+  }
+  return falta;
 }
 // a fetch that didn't arrive (network, CORS, HTTP error), told apart from a file we can't read
 async function download(url) {
@@ -320,7 +346,9 @@ function tableTop(map) {
 
 // Add every model of the map to `group` as it arrives. `isCurrent()` says whether the
 // group still belongs to the scene being built (the map may change mid-download).
+const contados = new Set();   // recursos de Steam ya sumados al total de la descarga
 export function addModels(group, map, renderer, BW, BH, isCurrent) {
+  if (fromSteam) for (const r of recursosDeMapa(map)) if (!contados.has(r.url)) { contados.add(r.url); progress.total += r.bytes; }
   const top = tableTop(map);
   for (const m of map.models3d) {
     const info = manifest.models[m.k];

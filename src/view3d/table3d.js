@@ -22,7 +22,7 @@ import { closeOpMenu } from '../ui/opmenu.js';
 import { SHOT_KINDS, shotsFrom } from '../engine/shots.js';
 import { coneShadows, sightCone, visibilityPolygon } from '../engine/sight.js';
 import { opR } from '../engine/geometry.js';
-import { addModels, ensureManifest, hasModels, progress, retryFailed, setRedraw, steamBytes, steamRemembered, useSteamSource } from './models.js';
+import { addModels, ensureManifest, faltaDelMapa, hasModels, progress, retryFailed, setRedraw, steamRemembered, useSteamSource } from './models.js';
 import { onMinisChange, unitObject } from './units.js';
 import { onOptionChange, options } from '../ui/options.js';
 import { IDLE } from './idle.js';
@@ -912,7 +912,6 @@ export function flashOp3D(op) {
 }
 // The TTS models aren't on this server (third-party assets): say so instead of silently
 // showing block terrain, and offer to load them from Steam.
-const NOTE_NO_MODELS = T.vista.sinModelos(Math.round(steamBytes / 1e6));
 const NOTE3D = T.vista.nota3d;
 function showModels(note) {
   const btn = document.getElementById("loadtts");
@@ -948,7 +947,14 @@ export function setView(to3d) {
       if (m && view3D) showModels(note);
       else if (!m) {
         ensureMeshPack();
-        if (view3D) { note.textContent = NOTE_NO_MODELS; Object.assign(document.getElementById("loadtts"), { textContent: T.vista.descargarSteam }).style.display = ""; }
+        // solo lo del mapa en pantalla, y lo que ya está en la caché del navegador no se vuelve a bajar:
+        // si ya está todo, se carga solo; si no, el botón dice cuánto falta
+        faltaDelMapa(MAP).then(falta => {
+          if (!view3D) return;
+          if (falta === 0) { useSteamSource(); showModels(note); return; }
+          note.textContent = T.vista.sinModelos(Math.max(1, Math.round(falta / 1e6)));
+          Object.assign(document.getElementById("loadtts"), { textContent: T.vista.descargarSteamMb(Math.max(1, Math.round(falta / 1e6))) }).style.display = "";
+        });
       }
     });
     setBoardPicker(groundPick);

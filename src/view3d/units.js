@@ -12,6 +12,7 @@ import { opR } from '../engine/geometry.js';
 import { BH, BW, OPS } from '../engine/world.js';
 import { noteFailure, steamMaterial, steamParts } from './models.js';
 import { idleClone, idleFields, idleGeometry, idlePhase } from './idle.js';
+import { retratoDe } from './retratos.js';
 
 const PREF = "skirmishtable.minis";
 // per side: the team mod's id (or null for plain tokens) and the model index per operative
@@ -148,6 +149,15 @@ export function syncBases() {
     if (op.base !== mm) { if (mm) op.base = mm; else delete op.base; any = true; }
   }
   return any;
+}
+// La imagen de la miniatura de un agente para su ficha 2D (dataURL), o null mientras carga el
+// modelo o si no hay (la ficha muestra entonces su número). Ver retratos.js.
+export function retrato(op) {
+  const model = modelOf(op);
+  if (!model) return null;
+  const key = keyOf(model);
+  if (!(key in ready)) { load(model); return null; }
+  return ready[key] ? retratoDe(key, ready[key]) : null;
 }
 // The miniature for an operative, or null while it loads / when its side has no team.
 // Expended operatives' miniatures lose most of their colour. Every part gets its own material
