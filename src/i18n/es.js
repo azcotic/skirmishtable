@@ -526,7 +526,7 @@ export const T = {
     termina: `<b>Despliegue terminado.</b> Comienza el ${G.puntoInflexion.es} 1.`,
     terminaPista: 'Despliegue terminado: ya puedes activar a tus agentes.',
     elegirTitulo: n => `Colocar a ${n} ahora`,
-    verFicha: 'toca dos veces para ver su ficha',
+    verFicha: 'mantén pulsado (o doble clic) para ver su ficha',
     restoAzar: 'Resto al azar',
     restoAzarTitulo: `Coloca al azar, dentro de su ${G.zonaDescenso.es}, a todos los agentes que faltan`,
     restoLog: n => `${n} ${n === 1 ? 'agente desplegado' : 'agentes desplegados'} al azar en su ${G.zonaDescenso.es}.`,

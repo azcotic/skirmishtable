@@ -451,6 +451,7 @@ body { overflow: hidden; overscroll-behavior: none; }
 /* 4 columnas en teléfono; letra condensada para que "Reposicionarse 6″" quepa */
 .acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 4px;
   grid-auto-rows: 44px; align-content: start; min-height: calc(2 * 44px + 4px); }
+.acciones .accion { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }   /* pulsación larga: sin menú ni selección */
 .acciones .accion { min-height: 44px; padding: 2px 4px; line-height: 1.1; white-space: normal;
   font-family: "Big Shoulders", "Arial Narrow", sans-serif; font-weight: 700; font-size: 14px; }
 .acciones .accion.fuerte { border-color: #e0672f; }

@@ -44,13 +44,19 @@ export function abrirFicha(op) {
       <tbody>${armas}</tbody></table>
     <p class="fnota">${F.provisional}</p>
     <button class="ffin" data-cerrar="1">${F.cerrar}</button>`;
+  tocadaDesdeQueAbrio = false;
   if (!dlg.open) dlg.showModal();
 }
+// Al soltar una pulsación larga el navegador genera un clic sobre el fondo de la ficha recién
+// abierta: solo cierra un toque que haya empezado después de abrirla.
+let tocadaDesdeQueAbrio = false;
 
 export function wireFicha() {
   const dlg = document.getElementById("ficha");
   if (!dlg) return;
+  dlg.addEventListener("pointerdown", () => { tocadaDesdeQueAbrio = true; });
   dlg.addEventListener("click", ev => {
+    if (!tocadaDesdeQueAbrio) return;
     // ✕, "Cerrar" o tocar fuera de la ficha (el fondo del diálogo) la cierran
     if (ev.target === dlg || ev.target.closest("[data-cerrar]")) dlg.close();
   });

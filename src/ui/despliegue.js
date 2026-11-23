@@ -129,12 +129,16 @@ function accionesHTML() {
   if (!online()) lista.push(`<button class="accion" data-esp="azar" title="${esc(T.despliegue.restoAzarTitulo)}">${T.despliegue.restoAzar}</button>`);
   return lista.join("");
 }
-// doble toque sobre un agente: su ficha completa (en el teléfono no hay dblclick fiable)
+// Ver la ficha de un agente: en el teléfono, pulsación larga; con ratón, doble clic.
 let ultimoToque = { id: null, t: 0 };
+let tipoPuntero = "mouse";
+let presion = null;            // pulsación larga en curso: {id, x, y, timer, hecha}
+const PULSACION_LARGA = 450;   // ms
 function accionClick(b) {
   if (b.dataset.esp === "azar") { restoAlAzar(); return; }
+  if (presion && presion.hecha) { presion = null; return; }   // fue una pulsación larga: ya abrió la ficha
   const id = b.dataset.esp, ahora = performance.now();
-  if (ultimoToque.id === id && ahora - ultimoToque.t < 400) {
+  if (tipoPuntero === "mouse" && ultimoToque.id === id && ahora - ultimoToque.t < 400) {
     ultimoToque = { id: null, t: 0 };
     abrirFicha(OPS.find(o => o.id === id));
     return;
@@ -145,6 +149,32 @@ function accionClick(b) {
   renderAll();
 }
 
+function wirePulsacionLarga() {
+  const bar = document.getElementById("acciones");
+  if (!bar) return;
+  const soltar = () => { if (presion && !presion.hecha) { clearTimeout(presion.timer); presion = null; } };
+  bar.addEventListener("pointerdown", ev => {
+    tipoPuntero = ev.pointerType || "mouse";
+    const b = ev.target.closest && ev.target.closest("[data-esp]");
+    if (!b || b.dataset.esp === "azar" || tipoPuntero === "mouse") return;
+    const id = b.dataset.esp;
+    presion = { id, x: ev.clientX, y: ev.clientY, hecha: false, timer: setTimeout(() => {
+      presion.hecha = true;
+      if (navigator.vibrate) navigator.vibrate(15);
+      abrirFicha(OPS.find(o => o.id === id));
+    }, PULSACION_LARGA) };
+  });
+  // mover el dedo (p. ej. desplazar la barra) no abre la ficha
+  bar.addEventListener("pointermove", ev => {
+    if (presion && !presion.hecha && Math.hypot(ev.clientX - presion.x, ev.clientY - presion.y) > 10) soltar();
+  });
+  bar.addEventListener("pointerup", soltar);
+  bar.addEventListener("pointercancel", soltar);
+  // sin el menú del sistema al mantener pulsado
+  bar.addEventListener("contextmenu", ev => { if (ev.target.closest && ev.target.closest("[data-esp]")) ev.preventDefault(); });
+}
+
 export function wireDespliegue() {
   setModoEspecial({ html: accionesHTML, click: accionClick });
+  wirePulsacionLarga();
 }
