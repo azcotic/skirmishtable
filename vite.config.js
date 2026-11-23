@@ -6,6 +6,9 @@ import { inlineIntoHtml } from './scripts/inline-plugin.js';
 // three.js and the fonts still load from their CDNs (see index.html).
 export default defineConfig({
   plugins: [inlineIntoHtml()],
+  // servidor de desarrollo detrás de un túnel (probar desde el teléfono): Vite rechaza los
+  // dominios que no conoce; estos son los de los túneles habituales
+  server: { allowedHosts: ['.devtunnels.ms', '.trycloudflare.com', '.ngrok-free.app', '.ngrok.app', '.loca.lt'] },
   build: { target: 'es2020', outDir: 'dist', cssCodeSplit: false, modulePreload: false, assetsInlineLimit: 100000000 },
   test: { include: ['tests/unit/**/*.test.js'], environment: 'node' },
 });
