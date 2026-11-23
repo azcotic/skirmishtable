@@ -37,7 +37,7 @@ Base: fork de [jfreal/skirmishtable](https://github.com/jfreal/skirmishtable) (l
 - **Contexto, no paneles.** Si seleccionas un agente, ves sus acciones. Si disparas, ves el veredicto y los dados. Nada más.
 - **Un pulgar.** Botones de al menos 44×44 px, acciones principales en la mitad inferior de la pantalla.
 - **Solo Kill Team.** Quitamos los otros rulesets de la interfaz (el código puede quedarse).
-- **100% en español.** Todo texto visible (botones, ayudas, log, veredictos, tooltips) en español. Los nombres propios de equipos y agentes se quedan como en el juego (Warpcoven, Gunner…), pero las acciones y conceptos se traducen (Reposicionarse, Correr, Cargar, Disparar, Combatir, orden de trabarse / ocultarse), con la terminología oficial de GW en español. Un glosario fijo en `src/i18n/es.js` para que la traducción sea consistente.
+- **100% en español.** Todo texto visible (botones, ayudas, log, veredictos, tooltips) en español. Los nombres propios de equipos y agentes se quedan como en el juego (Aquelarre Disforme, Tirador…), pero las acciones y conceptos se traducen (Reposicionarse, Correr, Cargar, Disparar, Combatir, orden de trabarse / ocultarse), con la terminología oficial de GW en español. Un glosario fijo en `src/i18n/es.js` para que la traducción sea consistente.
 
 ---
 
@@ -103,7 +103,8 @@ Sobre la ficha: anillo de estado (apostado / usado), contador de heridas, marcad
 | Equipo | Estado en el repo |
 |---|---|
 | **Warpcoven** | Ya está en el catálogo (`src/data/tts-teams.js`), en dos versiones de modelos (la normal y la de Space Marine 2). Hay que elegir una. |
-| **Angels of Death** | **No está** en el catálogo. Hay que buscar su mod en el Steam Workshop (serie Yellowscribed u otra) y añadir su id a `TEAMS` en `scripts/tts-teams.mjs`, luego `npm run tts:teams`. |
+| **Nemesis Claw** (Garra Némesis, Night Lords) | Ya está en el catálogo (9 modelos). Reemplaza a Angels of Death como comando de prueba. |
+| Angels of Death | **No está** en el catálogo; queda para más adelante (buscar su mod en el Steam Workshop, añadir su id a `TEAMS` en `scripts/tts-teams.mjs` y `npm run tts:teams`). Sus nombres en español ya están en `src/i18n/nombres.js`. |
 
 **Perfiles reales:** hoy todos los agentes usan perfiles genéricos inventados (`KINDS` en `src/engine/world.js`: leader, marksman, brawler, trooper). Para aprender necesitamos las fichas de estos dos equipos (APL, movimiento, salvación, heridas, armas con ataques/impacto/daño y reglas de arma). Se escriben a mano como **números** en `src/data/teams/warpcoven.js` y `src/data/teams/angels-of-death.js`, con descripciones en nuestras palabras; nada de copiar el texto de las cartas. Las reglas especiales de cada equipo (psíquicos del Warpcoven, etc.) quedan para la fase del motor de partida.
 
@@ -151,7 +152,7 @@ Sobre la ficha: anillo de estado (apostado / usado), contador de heridas, marcad
 - Barra de acciones contextual con las acciones de Kill Team.
 
 ### Fase 3b — Equipos y fichas 2D (2–3 días)
-- Añadir Angels of Death al catálogo; fijar la versión de Warpcoven.
+- Fijar la versión de Warpcoven (Garra Némesis ya está en el catálogo).
 - Perfiles numéricos de los dos equipos.
 - Generador de fichas 2D desde el modelo 3D + respaldo con iniciales.
 - Configuración de partida limitada a estos dos equipos.
@@ -193,7 +194,8 @@ Seguimos la regla del repo original: **no copiamos texto de reglas, cartas ni im
 - Fork propio + worktrees por tarea; desarrollo en VS Code con Claude Code.
 - UI 100% en español.
 - Ambas vistas: 3D (modelos de Steam) y 2D (fichas con imagen de la miniatura).
-- Equipos iniciales: Angels of Death (Space Marines de Kill Team 2024) y Warpcoven.
+- Equipos iniciales: Nemesis Claw (Garra Némesis) y Warpcoven (Aquelarre Disforme), ambos ya en el
+  catálogo de mods. Angels of Death queda para más adelante.
 - Nombres de comandos, agentes y armas siempre en español oficial, según las reglas de equipo de GW
   en español: Ángeles de la Muerte, Aquelarre Disforme, Tirador Intercesor… (`src/i18n/nombres.js`).
 

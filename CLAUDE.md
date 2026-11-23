@@ -28,7 +28,8 @@ No tocamos `src/engine/` salvo que la interfaz lo exija.
 - **Solo Kill Team.** Los rulesets Infinity y Ashfall no se muestran.
 - **Dos vistas:** 3D con modelos de Steam y 2D con fichas circulares con la imagen de cada miniatura
   (estilo VTT). Las imágenes se generan en el navegador desde el modelo 3D (ver §3b del plan).
-- **Comandos:** Ángeles de la Muerte (Angels of Death) y Aquelarre Disforme (Warpcoven).
+- **Comandos de prueba:** Garra Némesis (Nemesis Claw, Night Lords) y Aquelarre Disforme (Warpcoven),
+  los dos ya están en el catálogo de mods de Steam. Ángeles de la Muerte queda para más adelante.
 
 ## Licencia y contenido de terceros (heredado del original, obligatorio)
 
@@ -43,7 +44,7 @@ licencia que exija aviso.
 - Las reglas y perfiles de agentes se escriben como números y explicaciones con nuestras palabras.
 - Copias locales solo en carpetas ignoradas por git (`cache/`, `public/models/`,
   `public/meshpack.json`). Revisar `git status` antes de cada commit.
-- "Kill Team", "Warpcoven", "Angels of Death", "Volkus" y similares son marcas de Games Workshop;
+- "Kill Team", "Warpcoven", "Nemesis Claw", "Angels of Death", "Volkus" y similares son marcas de Games Workshop;
   usarlas solo para decir con qué funciona la app. Proyecto de fans no oficial.
 
 ## Flujo de git

@@ -22,6 +22,14 @@ describe('nombreES', () => {
     expect(nombreES('Warpcoven (Space Marine 2 Models)')).toBe('Aquelarre Disforme (modelos de Space Marine 2)');
   });
 
+  it('Garra Némesis, tal como la nombra su mod', () => {
+    const copia = JSON.parse(JSON.stringify(TTS_TEAMS.filter(t => t.name === 'Nemesis Claw')));
+    const [t] = traducirCatalogo(copia);
+    expect(t.name).toBe('Garra Némesis');
+    expect(t.models.map(m => m.name).sort()).toEqual(['Aullador', 'Combatiente', 'Combatiente', 'Robapieles',
+      'Siembramiedos', 'Tirador', 'Tirador pesado', 'Ventrilokar', 'Visionario']);
+  });
+
   it('lo desconocido queda igual', () => {
     expect(nombreES('Kommando Boss Nob')).toBe('Kommando Boss Nob');
     expect(nombreES('')).toBe('');

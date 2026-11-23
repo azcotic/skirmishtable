@@ -1,6 +1,7 @@
 /**
- * Nombres propios en español oficial: comandos, agentes y armas de los dos comandos de
- * prueba, tal como aparecen en sus reglas de equipo de GW en español (02/10/2024).
+ * Nombres propios en español oficial: comandos, agentes y armas de los comandos de prueba
+ * (Garra Némesis y Aquelarre Disforme; también Ángeles de la Muerte, para más adelante),
+ * tal como aparecen en sus reglas de equipo de GW en español (02/10/2024).
  * Solo nombres (son marcas de GW que usamos para decir con qué funciona la app); nunca
  * texto de reglas.
  *
@@ -12,6 +13,7 @@
 export const COMANDOS = {
   'Angels of Death': 'Ángeles de la Muerte',
   'Warpcoven': 'Aquelarre Disforme',
+  'Nemesis Claw': 'Garra Némesis',
 };
 
 export const AGENTES = {
@@ -36,6 +38,15 @@ export const AGENTES = {
   'Tzaangor Horn Bearer': 'Portacuerno Tzaangor',
   'Tzaangor Icon Bearer': 'Portaicono Tzaangor',
   'Tzaangor Warrior': 'Combatiente Tzaangor',
+  // Garra Némesis
+  'Visionary': 'Visionario',
+  'Fearmonger': 'Siembramiedos',
+  'Gunner': 'Tirador',
+  'Heavy Gunner': 'Tirador pesado',
+  'Screecher': 'Aullador',
+  'Skinthief': 'Robapieles',
+  'Ventrilokar': 'Ventrilokar',
+  'Night Lord Warrior': 'Combatiente',
 };
 
 // variantes con que los mods de Steam nombran a los mismos agentes
@@ -70,6 +81,16 @@ export const ARMAS = {
   'Tzaangor blades': 'Armas de Tzaangor',
   'Tzaangor blade & shield': 'Arma y escudo de Tzaangor',
   'Autopistol': 'Pistola automática',
+  // Garra Némesis
+  'Bolt pistol': 'Pistola bólter',
+  'Boltgun': 'Bólter',
+  'Power maul': 'Maza de energía',
+  'Nostraman chainblade': 'Cuchilla sierra de Nostramo',
+  'Flamer': 'Lanzallamas',
+  'Meltagun': 'Rifle de fusión',
+  'Plasma gun': 'Rifle de plasma',
+  'Heavy bolter': 'Bólter pesado',
+  'Missile launcher': 'Lanzamisiles',
   // como las abrevian los mods entre paréntesis
   'Blades': 'Armas',
   'Blade & Shield': 'Arma y escudo',
