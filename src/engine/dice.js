@@ -130,7 +130,7 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
   const acc = certera(what, w);
   let aCrit = atk.crit, aNorm = atk.norm + acc;
   if (acc) notes.push(`Accurate ${acc}`);
-  if (what.obsc) {   // crits become normal, then discard one success
+  if (what.obsc && !w.sinOfuscar) {   // crits become normal, then discard one success (Visión incorpórea: no)
     aNorm += aCrit; aCrit = 0;
     if (aNorm > 0) aNorm--;
     notes.push("obscured: crits downgraded, one success discarded");

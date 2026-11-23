@@ -19,7 +19,7 @@ import { fairNote, rollFor } from '../net/roll.js';
 import { renderMinis } from './minis.js';
 import { T, pulg } from '../i18n/es.js';
 import { renderAcciones } from './acciones.js';
-import { accionesLegales, agotada, alcanceArma, blancoValidoCon, buscadoraAplica, puede, puedeCambiarOrden } from '../game/acciones.js';
+import { accionesLegales, agotada, alcanceArma, blancoValidoCon, buscadoraAplica, costeAccion, puede, puedeCambiarOrden } from '../game/acciones.js';
 import { alternasObligatorias, conectarTurno, pistaDeTurno, porQueNoActua, puedeActuar, todosUsados } from './turno.js';
 import { control, esDeLaIA } from './control.js';
 
@@ -104,6 +104,11 @@ export function doShoot() {
     logLine(T.disparo.fueraDeAlcance(state.target.name, w.name, alcanceArma(w), shot.range)); return;
   }
   if (agotada(state.sel, state.sel.weapon)) { logLine(T.disparo.agotada(w.name)); return; }
+  // ya disparó todas las veces que puede, sin PA, o repite arma psíquica (regla Astartes)
+  const pr = puede(state.sel, "shoot", OPS);
+  if (!pr.ok && ["yaHecha", "sinPA", "psiquicaRepetida"].includes(pr.motivo)) {
+    logLine(T.reglas.noPuede(T.reglas.accion.shoot, T.reglas.motivo[pr.motivo])); return;
+  }
   // what is rolled for: the shot as this table judges it, fixed before the dice are known
   const what = {k: "shoot", by: state.sel.id, at: state.target.id, w: state.sel.weapon,
                 acc: Math.min(shot.accurate, w.atk), obsc: !!shot.obscured, cover: !!shot.save};
@@ -113,7 +118,7 @@ export function doShoot() {
   const why = rollFor(what, async (die, done, n, cancel) => {
     // the dice arrive a moment after the click: judge again what they are for
     const a = OPS.find(o => o.id === what.by), b = OPS.find(o => o.id === what.at);
-    if (!a || !b || !a.alive || !b.alive || a.ap < 1 || a.weapon !== what.w) {
+    if (!a || !b || !a.alive || !b.alive || a.ap < costeAccion(a, "shoot", what.w) || a.weapon !== what.w) {
       cancel();
       logLine(T.disparo.yaNo(a ? a.name : what.by));
       renderAll(); terminar(); return;
@@ -140,7 +145,8 @@ export function doShoot() {
     showRoll(r.atk.dice, r.hit, a.team, T.disparo.tiradaAtq(a.name));
     showRoll(r.dfn.dice, b.save, b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
     b.wounds = Math.max(0, b.wounds - r.dmg);
-    a.ap -= 1; a.used.push("shoot");
+    a.ap -= costeAccion(a, "shoot", what.w); a.used.push("shoot");
+    a.disparadas = [...(a.disparadas || []), what.w.split("~")[0]];   // Astartes: armas psíquicas ya usadas
     a.usos = { ...(a.usos || {}), [what.w]: ((a.usos || {})[what.w] || 0) + 1 };   // Limitada
     let line = T.disparo.log(a.name, b.name, r.w.name, fmtDice(r.atk.dice), fmtDice(r.dfn.dice), r.dfn.cover, r.dmg, r.notes);
     if (b.wounds === 0) { b.alive = false; line += T.heridas.incapacitado; }
@@ -168,6 +174,11 @@ export function doFight() {
   if (!state.sel || !state.target) return;
   const gap = opGap(state.sel, state.target);
   if (gap > CTRL) { logLine(T.combate.fueraDeZona(CTRL)); return; }
+  // ya combatió todas las veces que puede (dos, si es Astartes) o no le quedan PA
+  const pr = puede(state.sel, "fight", OPS);
+  if (!pr.ok && ["yaHecha", "sinPA"].includes(pr.motivo)) {
+    logLine(T.reglas.noPuede(T.reglas.accion.fight, T.reglas.motivo[pr.motivo])); return;
+  }
   const what = {k: "fight", by: state.sel.id, at: state.target.id, wa: meleeKey(state.sel),
                 wb: state.target.weapons.find(k => WPN[k].type === "M") || "knife"};
   let terminar;
@@ -474,7 +485,7 @@ conectarTurno({ tray, ultimo: () => ultimoBando });   // turno.js consulta el ma
 export function endActivation(op) {
   if (!op || !op.alive || !op.ready || !mayControl(op) || !puedeActuar(op)) return;
   ultimoBando = op.team;
-  snapshot(); op.ready = false; op.ap = op.apl; op.used = []; op.reaccion = false;
+  snapshot(); op.ready = false; op.ap = op.apl; op.used = []; op.reaccion = false; op.disparadas = []; op.ecosActivo = false;
   if (state.sel === op) state.moveType = "reposition";
   logLine(T.activacion.termina(op.name)); cancelMode(); renderAll();
   const p = pistaDeTurno();          // activaciones alternas: a quién le toca ahora
@@ -493,7 +504,7 @@ export function undoActivation(op) {
   const st = actStart.get(op.id), here = st && st.tp === tray.tp;
   snapshot();
   if (here) { op.x = st.x; op.y = st.y; op.z = st.z; if (RULES.orders) op.order = st.order; }
-  op.ready = true; op.ap = op.apl; op.used = [];
+  op.ready = true; op.ap = op.apl; op.used = []; op.disparadas = [];
   if (state.sel === op) state.moveType = "reposition";
   logLine(T.activacion.deshecha(op.name, here));
   cancelMode(); refreshSight(); renderAll();

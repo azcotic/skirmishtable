@@ -48,7 +48,7 @@ export function mejorDisparo(op, x, y) {
       const w = WPN[k];
       if (sh.sight && sh.sight.gap > alcance(w)) continue;
       const r = disparo(w, { save: e.save, heridas: e.wounds },
-        { cubierto: !!sh.save, ofuscado: sh.kind === "obscured", certera: sh.accurate || 0, lesionado: isInjured(op) });
+        { cubierto: !!sh.save, ofuscado: sh.kind === "obscured" && !w.sinOfuscar, certera: sh.accurate || 0, lesionado: isInjured(op) });
       const puntos = PESOS.dano * r.esperado + PESOS.incapacitar * r.incapacitar + (isInjured(e) ? PESOS.rematar * r.incapacitar : 0);
       if (!mejor || puntos > mejor.puntos) mejor = { blanco: e, arma: k, r, puntos };
     }

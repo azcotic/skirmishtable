@@ -5,7 +5,7 @@
  * mesa, los dados, el protocolo en línea y las fichas los tratan como a cualquier agente.
  * Los dos navegadores de una partida en línea registran lo mismo al arrancar.
  */
-import { KINDS, DEFAULT_ROSTER } from '../../engine/world.js';
+import { KINDS, DEFAULT_ROSTER, ajustesAgente } from '../../engine/world.js';
 import { WPN } from '../../config.js';
 import garraNemesis from './garra-nemesis.js';
 import aquelarreDisforme from './aquelarre-disforme.js';
@@ -18,12 +18,86 @@ export function registrarComandos() {
   if (registrado) return;
   registrado = true;
   for (const c of COMANDOS) {
-    for (const [k, w] of Object.entries(c.armas)) WPN[`${c.prefijo}.${k}`] = { ...w, rules: [...w.rules] };
+    for (const [k, w] of Object.entries(c.armas)) WPN[`${c.prefijo}.${k}`] = { ...w, rules: [...w.rules],
+      ...((c.armasPesadasAstartes || []).includes(k) ? { recargaAstartes: true } : {}) };
     for (const [k, a] of Object.entries(c.agentes))
       KINDS[`${c.prefijo}.${k}`] = { apl: a.apl, move: a.move, save: a.save, wounds: a.wounds,
-        weapons: a.armas.map(w => `${c.prefijo}.${w}`), nombre: a.nombre, lider: !!a.lider, comando: c.id };
+        weapons: a.armas.map(w => `${c.prefijo}.${w}`), nombre: a.nombre, lider: !!a.lider, comando: c.id,
+        astartes: !!a.astartes, clave: k };
   }
+  ajustesAgente.push(aplicarOpciones);
 }
+
+/* ---------- Elecciones de facción ----------
+ * Algunas reglas de facción piden elegir algo antes de la batalla (p. ej. los Dones de Tzeentch
+ * del Aquelarre Disforme). Cada comando las declara en `elecciones`:
+ *   { id, agentes: [claves de los agentes que eligen], unica: cada opción solo una vez por
+ *     comando, opciones: [{ id, nombre, ...efecto }] }
+ * Efectos que entiende la app: move (+″ al Movimiento); armas: { distancia | psiquicas |
+ * unaPsiquica | combate: { anadir: [reglas], dmgN, sinOfuscar } }; ecos (ver reaccion.js);
+ * pendiente: se puede elegir pero aún no hace nada. Las pantallas de inicio salen de aquí solas.
+ * Cada agente guarda lo elegido en op.opciones = { [id de la elección]: id de la opción }.
+ */
+export const eleccionesDe = teamId => (comandoPorId(teamId) || {}).elecciones || [];
+// las opciones elegidas por un agente, como objetos
+export function opcionesDe(op) {
+  const base = op && KINDS[op.kind], c = base && comandoPorId(base.comando);
+  if (!c || !op.opciones) return [];
+  return Object.entries(op.opciones).map(([e, o]) => {
+    const el = (c.elecciones || []).find(x => x.id === e);
+    return el && el.opciones.find(x => x.id === o);
+  }).filter(Boolean);
+}
+export const tieneEfecto = (op, efecto) => opcionesDe(op).some(o => o[efecto]);
+const esPsiquica = w => w.rules.includes("PSYCHIC");
+// el arma `w` cambiada por la opción `d`, o null si no la toca
+function armaConOpcion(w, d) {
+  if (!d.armas) return null;
+  const e = d.armas, cambio = (e.distancia && w.type === "R" && e.distancia)
+    || (e.psiquicas && w.type === "R" && esPsiquica(w) && e.psiquicas)
+    || (e.unaPsiquica && w.type === "R" && esPsiquica(w) && e.unaPsiquica)
+    || (e.combate && w.type === "M" && e.combate);
+  if (!cambio) return null;
+  const nueva = { ...w, rules: [...w.rules] };
+  for (const r of cambio.anadir || []) {
+    const base = r.replace(/ \d+$/, "");
+    if (!nueva.rules.some(x => x === r || x.startsWith(base + " ") || x === base)) nueva.rules.push(r);
+  }
+  if (cambio.dmgN) nueva.dmgN += cambio.dmgN;
+  if (cambio.sinOfuscar) nueva.sinOfuscar = true;
+  return nueva;
+}
+const sinOpcion = k => k.split("~")[0];
+// Pone al agente los atributos y armas de sus opciones (op.opciones); sin ellas, los de su ficha.
+// Se puede llamar las veces que haga falta: siempre parte de la ficha. Las armas cambiadas se
+// registran con clave "<arma>~<opción>…" (p. ej. "ad.descargaFlujo~giro"); los dos navegadores
+// de una partida en línea las crean igual.
+export function aplicarOpciones(op) {
+  const base = KINDS[op.kind];
+  if (!base || !base.comando) return op;
+  const ops = opcionesDe(op), yaUna = new Set();   // unaPsiquica: solo la primera arma psíquica
+  const armas = base.weapons.map(k => {
+    let w = WPN[k], ids = [];
+    for (const d of ops) {
+      if (d.armas && d.armas.unaPsiquica && yaUna.has(d.id)) continue;
+      const nueva = armaConOpcion(w, d);
+      if (!nueva) continue;
+      if (d.armas.unaPsiquica) yaUna.add(d.id);
+      w = nueva; ids.push(d.id);
+    }
+    if (!ids.length) return k;
+    const clave = [k, ...ids].join("~");
+    if (!WPN[clave]) WPN[clave] = w;
+    return clave;
+  });
+  const enMano = op.weapon ? sinOpcion(op.weapon) : base.weapons[0];
+  op.weapons = armas;
+  op.weapon = armas.find(k => sinOpcion(k) === enMano) || armas[0];
+  op.move = base.move + ops.reduce((a, d) => a + (d.move || 0), 0);
+  return op;
+}
+// el don (o null) de un agente, y si es Astartes Herejes (regla Astartes)
+export const esAstartes = op => !!(KINDS[op.kind] && KINDS[op.kind].astartes);
 
 // Agentes por comando cuando el comando no dice nada
 export const TAM_COMANDO = 6;

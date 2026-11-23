@@ -661,6 +661,9 @@ dialog.ficha::backdrop { background: rgba(10, 8, 6, .7); }
 .pant-agente-info small { font-family: "JetBrains Mono", monospace; font-size: 9px; padding: 0 5px; border-radius: 6px; background: #e0672f; color: #14110e; vertical-align: middle; }
 .pant-agente-info span { font-size: 11px; color: #9a9184; }
 .pant-veces { color: #f0a276; }
+.pant-pendiente { font-style: normal; color: #c9a070; }
+.fregla { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: #d8cfc2; }
+.fregla em { font-style: normal; color: #c9a070; }
 .pant-agente-info small.medio { background: #6b5a8c; color: #f3ece2; }
 .pant-agente-info em { font-style: normal; color: #c9a070; }
 .pant-errores { margin: 4px 0 0; padding: 8px 10px 8px 26px; border-radius: 10px; background: #3a1d14; border: 1px solid #a8452a; color: #ffcdb8; font-size: 13px; }

@@ -15,6 +15,7 @@ import { teamOf } from '../view3d/units.js';
 import { queEs } from './despliegue.js';
 import { KINDS } from '../engine/world.js';
 import { state } from '../state.js';
+import { opcionesDe } from '../data/teams/index.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
@@ -44,6 +45,8 @@ export function abrirFicha(op) {
     <div class="fstats">${stats.map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join("")}</div>
     <table class="farmas"><thead><tr><th>${F.nombre}</th><th>${G.ataques.abrev}</th><th>${G.impactar.abrev}</th><th>${G.dano.abrev}</th><th>${F.reglasArmas}</th></tr></thead>
       <tbody>${armas}</tbody></table>
+    ${opcionesDe(op).map(d => `<p class="fregla"><b>${esc(d.nombre)}</b> · ${T.faccion.desc[d.id] || ""}${d.pendiente ? ` <em>${T.faccion.pendiente}</em>` : ""}</p>`).join("")}
+    ${perfil.astartes ? `<p class="fregla"><b>${F.astartes}</b> · ${F.astartesDesc}</p>` : ""}
     <p class="fnota">${perfil.comando ? F.oficial : F.provisional}</p>
     <button class="ffin" data-cerrar="1">${F.cerrar}</button>`;
   tocadaDesdeQueAbrio = false;

@@ -18,6 +18,7 @@ import { CTRL, WPN } from '../config.js';
 import { opGap } from '../engine/geometry.js';
 import { SHOT_KINDS, shotsFrom } from '../engine/shots.js';
 import { regla } from '../engine/dice.js';
+import { KINDS } from '../engine/world.js';
 
 // Reglas de arma que deciden si se puede disparar a un blanco:
 // Alcance x (como mucho x″ entre peanas) y Buscadora (un blanco con orden de ocultarse no
@@ -32,6 +33,28 @@ export const agotada = (op, k) => { const v = regla(WPN[k] && WPN[k].rules, "Lim
 
 export const COSTE = { reposition: 1, dash: 1, fallBack: 2, charge: 1, shoot: 1, fight: 1 };
 export const ACCIONES = Object.keys(COSTE);
+
+// Astartes (Aquelarre Disforme): un Astartes Herejes puede Disparar dos veces o Combatir dos veces
+// en su activación (no las dos cosas dos veces). Si dispara dos veces con un arma pesada (cañón
+// cosechaalmas, lanzallamas disforme), el segundo disparo cuesta 1 PA más. No puede usar la misma
+// arma PSÍQUICA a distancia dos veces en una activación. Además puede reaccionar con cualquier orden.
+export const esAstartes = op => !!(op && KINDS[op.kind] && KINDS[op.kind].astartes);
+const veces = (op, a) => (op.used || []).filter(x => x === a).length;
+const sinDon = k => (k || "").split("~")[0];
+// Lo que cuesta la acción ahora (con el arma en mano, o `wk`)
+export function costeAccion(op, accion, wk = op && op.weapon) {
+  const w = WPN[wk];
+  if (accion === "shoot" && esAstartes(op) && veces(op, "shoot") >= 1 && w && w.recargaAstartes) return COSTE.shoot + 1;
+  return COSTE[accion];
+}
+// ¿Ya hizo esta acción todas las veces que puede en esta activación?
+function yaHecha(op, accion) {
+  const n = veces(op, accion);
+  if (!n) return false;
+  if (op.reaccion || !esAstartes(op) || (accion !== "shoot" && accion !== "fight")) return true;
+  const otra = accion === "shoot" ? "fight" : "shoot";
+  return n >= 2 || veces(op, otra) >= 2;
+}
 const MOVIMIENTOS = ["reposition", "dash", "fallBack", "charge"];
 
 export const enemigos = (op, ops) => ops.filter(o => o.alive && o.team !== op.team);
@@ -47,8 +70,8 @@ export function puede(op, accion, ops) {
   if (!op || !op.alive) return no("fuera");
   if (!op.ready) return no("usado");
   if (!(accion in COSTE)) return no("desconocida");
-  if ((op.ap ?? op.apl) < COSTE[accion]) return no("sinPA");
-  if ((op.used || []).includes(accion)) return no("yaHecha");
+  if (yaHecha(op, accion)) return no("yaHecha");
+  if ((op.ap ?? op.apl) < costeAccion(op, accion)) return no("sinPA");
   const usado = a => (op.used || []).includes(a);
   const trabado = enZonaDeControl(op, ops).length > 0;
   // un arma Pesada: si ya disparó con ella, no se mueve (salvo el movimiento que la regla permita)
@@ -86,6 +109,7 @@ export function puede(op, accion, ops) {
         if (MOVIMIENTOS.some(m => usado(m) && m !== permitido)) return no("armaPesada");
       }
       if (agotada(op, op.weapon)) return no("armaAgotada");
+      if (tieneRegla(w, "PSYCHIC") && (op.disparadas || []).includes(sinDon(op.weapon))) return no("psiquicaRepetida");
       const todos = shotsFrom({ x: op.x, y: op.y, z: op.z || 0, team: op.team, op });
       if (!todos.some(s => blancoValidoCon(w, s))) {
         // hay blancos válidos, pero ninguno al alcance del arma
@@ -108,20 +132,24 @@ export function puede(op, accion, ops) {
 export function puedeCambiarOrden(op) {
   if (!op || !op.alive) return { ok: false, motivo: "fuera" };
   if (!op.ready) return { ok: false, motivo: "usado" };
+  // Ecos de la Disformidad: reaccionando con ese don, aún puede cambiar su orden antes de actuar
+  if (op.reaccion && op.ecosActivo && !(op.used && op.used.length)) return { ok: true };
   if ((op.used && op.used.length) || (op.ap ?? op.apl) < op.apl) return { ok: false, motivo: "ordenFijada" };
   return { ok: true };
 }
 
 // Todas las acciones con su coste y si se pueden ahora (para la IA y para la interfaz).
 export function accionesLegales(op, ops) {
-  return ACCIONES.map(a => ({ accion: a, coste: COSTE[a], ...puede(op, a, ops) }));
+  return ACCIONES.map(a => ({ accion: a, coste: costeAccion(op, a), ...puede(op, a, ops) }));
 }
 
 // A quién le toca activar: se alterna, empezando por quien tiene la iniciativa; si un bando no
 // tiene agentes apostados, el otro sigue. ultimo = el bando que activó por última vez (o null
 // al empezar la fase de tiroteo). Devuelve 0, 1 o null si el punto de inflexión terminó.
-// Reaccionar: un agente usado, con orden de trabarse, que no reaccionó en este punto de inflexión.
-export const puedeReaccionar = o => o.alive && !o.ready && o.deployed !== false && o.order === "engage" && !o.reacciono;
+// Reaccionar: un agente usado, con orden de trabarse (un Astartes, con cualquiera), que no
+// reaccionó en este punto de inflexión.
+export const puedeReaccionar = o => o.alive && !o.ready && o.deployed !== false
+  && (o.order === "engage" || esAstartes(o)) && !o.reacciono;
 
 export function turnoDeActivacion(ops, ini, ultimo = null) {
   const apostados = s => ops.some(o => o.alive && o.team === s && o.ready);

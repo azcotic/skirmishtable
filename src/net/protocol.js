@@ -4,8 +4,8 @@
  * the game. The unit tests run this in Node. See docs/MULTIPLAYER.md.
  */
 
-import { BASE_SIZES } from "../config.js";
-import { DEFAULT_ROSTER, KINDS, MAX_SIDE, mkOp, opName } from "../engine/world.js";
+import { BASE_SIZES, WPN } from "../config.js";
+import { DEFAULT_ROSTER, KINDS, MAX_SIDE, ajustarAgente, mkOp, opName } from "../engine/world.js";
 
 // room codes: no 0/O, 1/I/L, so they survive being read out loud
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -147,9 +147,23 @@ export function cleanOps(incoming, local) {
       order: o.order === "engage" ? "engage" : "conceal",
       ready: !!o.ready, alive: !!o.alive, deployed: o.deployed === false ? false : undefined,
       reacciono: o.reacciono ? true : undefined, reaccion: o.reaccion ? true : undefined,
+      // elecciones de facción (Ecos de la Disformidad: si ya lo usó / lo está usando)
+      ecosUsado: o.ecosUsado ? true : undefined, ecosActivo: o.ecosActivo ? true : undefined,
+      disparadas: Array.isArray(o.disparadas) ? o.disparadas.filter(k => typeof k === "string" && Object.hasOwn(WPN, k)).slice(0, 8) : [],
       base: BASE_SIZES.includes(o.base) ? o.base : undefined,
       weapon: l.weapons.includes(o.weapon) ? o.weapon : l.weapon,
       used: Array.isArray(o.used) ? o.used.filter(u => ACTS.includes(u)).slice(0, 12) : [] });
+  }
+  // las elecciones de facción de cada agente (ids cortos); ponen sus atributos y armas (src/data/teams)
+  const ID = /^[a-zA-Z]{1,16}$/;
+  for (const op of out) {
+    const o = incoming.find(x => x && x.id === op.id);
+    const opciones = o && o.opciones && typeof o.opciones === "object" ? Object.fromEntries(Object.entries(o.opciones)
+      .filter(([e, v]) => ID.test(e) && typeof v === "string" && ID.test(v)).slice(0, 4)) : {};
+    if (JSON.stringify(opciones) !== JSON.stringify(op.opciones || {})) {
+      op.opciones = Object.keys(opciones).length ? opciones : undefined; ajustarAgente(op);
+    }
+    if (o && typeof o.weapon === "string" && op.weapons.includes(o.weapon)) op.weapon = o.weapon;
   }
   return out.length ? out : null;
 }

@@ -30,7 +30,7 @@ import { teamOf } from '../view3d/units.js';
 import { ARDIDES } from '../i18n/nombres.js';
 import { pmDelPI, puedeUsarArdid, quienDecide, tirarD6, COSTE_ARDID } from '../game/fases.js';
 import { OPS, rosterInit } from '../engine/world.js';
-import { agenteDeMuestra, comandoPorId, modelosPara, pesoAgente, plantillaDefs, puedeAnadir, seleccionesMax,
+import { agenteDeMuestra, comandoPorId, eleccionesDe, modelosPara, pesoAgente, plantillaDefs, puedeAnadir, seleccionesMax,
   validarComando } from '../data/teams/index.js';
 import { abrirFicha } from './ficha.js';
 import { gradoActual, puntuarKillOp, reiniciarPuntos } from './ops.js';
@@ -44,7 +44,35 @@ const COMANDOS_PRUEBA = ["3352828814", "3348897103"];
 const ORDEN = ["modo", "mapa", "comando0", "plantilla0", "comando1", "plantilla1", "despliegue", "resumen"];
 
 // plantilla: los agentes elegidos de cada bando (claves); config: el nombre de la configuración
-const eleccion = { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], despliegue: null };
+// faccion: por bando, lo elegido en las elecciones de facción de su comando (src/data/teams):
+// { [índice del agente en la plantilla]: { [id de la elección]: id de la opción } }
+const eleccion = { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], despliegue: null };
+// Lo que falta o hay que elegir en un bando: una entrada por agente y elección que le toca
+function porElegir(s) {
+  if (!eleccion.plantilla[s]) return [];
+  const els = eleccionesDe(eleccion.comando[s]);
+  return els.flatMap(e => eleccion.plantilla[s].map((k, i) => e.agentes.includes(k) ? { e, i } : null).filter(Boolean));
+}
+const elegido = (s, { e, i }) => (eleccion.faccion[s][i] || {})[e.id];
+// lo que ya eligieron los demás agentes del bando en esa elección (si es "unica", no se repite)
+const tomadas = (s, { e, i }) => porElegir(s).filter(x => x.e === e && x.i !== i).map(x => elegido(s, x)).filter(Boolean);
+function elegirOpcion(s, { e, i }, id) { eleccion.faccion[s][i] = { ...(eleccion.faccion[s][i] || {}), [e.id]: id }; }
+// Tras la configuración de un bando: sus elecciones de facción (si las hay), una pantalla por
+// agente, y luego el siguiente paso. La computadora elige al azar entre las que ya hacen algo.
+function trasConfig(s) {
+  const despues = s === 0 ? "comando1" : "despliegue";
+  eleccion.faccion[s] = {};
+  const lista = porElegir(s);
+  if (!lista.length) return ir(despues);
+  if (s === 1 && eleccion.modo === "ia") {
+    for (const x of lista) {
+      const libres = x.e.opciones.filter(o => !o.pendiente && !(x.e.unica && tomadas(1, x).includes(o.id)));
+      if (libres.length) elegirOpcion(1, x, libres[Math.floor(Math.random() * libres.length)].id);
+    }
+    return ir(despues);
+  }
+  return ir("faccion" + s);
+}
 let paso = "modo";
 const pila = [];
 let tirada = null;          // fase de estrategia en línea: {dados: [a, b], decide: 0|1|null}
@@ -96,6 +124,16 @@ function contenido() {
         { activa: eleccion.config[s] === e.nombre })).join("") +
         opcion("propia", I.propia, I.propiaDesc(seleccionesMax(c)), { activa: eleccion.config[s] === I.propia });
       return { titulo: s === 0 ? I.configTitulo : I.configTituloRival, sub: esc(c.nombre), html };
+    }
+    case "faccion0": case "faccion1": {        // elecciones de facción: una pantalla por agente y elección
+      const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = porElegir(s), F = T.faccion;
+      const x = lista.find(y => !elegido(s, y)) || lista[lista.length - 1];
+      const deEsta = lista.filter(y => y.e === x.e), ya = x.e.unica ? tomadas(s, x) : [];
+      const html = x.e.opciones.map(o => opcion(`op:${lista.indexOf(x)}:${o.id}`, esc(o.nombre),
+        `${F.desc[o.id] || ""}${o.pendiente ? ` <em class="pant-pendiente">${F.pendiente}</em>` : ""}`,
+        { activa: elegido(s, x) === o.id, deshabilitada: ya.includes(o.id) })).join("");
+      return { titulo: F.titulo[x.e.id] || F.tituloGenerico,
+        sub: F.sub(esc(c.agentes[eleccion.plantilla[s][x.i]].nombre), deEsta.indexOf(x) + 1, deEsta.length, !!x.e.unica), html };
     }
     case "elegir0": case "elegir1": {          // armar el comando agente por agente
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = eleccion.plantilla[s] || [];
@@ -204,7 +242,7 @@ function render() {
   const el = pantalla();
   if (!el) return;
   // armar el comando cuenta como el paso de su configuración, para los puntos de progreso
-  const c = contenido(), i = ORDEN.indexOf(paso.startsWith("elegir") ? "plantilla" + paso.slice(-1) : paso);
+  const c = contenido(), i = ORDEN.indexOf(/^(elegir|faccion)/.test(paso) ? "plantilla" + paso.slice(-1) : paso);
   const puntos = i < 0 ? "" : ORDEN.map((_, k) => `<i class="${k < i ? "hecho" : k === i ? "ahora" : ""}"></i>`).join("");
   el.innerHTML = `<div class="pant" data-paso="${paso}">
     <div class="pant-cab">
@@ -229,12 +267,11 @@ function elegir(v) {
     case "comando0": case "comando1": {
       const s = +paso.slice(-1), c = comandoPorId(v);
       eleccion.comando[s] = v; eleccion.plantilla[s] = null; eleccion.config[s] = null;
-      const despues = s === 0 ? "comando1" : "despliegue";
-      if (!c) return ir(despues);                       // fichas simples: sin configuración
+      if (!c) return ir(s === 0 ? "comando1" : "despliegue");   // fichas simples: sin configuración
       if (s === 1 && eleccion.modo === "ia") {          // la computadora elige una de las de ejemplo
         const e = c.ejemplos[Math.floor(Math.random() * c.ejemplos.length)];
         eleccion.plantilla[1] = [...e.agentes]; eleccion.config[1] = e.nombre;
-        return ir(despues);
+        return trasConfig(1);
       }
       return ir("plantilla" + s);
     }
@@ -243,7 +280,13 @@ function elegir(v) {
       if (v === "propia") { eleccion.plantilla[s] = eleccion.config[s] === T.inicio.propia ? eleccion.plantilla[s] : []; return ir("elegir" + s); }
       const e = c.ejemplos[+v.slice(3)];
       eleccion.plantilla[s] = [...e.agentes]; eleccion.config[s] = e.nombre;
-      return ir(s === 0 ? "comando1" : "despliegue");
+      return trasConfig(s);
+    }
+    case "faccion0": case "faccion1": {
+      const s = +paso.slice(-1), [, n, id] = v.split(":"), lista = porElegir(s);
+      elegirOpcion(s, lista[+n], id);
+      if (lista.every(y => elegido(s, y))) return ir(s === 0 ? "comando1" : "despliegue");
+      return render();
     }
     case "elegir0": case "elegir1": {
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = eleccion.plantilla[s] = eleccion.plantilla[s] || [];
@@ -338,7 +381,9 @@ function empezar() {
   setTeam(0, eleccion.comando[0] || null);
   setTeam(1, eleccion.comando[1] || null);
   // los agentes de cada bando: el comando de prueba con sus fichas reales (o fichas simples)
-  rosterInit([0, 1].flatMap(s => plantillaDefs(s, eleccion.comando[s], eleccion.plantilla[s])));
+  // con sus elecciones de facción (5.º dato de cada agente)
+  rosterInit([0, 1].flatMap(s => plantillaDefs(s, eleccion.comando[s], eleccion.plantilla[s])
+    .map((d, i) => eleccion.faccion[s][i] ? [...d, eleccion.faccion[s][i]] : d)));
   loadMap(eleccion.mapa);
   reiniciarPuntos();                 // hoja de PV en blanco (grado de bajas incluido)
   // cada agente con el modelo 3D que le corresponde
@@ -357,7 +402,7 @@ export function abrirInicio() {
   const el = pantalla();
   if (!el) return;
   finMostrado = false;
-  Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], despliegue: null });
+  Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], despliegue: null });
   paso = "modo"; pila.length = 0;
   el.hidden = false;
   render();
@@ -421,7 +466,7 @@ export function wireInicio() {
     if (b.id === "pantlistoarmar") {               // comando armado a mano
       const s = +paso.slice(-1);
       eleccion.config[s] = T.inicio.propia;
-      return ir(s === 0 ? "comando1" : "despliegue");
+      return trasConfig(s);
     }
     if (b.id === "pantotrobando") { ladoTiroteo = 1 - ladoTiroteo; return render(); }
     if (b.id === "pantempezar") {                  // confirmado: empieza el primer punto de inflexión

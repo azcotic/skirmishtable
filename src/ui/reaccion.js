@@ -13,6 +13,7 @@ import { TEAMNAME } from '../config.js';
 import { KINDS, OPS } from '../engine/world.js';
 import { enDespliegue } from '../engine/deploy.js';
 import { puedeReaccionar } from '../game/acciones.js';
+import { tieneEfecto } from '../data/teams/index.js';
 import { state } from '../state.js';
 import { mayControl } from '../net/sync.js';
 import { pasarTurno, snapshot } from './panels.js';
@@ -35,9 +36,13 @@ export function ventanaReaccion() {
 
 export function iniciarReaccion(op) {
   snapshot();
-  Object.assign(op, { ready: true, ap: 1, used: [], reaccion: true, reacciono: true });
+  Object.assign(op, { ready: true, ap: 1, used: [], disparadas: [], reaccion: true, reacciono: true });
+  // Ecos de la Disformidad (una vez por batalla): puede cambiar su orden y hacer una acción
+  // de 1 PA más, gratis, distinta de la primera
+  if (tieneEfecto(op, "ecos") && !op.ecosUsado) Object.assign(op, { ap: 2, ecosUsado: true, ecosActivo: true });
   state.sel = op; state.target = null;
   logLine(T.reaccion.log(op.name));
+  if (op.ecosActivo) logLine(T.reaccion.ecos(op.name));
   renderAll();
   hint(T.reaccion.empieza(op.name));
 }

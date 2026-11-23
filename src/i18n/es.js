@@ -636,11 +636,32 @@ export const T = {
     boton: `${G.reaccionar.es}`,
     titulo: `Hace gratis una acción de 1 ${G.pa.abrev} (moviendo como mucho 2″). Una vez por punto de inflexión.`,
     pasar: 'Pasar',
-    pista: equipo => `Turno de ${equipo}: todos sus agentes están usados. Puede ${G.reaccionar.es.toLowerCase()} con un agente con orden de trabarse (una acción gratis de 1 ${G.pa.abrev}) o pasar.`,
+    pista: equipo => `Turno de ${equipo}: todos sus agentes están usados. Puede ${G.reaccionar.es.toLowerCase()} con un agente con orden de trabarse (o un Astartes con cualquier orden: una acción gratis de 1 ${G.pa.abrev}) o pasar.`,
     empieza: n => `${n} reacciona: haz una acción de 1 ${G.pa.abrev} (moviendo como mucho 2″) y termina su activación.`,
     log: n => `<b>${n}</b> reacciona.`,
+    ecos: n => `Ecos de la Disformidad: ${n} puede cambiar su orden y hacer dos acciones distintas de 1 ${G.pa.abrev} (una vez por batalla).`,
     pasa: equipo => `<b>${equipo}</b> pasa (no reacciona).`,
     iaDispara: b => `reacciona y dispara a ${b}.`,
+  },
+
+  // Elecciones de facción (src/data/teams: `elecciones`): pantallas de inicio y ficha.
+  // Las opciones se resumen con nuestras palabras, por su id.
+  faccion: {
+    titulo: { dones: 'Elige un Don de Tzeentch' },
+    tituloGenerico: 'Regla de facción: elige',
+    sub: (n, i, total, unica) => `Para ${n}${total > 1 ? ` (${i} de ${total})` : ''}.${unica && total > 1 ? ' Cada opción solo puede elegirla un agente.' : ''}`,
+    pendiente: '(aún no tiene efecto en la app)',
+    desc: {
+      vision: 'Sus armas a distancia ganan Saturación y sus blancos no cuentan como ofuscados.',
+      caminante: '+1″ a su Movimiento.',
+      ecos: `Una vez por batalla, al reaccionar, puede cambiar su orden y hacer otra acción de 1 ${G.pa.abrev} gratis, distinta de la primera.`,
+      hinchazon: '+1 al daño normal de sus armas de combate.',
+      apendice: `Puede recoger marcadores y hacer acciones de misión con enemigos cerca, y una vez por activación una de ellas le cuesta 1 ${G.pa.abrev} menos.`,
+      vuelo: 'Una vez por punto de inflexión, al cargar o reposicionarse, puede volar: se levanta y se coloca a la distancia de su Movimiento, sin importar el terreno.',
+      giro: 'Sus armas psíquicas a distancia ganan Perforante en críticos 1.',
+      bombardeo: 'Una de sus armas psíquicas a distancia gana Devastadora 1 (el Proyectil de condenación, que ya la tiene, alcanzaría también a quien esté a 2″ del blanco: eso aún no se aplica).',
+      maestro: '+3″ a la distancia de sus acciones psíquicas.',
+    },
   },
 
   // activaciones alternas (src/ui/turno.js)
@@ -698,6 +719,7 @@ export const T = {
       sinBlanco: `no hay ningún ${G.blancoValido.es}`,
       sinArmaCombate: 'no tiene armas de combate',
       ordenFijada: 'la orden se elige al empezar la activación y ya hizo una acción',
+      psiquicaRepetida: 'ya disparó con esa arma psíquica en esta activación (regla Astartes: elige otra)',
       fueraDeAlcance: 'ningún blanco válido está al alcance de su arma',
       armaAgotada: 'su arma Limitada ya no tiene usos en esta batalla',
     },
@@ -716,6 +738,8 @@ export const T = {
     provisional: 'Ficha provisional: atributos y armas de prueba (fichas simples, sin comando).',
     oficial: 'Atributos y armas de la ficha oficial del comando. Las reglas con * y las habilidades del agente están en su ficha.',
     lider: 'Líder',
+    astartes: 'Astartes',
+    astartesDesc: `En su activación puede Disparar dos veces o Combatir dos veces (el segundo disparo con un cañón cosechaalmas o un lanzallamas disforme cuesta 1 ${G.pa.abrev} más; no repite arma psíquica). Puede reaccionar con cualquier orden.`,
     ver: 'Ver ficha',
   },
 

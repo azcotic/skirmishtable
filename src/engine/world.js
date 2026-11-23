@@ -77,7 +77,10 @@ export const DEFAULT_ROSTER = [
 ];
 // who is on the table, as rosterInit takes it: the UI passes this to a new map or a reset,
 // so a roster built in the Miniatures panel stays
-export const rosterDefs = () => OPS.length ? OPS.map(o => [o.id, o.team, o.name, o.kind]) : DEFAULT_ROSTER;
+export const rosterDefs = () => OPS.length ? OPS.map(o => [o.id, o.team, o.name, o.kind, o.opciones]) : DEFAULT_ROSTER;
+// Ajustes a un agente según sus elecciones de facción (los registra src/data/teams/index.js)
+export const ajustesAgente = [];
+export const ajustarAgente = op => { for (const f of ajustesAgente) f(op); return op; };
 // The starting roster, every operative fresh in its side's drop zone (default: six a side).
 export function rosterInit(defs = DEFAULT_ROSTER) {
   const spawns = MAP && MAP.spawns ? MAP.spawns.map(s => s.slice()) : [autoSpawn(0), autoSpawn(1)];
@@ -87,7 +90,7 @@ export function rosterInit(defs = DEFAULT_ROSTER) {
   }
   const idx = [0, 0], placed = [];
   const out = [];
-  for (const [id, team, name, kind] of defs) {
+  for (const [id, team, name, kind, opciones] of defs) {
     let p = spawns[team][idx[team]++];
     if (!p) p = anyFreeSpot(placed);   // the drop zone is full: any free spot on the board
     // no room anywhere: leave the operative out, but a side keeps at least one, in the middle
@@ -98,7 +101,9 @@ export function rosterInit(defs = DEFAULT_ROSTER) {
     }
     if (!p) continue;
     placed.push([p[0], p[1]]);
-    out.push(mkOp(id, team, name, kind, p[0], p[1]));
+    const op = mkOp(id, team, name, kind, p[0], p[1]);
+    if (opciones && Object.keys(opciones).length) { op.opciones = { ...opciones }; ajustarAgente(op); }
+    out.push(op);
   }
   OPS = out;
 }
