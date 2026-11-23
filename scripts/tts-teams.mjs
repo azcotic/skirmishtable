@@ -64,6 +64,18 @@ function part(o, local) {
   return e;
 }
 
+// todas las piezas de un modelo, también las de hijos de hijos (p. ej. el Capitán: dos mitades, una dentro de
+// la otra). La posición se acumula; se supone que los hijos no giran ni escalan a sus piezas (en este mod es así).
+function descendientes(o, p0 = [0, 0, 0]) {
+  const out = [];
+  for (const c of o.ChildObjects || []) {
+    const e = part(c, true), p = (e ? e.p : tf(c.Transform || {}).p).map((v, i) => r4(v + p0[i]));
+    if (e) out.push({ ...e, p });
+    out.push(...descendientes(c, p));
+  }
+  return out;
+}
+
 // drop models whose files are gone from Steam (deleted uploads answer 404)
 const alive = new Map();
 async function live(url) {
@@ -91,7 +103,7 @@ for (const d of await details(TEAMS)) {
     const agentes = agentesDe(clean(o.Nickname));
     const base = agentes && part(o, false);
     if (base) {
-      const parts = (o.ChildObjects || []).map(c => part(c, true)).filter(Boolean);
+      const parts = descendientes(o);
       const key = JSON.stringify([base.obj || base.bundle, parts.map(p => [p.obj || p.bundle, p.tex])]);
       if (!seen.has(key)) {
         seen.add(key);

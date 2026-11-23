@@ -97,7 +97,9 @@ function template(model) {
         // TTS tints don't reach a bundle's own textured materials (mods tint those objects
         // black for the base underneath); untextured parts take the tint, else read grey
         const color = e.bundle && p.tex ? null : e.color || (p.tex ? null : [0.62, 0.62, 0.62]);
-        const mesh = new THREE.Mesh(p.geometry, steamMaterial(p, color, e.material, renderer));
+        // los paquetes de Unity de las miniaturas traen los triángulos al revés para esta mesa (con el modelo
+        // espejado, las caras que miran hacia fuera quedan como traseras y se ve el interior): se les da la vuelta
+        const mesh = new THREE.Mesh(e.bundle ? caraAfuera(p.geometry) : p.geometry, steamMaterial(p, color, e.material, renderer));
         mesh.matrixAutoUpdate = false; mesh.matrix.copy(local);
         mesh.castShadow = true; mesh.receiveShadow = true;
         inner.add(mesh);
@@ -120,6 +122,16 @@ function template(model) {
     root.userData = { diameter: base ? base.w : null, mm, centre: foot.getCenter(new THREE.Vector3()), bottom: all.min.y };
     return root;
   });
+}
+
+// Una copia de la geometría con el orden de los triángulos invertido (una vez por geometría)
+const invertidas = new WeakMap();
+function caraAfuera(g) {
+  if (invertidas.has(g)) return invertidas.get(g);
+  const c = g.clone(), ix = c.index;
+  if (ix) { const a = ix.array.slice(); for (let i = 0; i < a.length; i += 3) { const t = a[i]; a[i] = a[i + 2]; a[i + 2] = t; } c.setIndex(new THREE.BufferAttribute(a, 1)); }
+  invertidas.set(g, c);
+  return c;
 }
 
 let renderer = null;
