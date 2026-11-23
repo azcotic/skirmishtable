@@ -518,7 +518,7 @@ export const T = {
     aTiroteo: 'Listo · a la fase de tiroteo',
     tiroteo: equipo => `Fase de tiroteo: empieza ${equipo}, que tiene la iniciativa. Activa a un agente.`,
     tiroteoTitulo: 'Ardides de tiroteo',
-    tiroteoSub: (equipo, pm) => `${equipo} tiene ${pm} ${PM}. Úsalos en el momento que indica la ficha del comando; cada uno cuesta 1 ${PM} y se usa una vez por punto de inflexión.`,
+    tiroteoSub: (equipo, pm) => `${equipo} tiene ${pm} ${PM}. Úsalos en el momento que indica la ficha del comando; cada uno cuesta 1 ${PM} y se usa una vez por punto de inflexión. Por ahora solo descuentan los ${PM}: su efecto se aplica a mano.`,
     repeticionNota: `Repetición de mando (1 ${PM}) no está en la lista: se ofrece sola al tirar los dados, sin límite de usos.`,
     volverMesa: 'Volver a la mesa',
     verOtro: equipo => `Ver los de ${equipo}`,
