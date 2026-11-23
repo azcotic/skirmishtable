@@ -42,8 +42,15 @@ export function abrirEncuadres() {
         <div id="enclista" class="enc-agentes"></div>
       </div>
       <div class="enc-visor">
-        <div class="enc-lienzo"><canvas id="enccanvas"></canvas><div class="enc-guia" aria-hidden="true"></div>
-          <canvas id="encbase" class="enc-base" width="240" height="240" title="${E.vistaArriba}" aria-label="${E.vistaArriba}"></canvas></div>
+        <div class="enc-fila">
+          <div class="enc-lienzo"><canvas id="enccanvas"></canvas><div class="enc-guia" aria-hidden="true"></div>
+            <canvas id="encbase" class="enc-base" width="240" height="240" title="${E.vistaArriba}" aria-label="${E.vistaArriba}"></canvas></div>
+          <div class="enc-eje" title="${E.ejeTitulo}">
+            <button class="mini" id="encarriba" aria-label="${E.subir}" title="${E.subir}">▲</button>
+            <input type="range" id="enceje" min="-0.3" max="1.5" step="0.005" value="0.66" aria-label="${E.ejeTitulo}">
+            <button class="mini" id="encabajo" aria-label="${E.bajar}" title="${E.bajar}">▼</button>
+          </div>
+        </div>
         <div class="enc-acciones">
           <button class="mini enc-guardar" id="encguardar">${E.guardar}</button>
           <button class="mini" id="encauto">${E.auto}</button>
@@ -70,6 +77,9 @@ export function abrirEncuadres() {
   $("encequipo").onchange = e => { equipo = e.target.value; pintarLista(); seleccionar(nombres(equipo)[0]); };
   $("encguardar").onclick = guardar;
   $("encauto").onclick = () => { if (escena) { aplicar(encuadreAuto(escena, frente)); estado(E.autoPuesto); } };
+  $("enceje").oninput = e => moverEje(+e.target.value);
+  $("encarriba").onclick = () => moverEje(valorEje() + 0.02);
+  $("encabajo").onclick = () => moverEje(valorEje() - 0.02);
   $("encfrente").oninput = e => ponerFrente(+e.target.value);
   $("encfm").onclick = () => ponerFrente(frente - 15);
   $("encfp").onclick = () => ponerFrente(frente + 15);
@@ -116,6 +126,7 @@ function ajustar() {
   cont.style.width = cont.style.height = lado + "px";
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.setSize(lado, lado, false);
+  $("enceje").style.height = Math.max(120, lado - 100) + "px";   // el control vertical, del alto del visor menos sus dos botones
 }
 
 async function seleccionar(n) {
@@ -145,6 +156,7 @@ async function seleccionar(n) {
     cam = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
     controles = new THREE.OrbitControls(cam, $("enccanvas"));
     controles.enableDamping = false; controles.screenSpacePanning = true;
+    controles.addEventListener("change", sincronizarEje);   // girar o mover con el ratón también mueve el control
     renderer2 = new THREE.WebGLRenderer({ canvas: $("encbase"), alpha: true, antialias: true });
     renderer2.outputEncoding = THREE.sRGBEncoding; renderer2.setClearColor(0x14110e, 0.85);
     renderer2.setSize(150, 150, false);
@@ -196,6 +208,22 @@ function aplicar(enc) {
   controles.target.copy(objetivo);
   controles.minDistance = escena.alto * 0.15; controles.maxDistance = escena.alto * 4;
   controles.update();
+  sincronizarEje();
+}
+
+// El eje Y: sube o baja el encuadre (la cámara y el punto al que mira, juntos) sin cambiar el zoom ni el giro.
+// El valor es la altura a la que mira la cámara, en alturas de la figura (0 = pies, 1 = cabeza).
+const valorEje = () => escena ? (controles.target.y - escena.origen.y) / escena.alto : 0;
+function sincronizarEje() {
+  const i = $("enceje");
+  if (i && escena && controles) i.value = String(valorEje());
+}
+function moverEje(v) {
+  if (!escena) return;
+  const nuevo = escena.origen.y + Math.max(-0.3, Math.min(1.5, v)) * escena.alto, d = nuevo - controles.target.y;
+  cam.position.y += d; controles.target.y = nuevo;
+  controles.update();
+  sincronizarEje();
 }
 
 function bucle() {
