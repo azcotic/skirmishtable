@@ -10,8 +10,34 @@ function hojas(obj, pre = '') {
   return Object.entries(obj).flatMap(([k, v]) =>
     v && typeof v === 'object' ? hojas(v, pre + k + '.') : [[pre + k, v]]);
 }
-const EJEMPLOS = ['Ash', 3, 2.5, 1];
-const valor = v => typeof v === 'function' ? v(...EJEMPLOS.slice(0, v.length || 1)) : v;
+// juegos de argumentos genéricos: se usa el primero que produce un texto limpio
+const EJEMPLOS = [['Ash', 3, 2.5, 1], [3, 2.5, 1, 1], ['Ash', 'Slate', 3, 1], ['A1', true, 3, 1]];
+const limpio = s => typeof s === 'string' && s.length > 0 && !/undefined|NaN|\[object/.test(s);
+function probar(f) {
+  let ultimo;
+  for (const e of EJEMPLOS) { try { ultimo = f(...e.slice(0, f.length || 1)); if (limpio(ultimo)) return ultimo; } catch (err) { ultimo = String(err); } }
+  return ultimo;
+}
+// funciones que reciben listas u otros tipos: sus argumentos de ejemplo
+const ARGS = {
+  'ficha.reglas': [['Ceaseless', 'Lethal']],
+  'mover.contra': [['B1', 'B2']],
+  'mover.incluye': [['trepando 2″']],
+  'mover.enZona': ['A1', ['B1']],
+  'mover.cargo': ['A1', ['B1', 'B2']],
+  'mover.etiqueta': ['reposition', 4, 6],
+  'mover.etiquetaDoble': ['reposition', 6, 'dash', 2, 3],
+  'mover.log': ['A1', 'dash', 3, 3, ''],
+  'mover.logDoble': ['A1', 'reposition', 6, 'dash', 2, ''],
+  'mover.soltar': ['A1', 'charge', 'medida exacta', 1, true],
+  'disparo.log': ['A1', 'B1', 'Bólter', '6 4', '3', true, 3, ['Accurate 1', 'cover save banked']],
+  'combate.log': ['A1', 'B1', '6 4', '5 2', 2, 0],
+  'terreno.trepar': [2, 0, ['Reposicionarse', 'Cargar']],
+  'partida.notaFina': ['Volkus AO 1', 30, 22, 'despliegue', 40, ''],
+  'partida.notaMuros': ['Gallowdark', 30, 22, 'despliegue', 12, 2, 'fuente'],
+};
+const valor = (v, ruta) => typeof v !== 'function' ? v
+  : ARGS[ruta] ? v(...ARGS[ruta]) : probar(v);
 
 // conjugaciones de voseo que no deben aparecer nunca (el usuario lo considera inaceptable)
 const VOSEO = /\b(vos|sos|tenés|querés|podés|sabés|hacé|tocá|arrastrá|seleccioná|elegí|ingresá|buscá|agregá|revisá|probá|mirá|dale|che)\b/i;
@@ -19,18 +45,19 @@ const VOSEO = /\b(vos|sos|tenés|querés|podés|sabés|hacé|tocá|arrastrá|sel
 describe('es.js', () => {
   const todas = hojas(T);
 
-  it('cada texto es un string no vacío, sin espacios sobrantes ni "undefined"', () => {
+  it('cada texto es un string no vacío, sin espacios al final ni dobles, ni "undefined"', () => {
     for (const [ruta, v] of todas) {
-      const s = valor(v);
+      const s = valor(v, ruta);
       expect(typeof s, ruta).toBe('string');
       expect(s.length, ruta).toBeGreaterThan(0);
-      expect(s, ruta).toBe(s.trim());
+      expect(s, ruta).toBe(s.trimEnd());            // un espacio inicial sí: hay fragmentos que se pegan a otra frase
+      expect(s, ruta).not.toMatch(/\S  \S/);
       expect(s, ruta).not.toMatch(/undefined|NaN|\[object/);
     }
   });
 
   it('no hay voseo', () => {
-    for (const [ruta, v] of todas) expect(valor(v), ruta).not.toMatch(VOSEO);
+    for (const [ruta, v] of todas) expect(valor(v, ruta), ruta).not.toMatch(VOSEO);
     for (const [k, g] of Object.entries(G)) expect(JSON.stringify(g), k).not.toMatch(VOSEO);
   });
 

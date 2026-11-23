@@ -1,6 +1,7 @@
 // Replays: every action is recorded; one page shares the replay as a "#replay=…" link,
 // another opens it at a step, steps through it turn by turn, can't change it, and leaves.
 import { test, expect } from '@playwright/test';
+import { T } from '../../src/i18n/es.js';
 
 const pos = page => page.evaluate(() => skirmishtable.world.OPS.map(o => [o.id, o.x, o.y, o.wounds]));
 
@@ -39,12 +40,12 @@ test('a recorded game replays step by step from a link', async ({ context }) => 
   expect(await pos(b)).toEqual(frames[2]);
   await b.locator('#endtp').click();
   await expect(b.locator('#tpv')).toHaveText('1');
-  await expect(b.locator('#hint')).toContainText('watching a replay');
+  await expect(b.locator('#hint')).toContainText(T.partida.viendoGrabacion);
 
   // turn by turn: jump to TP 2, the End TP's log line shows; the arrow keys step
   await b.locator('#rptps button', { hasText: 'TP 2' }).click();
   await expect(b.locator('#rpwhere')).toHaveText('TP 2 · step 4 of 5');
-  await expect(b.locator('#rplog')).toContainText('Turning point 2');
+  await expect(b.locator('#rplog')).toContainText('Punto de inflexión 2');
   await expect(b.locator('#tpv')).toHaveText('2');
   expect(new URL(b.url()).hash).toMatch(/&step=4$/);
   await b.locator('body').press('ArrowRight');

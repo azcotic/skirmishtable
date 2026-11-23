@@ -15,7 +15,7 @@ import { mayControl, online } from '../net/sync.js';
 import { showRoll } from './dicetray.js';
 import { fairNote, rollFor } from '../net/roll.js';
 import { renderMinis } from './minis.js';
-import { T } from '../i18n/es.js';
+import { T, pulg } from '../i18n/es.js';
 
 /* ---------- state / undo / log ---------- */
 export let tray = {tp:1, cp:[3,3], vp:[0,0]};
@@ -40,12 +40,12 @@ export function snapshot() {
 }
 export function doUndo() {
   const s = undoStack.pop();
-  if (!s) { hint(online() ? "Nothing to undo. Online, a shared roll can't be taken back." : "Nothing to undo."); return false; }
+  if (!s) { hint(online() ? T.deshacer.nadaEnLinea : T.deshacer.nada); return false; }
   const o = JSON.parse(s); OPS.splice(0, OPS.length, ...o.ops); Object.assign(tray, o.tray);
   if (o.extras) undoExtras.forEach((x, i) => { if (o.extras[i] !== undefined) x.set(o.extras[i]); });
   if (state.sel) state.sel = OPS.find(x => x.id === state.sel.id) || null;
   state.target = null; state.lastShot = null; cancelMode();
-  logLine("Undid last action.");
+  logLine(T.deshacer.hecho);
   renderAll(); renderMinis();             // the roster may have changed (Miniatures panel)
   return true;
 }
@@ -54,13 +54,13 @@ export function doUndo() {
 function doShoot() {
   if (!state.sel || !state.target) return;
   const w = WPN[state.sel.weapon];
-  if (w.type !== "R") { logLine("Selected weapon is melee — use Fight."); return; }
+  if (w.type !== "R") { logLine(T.disparo.armaDeCombate); return; }
   const no = cannotShoot(selEye());
-  if (no) { logLine(`<b>${state.sel.name}</b> can't Shoot — ${noShootWhy(no)}.`); return; }
+  if (no) { logLine(T.disparo.noPuedeLog(state.sel.name, noShootWhy(no))); return; }
   refreshSight();                        // judge it as things stand now, not when targeted
   const shot = state.lastShot;
   if (!shot || !SHOT_KINDS[shot.kind].valid) {
-    logLine(`<b>${state.target.name}</b> is not a valid target — ${shot ? shotWhy(shot) : "no target"}.`);
+    logLine(T.disparo.noValido(state.target.name, shot ? shotWhy(shot) : T.disparo.sinBlanco));
     renderAll(); return;
   }
   // what is rolled for: the shot as this table judges it, fixed before the dice are known
@@ -71,24 +71,22 @@ function doShoot() {
     const a = OPS.find(o => o.id === what.by), b = OPS.find(o => o.id === what.at);
     if (!a || !b || !a.alive || !b.alive || a.ap < 1 || a.weapon !== what.w) {
       cancel();
-      logLine(`<b>${a ? a.name : what.by}</b>'s shot no longer stands — not rolled.`);
+      logLine(T.disparo.yaNo(a ? a.name : what.by));
       renderAll(); return;
     }
     snapshot();
     const r = shootRoll(what, a, b, die);
-    showRoll(r.atk.dice, r.hit, a.team, `${a.name} shoots`);
-    showRoll(r.dfn.dice, b.save, b.team, `${b.name} saves${r.dfn.cover ? " (+cover)" : ""}`);
+    showRoll(r.atk.dice, r.hit, a.team, T.disparo.tiradaAtq(a.name));
+    showRoll(r.dfn.dice, b.save, b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
     b.wounds = Math.max(0, b.wounds - r.dmg);
     a.ap -= 1; a.used.push("shoot");
-    let line = `<b>${a.name}</b> shoots <b>${b.name}</b> with ${r.w.name} — ` +
-      `<span class="dice">atk [${fmtDice(r.atk.dice)}] def [${fmtDice(r.dfn.dice)}${r.dfn.cover?" +cover":""}]</span> → ` +
-      `<b>${r.dmg} dmg</b>${r.notes.length ? " <span class='dice'>("+r.notes.join("; ")+")</span>" : ""}`;
-    if (b.wounds === 0) { b.alive = false; line += " — <b>incapacitated!</b>"; }
-    else if (isInjured(b)) line += " — injured";
+    let line = T.disparo.log(a.name, b.name, r.w.name, fmtDice(r.atk.dice), fmtDice(r.dfn.dice), r.dfn.cover, r.dmg, r.notes);
+    if (b.wounds === 0) { b.alive = false; line += T.heridas.incapacitado; }
+    else if (isInjured(b)) line += T.heridas.lesionado;
     logLine(line + fairNote(n), r.dmg > 0);
     rolled(n, done);
   });
-  if (why) hint(`Can't shoot yet: ${why}.`);
+  if (why) hint(T.disparo.aunNo(why));
 }
 // a roll's result is in: send it (online), and online a shared roll can't be undone
 function rolled(n, done) {
@@ -99,45 +97,43 @@ function rolled(n, done) {
 function doFight() {
   if (!state.sel || !state.target) return;
   const gap = opGap(state.sel, state.target);
-  if (gap > CTRL) { logLine(`Target is not within control range (${fmtIn(CTRL)}&Prime;).`); return; }
+  if (gap > CTRL) { logLine(T.combate.fueraDeZona(CTRL)); return; }
   const what = {k: "fight", by: state.sel.id, at: state.target.id, wa: meleeKey(state.sel),
                 wb: state.target.weapons.find(k => WPN[k].type === "M") || "knife"};
   const why = rollFor(what, (die, done, n, cancel) => {
     const a = OPS.find(o => o.id === what.by), b = OPS.find(o => o.id === what.at);
     if (!a || !b || !a.alive || !b.alive || a.ap < 1 || opGap(a, b) > CTRL) {
       cancel();
-      logLine(`<b>${a ? a.name : what.by}</b>'s fight no longer stands — not rolled.`);
+      logLine(T.combate.yaNo(a ? a.name : what.by));
       renderAll(); return;
     }
     snapshot();
     const r = fightRoll(what, a, b, die);
-    showRoll(r.ra.dice, r.hitA, a.team, `${a.name} fights`);
-    showRoll(r.rb.dice, r.hitB, b.team, `${b.name} fights back`);
+    showRoll(r.ra.dice, r.hitA, a.team, T.combate.tiradaAtq(a.name));
+    showRoll(r.rb.dice, r.hitB, b.team, T.combate.tiradaDef(b.name));
     Object.assign(a, r.a); Object.assign(b, r.b);
     a.ap -= 1; a.used.push("fight");
-    let line = `<b>${a.name}</b> fights <b>${b.name}</b> — ` +
-      `<span class="dice">${a.name} [${fmtDice(r.ra.dice)}] vs ${b.name} [${fmtDice(r.rb.dice)}]</span> → ` +
-      `${a.name} ${a.wounds}W, ${b.name} ${b.wounds}W`;
-    if (!b.alive) line += ` — <b>${b.name} down!</b>`;
-    if (!a.alive) line += ` — <b>${a.name} down!</b>`;
+    let line = T.combate.log(a.name, b.name, fmtDice(r.ra.dice), fmtDice(r.rb.dice), a.wounds, b.wounds);
+    if (!b.alive) line += T.combate.cae(b.name);
+    if (!a.alive) line += T.combate.cae(a.name);
     logLine(line + fairNote(n), true);
     rolled(n, done);
   });
-  if (why) hint(`Can't fight yet: ${why}.`);
+  if (why) hint(T.combate.aunNo(why));
 }
 // The ruleset's move actions as buttons: ① main move, ② secondary move, and its charge.
 function moveButtons(repoUsed, dashUsed, chargeUsed) {
   const M = RULES.moves, op = state.sel, out = [];
   const btn = (t, spec, used, prefix, title, extraCls = "") =>
     `<button id="mv-${t}" class="${state.moveType === t ? "active" : ""} ${used ? "used" : ""} ${extraCls}" title="${title}">` +
-    `${used ? "✓ " + spec.label : `${prefix}${spec.label} ${fmtIn(spec.allow(op))}&Prime;`}</button>`;
-  out.push(btn("reposition", M.primary, repoUsed, "① ", `1AP · move up to ${fmtIn(M.primary.allow(op))}&Prime;${M.primary.climb ? " · can climb" : ""}`));
-  out.push(btn("dash", M.secondary, dashUsed, "② ", `1AP · move up to ${fmtIn(M.secondary.allow(op))}&Prime;${M.secondary.climb ? " · can climb" : " · can't climb"}`));
+    `${used ? "✓ " + T.mover.nombre[t] : `${prefix}${T.mover.nombre[t]} ${pulg(spec.allow(op))}`}</button>`;
+  out.push(btn("reposition", M.primary, repoUsed, "① ", T.ficha.movTitulo(M.primary.allow(op), M.primary.climb)));
+  out.push(btn("dash", M.secondary, dashUsed, "② ", T.ficha.movTitulo(M.secondary.allow(op), M.secondary.climb)));
   if (M.charge) {
     const restricted = !chargeUsed && (repoUsed || dashUsed);
     out.push(btn("charge", M.charge, chargeUsed, "", restricted
-      ? `Cannot ${M.charge.label} in an activation with another move`
-      : `1AP · move up to ${fmtIn(M.charge.allow(op))}&Prime;, must end in enemy control range`, restricted ? "restricted" : ""));
+      ? T.ficha.cargaRestringida
+      : T.ficha.cargaTitulo(M.charge.allow(op)), restricted ? "restricted" : ""));
   }
   return out.join("\n      ");
 }
@@ -147,9 +143,9 @@ export function adjustWounds(op, d) {
   if (!op || !op.alive) return;
   snapshot();
   op.wounds = Math.max(0, Math.min(op.maxW, op.wounds + d));
-  let line = `[${op.wounds}/${op.maxW}] <b>${op.name}</b> ${d < 0 ? "took damage" : "recovered"}`;
-  if (op.wounds === 0) { op.alive = false; line += " — <b>incapacitated!</b>"; }
-  else if (d < 0 && isInjured(op) && !isInjured({ ...op, wounds: op.wounds - d })) line += " — injured";
+  let line = T.heridas.log(op.name, op.wounds, op.maxW, d < 0);
+  if (op.wounds === 0) { op.alive = false; line += T.heridas.incapacitado; }
+  else if (d < 0 && isInjured(op) && !isInjured({ ...op, wounds: op.wounds - d })) line += T.heridas.lesionado;
   logLine(line, d < 0);
   renderAll();
 }
@@ -169,35 +165,35 @@ export function renderCard() {
   const slot1Used = repoUsed || chargeUsed;
   c.innerHTML = `
     <div class="opname" style="color:${TEAMCOL_LT[state.sel.team]}">${state.sel.id} · ${state.sel.name} <span class="tag">${state.sel.kind}</span>
-      ${inj ? '<span class="tag warn">injured</span>' : ''} ${state.sel.ready ? '' : '<span class="tag">expended</span>'}</div>
+      ${inj ? `<span class="tag warn">${T.ficha.lesionado}</span>` : ''} ${state.sel.ready ? '' : `<span class="tag">${T.ficha.usado}</span>`}</div>
     <div class="stats">
-      <div><div class="v">${state.sel.apl}</div><div class="k">APL</div></div>
-      <div><div class="v">${fmtIn(RULES.moves.primary.allow(state.sel))}"</div><div class="k">Move</div></div>
-      <div><div class="v">${state.sel.save}+</div><div class="k">Save</div></div>
-      <div><div class="v">${state.sel.wounds}/${state.sel.maxW}</div><div class="k">Wounds</div></div>
-      <div><div class="v">${state.sel.ap}</div><div class="k">AP left</div></div>
-      <div><div class="v" title="Two movements per activation: &#9312; ${RULES.moves.primary.label}${RULES.moves.charge ? " (or " + RULES.moves.charge.label + ")" : ""} and &#9313; ${RULES.moves.secondary.label}">${slot1Used?"○":"●"}${dashUsed?"○":"●"}</div><div class="k">Moves</div></div>
+      <div><div class="v">${state.sel.apl}</div><div class="k">${T.ficha.stat.lpa}</div></div>
+      <div><div class="v">${pulg(RULES.moves.primary.allow(state.sel))}</div><div class="k">${T.ficha.stat.mov}</div></div>
+      <div><div class="v">${state.sel.save}+</div><div class="k">${T.ficha.stat.salv}</div></div>
+      <div><div class="v">${state.sel.wounds}/${state.sel.maxW}</div><div class="k">${T.ficha.stat.heridas}</div></div>
+      <div><div class="v">${state.sel.ap}</div><div class="k">${T.ficha.stat.pa}</div></div>
+      <div><div class="v" title="${T.ficha.dosMovimientos(T.mover.nombre.reposition, RULES.moves.charge ? T.mover.nombre.charge : null, T.mover.nombre.dash)}">${slot1Used?"○":"●"}${dashUsed?"○":"●"}</div><div class="k">${T.ficha.stat.movs}</div></div>
     </div>
     <div class="woundbar"><i class="${woundClass(state.sel)}" style="width:${100*state.sel.wounds/state.sel.maxW}%"></i></div>
     <div class="btnrow woundbtns">
-      <button class="mini" id="wdn" title="Take 1 damage (logged)">−1 W</button>
-      <button class="mini" id="wup" title="Recover 1 wound (logged)" ${state.sel.wounds >= state.sel.maxW ? "disabled" : ""}>+1 W</button>
+      <button class="mini" id="wdn" title="${T.ficha.menosHeridaTitulo}">${T.ficha.menosHerida}</button>
+      <button class="mini" id="wup" title="${T.ficha.masHeridaTitulo}" ${state.sel.wounds >= state.sel.maxW ? "disabled" : ""}>${T.ficha.masHerida}</button>
     </div>
     <div class="btnrow">
-      ${RULES.orders ? `<button id="ordbtn">${state.sel.order === "conceal" ? "◖ Conceal" : "▲ Engage"}</button>` : ""}
-      <button id="endact">End activation</button>
+      ${RULES.orders ? `<button id="ordbtn">${T.orden.boton(state.sel.order)}</button>` : ""}
+      <button id="endact">${T.ficha.terminar}</button>
     </div>
     <div class="weapons">${state.sel.weapons.map(k => {
       const w = WPN[k];
       return `<label><input type="radio" name="wpn" value="${k}" ${state.sel.weapon===k?"checked":""}>
         <span class="wname">${w.type==="R"?"⌖":"⚔"} ${w.name}</span>
-        <span class="wstat">${w.atk}A ${effHit(state.sel,w)}+ ${w.dmgN}/${w.dmgC}${w.rules.length?" · "+w.rules.join(","):""}</span></label>`;
+        <span class="wstat">${w.atk}A ${effHit(state.sel,w)}+ ${w.dmgN}/${w.dmgC}${w.rules.length?" · "+T.ficha.reglas(w.rules):""}</span></label>`;
     }).join("")}</div>
     <div class="btnrow">${moveButtons(repoUsed, dashUsed, chargeUsed)}</div>
     <div class="btnrow">
-      <button id="tgtbtn" class="${state.mode==='target'?'active':''}">Target ⌖</button>
-      <button id="shootbtn" ${(!state.target || !state.lastShot || !SHOT_KINDS[state.lastShot.kind].valid || cannotShoot(selEye()) || WPN[state.sel.weapon].type!=="R") ? "disabled" : ""}>Shoot 1AP</button>
-      <button id="fightbtn" ${meleeFoes.length ? "" : "disabled"}>Fight 1AP</button>
+      <button id="tgtbtn" class="${state.mode==='target'?'active':''}">${T.ficha.apuntarBoton}</button>
+      <button id="shootbtn" ${(!state.target || !state.lastShot || !SHOT_KINDS[state.lastShot.kind].valid || cannotShoot(selEye()) || WPN[state.sel.weapon].type!=="R") ? "disabled" : ""}>${T.ficha.disparar}</button>
+      <button id="fightbtn" ${meleeFoes.length ? "" : "disabled"}>${T.ficha.combatir}</button>
     </div>`;
   if (RULES.orders) c.querySelector("#ordbtn").onclick = () => { snapshot(); state.sel.order = state.sel.order === "conceal" ? "engage" : "conceal"; refreshSight(); renderAll(); };
   c.querySelector("#endact").onclick = () => endActivation(state.sel);
@@ -208,16 +204,16 @@ export function renderCard() {
     if (!moveSpec(t)) continue;
     c.querySelector("#mv-" + t).onclick = () => {
       state.moveType = t;
-      const label = moveSpec(t).label;
+      const label = T.mover.nombre[t];
       if (state.sel && state.sel.used.includes(t))
-        hint(`${label} already used this activation — dragging again would repeat it (players adjudicate).`);
+        hint(T.mover.yaUsado(label));
       else
-        hint(`${label} selected — drag ${state.sel ? state.sel.name : "an operative"} to move (${fmtIn(allowance())}" allowance).`);
+        hint(T.mover.elegido(label, state.sel && state.sel.name, allowance()));
       renderCard();
     };
   }
   c.querySelector("#tgtbtn").onclick = () => { state.mode = state.mode === "target" ? null : "target";
-    hint(state.mode === "target" ? "Click an enemy operative to judge line of sight." : HINT0); renderAll(); };
+    hint(state.mode === "target" ? T.seleccion.apuntando : HINT0); renderAll(); };
   c.querySelector("#shootbtn").onclick = doShoot;
   if (!mayControl(state.sel))    // online: look at the other side's operatives, don't act for them
     c.querySelectorAll("button:not(#tgtbtn), input").forEach(b => { b.disabled = true; });
@@ -235,42 +231,42 @@ export function renderVerdict() {
   }
   const shot = state.lastShot, s = shot.sight, c = s.coverBy, o = s.obscBy;
   let big, cls, why = [];
-  if (shot.kind === "engaged") { big = "NOT A VALID TARGET — IN MELEE"; cls = "v-novis";
-    why.push(`friendly ${shot.engagedBy.name} is within ${fmtIn(CTRL)}" of it`); }
-  else if (shot.kind === "hidden") { big = "NOT VISIBLE"; cls = "v-novis"; why.push("no clear sight line — blocked by terrain"); }
+  const V = T.veredicto;
+  big = V.grande[shot.kind];
+  if (shot.kind === "engaged") { cls = "v-novis";
+    why.push(V.aliadoCerca(shot.engagedBy.name, CTRL)); }
+  else if (shot.kind === "hidden") { cls = "v-novis"; why.push(V.sinLinea); }
   else {
-    if (shot.kind === "obscured") { big = "VALID — OBSCURED"; cls = "v-obsc";
-      why.push(`heavy terrain ${o.id} crosses a cover line more than ${fmtIn(RULES.obscure.fromShooter)}" from the shooter and ${fmtIn(RULES.obscure.fromTarget)}" from the target → one success discarded, crits count as normal`);
-      if (c) why.push(`also in cover behind ${c.id}${shot.vantage ? " (conceal order, seen past from a Vantage Point)" : ""} → cover save`); }
-    else if (shot.kind === "concealed") { big = "NOT A VALID TARGET"; cls = "v-novis";
-      why.push(`conceal order + in cover behind ${c.id}${s.hardCover ? " (heavy)" : ""}`); }
-    else if (shot.kind === "cover") { big = "VALID — IN COVER"; cls = "v-cover";
-      why.push(shot.vantage
-        ? `conceal order, but shot down from a Vantage Point past light cover (${c.id}) → cover save`
-        : `${c.id} intervenes within ${fmtIn(RULES.cover.range)}" of target → cover save`); }
-    else { big = "VALID TARGET"; cls = "v-valid"; why.push("clear shot — no cover, not obscured"); }
-    if (shot.accurate) why.push(`from a Vantage Point: Accurate ${shot.accurate}`);
-    if (RULES.orders && state.target.order === "conceal" && !c && shot.kind === "clear") why.push("conceal order but no cover — still targetable");
-    if (RULES.cover.voidWithin > 0 && s.gap <= RULES.cover.voidWithin) why.push(`within ${fmtIn(RULES.cover.voidWithin)}": no cover, no obscuring`);
+    if (shot.kind === "obscured") { cls = "v-obsc";
+      why.push(V.ofuscado(o.id, RULES.obscure.fromShooter, RULES.obscure.fromTarget));
+      if (c) why.push(V.tambienCubierto(c.id, shot.vantage)); }
+    else if (shot.kind === "concealed") { cls = "v-novis";
+      why.push(V.oculto(c.id, s.hardCover)); }
+    else if (shot.kind === "cover") { cls = "v-cover";
+      why.push(shot.vantage ? V.cubiertoAventajado(c.id) : V.cubierto(c.id, RULES.cover.range)); }
+    else { cls = "v-valid"; why.push(V.limpio); }
+    if (shot.accurate) why.push(V.certera(shot.accurate));
+    if (RULES.orders && state.target.order === "conceal" && !c && shot.kind === "clear") why.push(V.ocultoSinCobertura);
+    if (RULES.cover.voidWithin > 0 && s.gap <= RULES.cover.voidWithin) why.push(V.muyCerca(RULES.cover.voidWithin));
   }
-  why.push(`range ${Math.max(0, s.gap).toFixed(1)}" base-to-base`);
+  why.push(V.distancia(s.gap));
   const no = cannotShoot(selEye());
-  const head = no ? `<div class="why"><b>${state.sel.name} can't Shoot</b> — ${noShootWhy(no)}</div>` : "";
+  const head = no ? `<div class="why">${V.noPuede(state.sel.name, noShootWhy(no))}</div>` : "";
   v.innerHTML = `${head}<div class="big ${cls}">${big}</div><div class="why">${state.sel.name} → ${state.target.name} · ${why.join(" · ")}</div>`;
 }
 // the selected operative as a shooter, where it stands
 const selEye = () => ({x: state.sel.x, y: state.sel.y, team: state.sel.team, op: state.sel});
 // why an operative can't take a Shoot action at all
-const noShootWhy = n => n.why === "conceal" ? "it is on Conceal" : `within control range of ${n.by.name}`;
+const noShootWhy = n => n.why === "conceal" ? T.disparo.noPuede.conceal : T.disparo.noPuede.engaged(n.by.name);
 // one short reason per judgement, for the valid-shots list and the log
 function shotWhy(s) {
-  const c = s.sight.coverBy, o = s.sight.obscBy, acc = s.accurate ? `; Accurate ${s.accurate} from a Vantage Point` : "";
-  if (s.kind === "clear") return "no cover, not obscured";
-  if (s.kind === "cover") return s.vantage ? `on Conceal behind ${c.id}, seen past from a Vantage Point` : `${c.id} within ${fmtIn(RULES.cover.range)}″ of it${acc}`;
-  if (s.kind === "obscured") return `heavy terrain ${o.id} in the way${c ? `; also in cover (${c.id})` : ""}`;
-  if (s.kind === "concealed") return `on Conceal, in cover (${c.id})`;
-  if (s.kind === "engaged") return `in melee with ${s.engagedBy.name}`;
-  return "every line blocked by walls or heavy terrain";
+  const c = s.sight.coverBy, o = s.sight.obscBy, P = T.disparo.porque;
+  if (s.kind === "clear") return P.clear;
+  if (s.kind === "cover") return s.vantage ? P.coverVantage(c.id) : P.cover(c.id, RULES.cover.range, s.accurate);
+  if (s.kind === "obscured") return P.obscured(o.id, c && c.id);
+  if (s.kind === "concealed") return P.concealed(c.id);
+  if (s.kind === "engaged") return P.engaged(s.engagedBy.name);
+  return P.hidden;
 }
 
 // The valid-shots summary: every enemy from the selected operative (or its landing spot
@@ -281,17 +277,16 @@ export function renderShots(eye) {
   if (!box) return;
   let html;
   if (!eye) html = state.drag && state.drag.active
-    ? '<span class="hint">No legal landing spot — no shots to show.</span>'
+    ? `<span class="hint">${T.blancos.sinLlegada}</span>`
     : `<span class="hint">${T.blancos.ayuda}</span>`;
   else {
     const list = [...shotsFrom(eye)].sort((p, q) => SHOT_ORDER.indexOf(p.kind) - SHOT_ORDER.indexOf(q.kind) || p.range - q.range);
     const valid = list.filter(s => SHOT_KINDS[s.kind].valid).length, no = cannotShoot(eye);
-    html = `<div class="shothead">${eye.op.name}${eye.landing ? " at the landing spot" : ""} · ` +
-      `<b>${valid}</b> valid target${valid === 1 ? "" : "s"} of ${list.length}` +
-      `${no ? ` · <b>can't Shoot</b>: ${noShootWhy(no)}` : ""}</div><ul class="shotlist">` +
+    html = `<div class="shothead">${T.blancos.cabecera(eye.op.name, eye.landing, valid, list.length)}` +
+      `${no ? T.blancos.noPuede(noShootWhy(no)) : ""}</div><ul class="shotlist">` +
       list.map(s => `<li data-shot="${s.kind}" data-oid="${s.target.id}"><i style="background:${SHOT_COL[s.kind]}"></i>` +
-        `<b>${s.target.id} ${s.target.name}</b> <span class="k-${s.kind}">${SHOT_KINDS[s.kind].label}</span>` +
-        `${s.kind === "hidden" ? "" : ` · ${s.range.toFixed(1)}″`}<span class="why"> — ${shotWhy(s)}</span></li>`).join("") + "</ul>";
+        `<b>${s.target.id} ${s.target.name}</b> <span class="k-${s.kind}">${T.disparo.tipo[s.kind]}</span>` +
+        `${s.kind === "hidden" ? "" : ` · ${pulg(s.range)}`}<span class="why"> — ${shotWhy(s)}</span></li>`).join("") + "</ul>";
   }
   if (box._html !== html) { box.innerHTML = html; box._html = html; }
 }
@@ -307,7 +302,7 @@ export function endActivation(op) {
   if (!op || !op.alive || !op.ready || !mayControl(op)) return;
   snapshot(); op.ready = false; op.ap = op.apl; op.used = [];
   if (state.sel === op) state.moveType = "reposition";
-  logLine(`<b>${op.name}</b> activation ends.`); cancelMode(); renderAll();
+  logLine(T.activacion.termina(op.name)); cancelMode(); renderAll();
 }
 // Something to undo: the operative has acted, or is expended.
 export const canUndoActivation = op => !!op && op.alive && (!untouched(op) || orderChanged(op));
@@ -320,7 +315,7 @@ export function undoActivation(op) {
   if (here) { op.x = st.x; op.y = st.y; op.z = st.z; if (RULES.orders) op.order = st.order; }
   op.ready = true; op.ap = op.apl; op.used = [];
   if (state.sel === op) state.moveType = "reposition";
-  logLine(`<b>${op.name}</b> activation undone${here ? " — back where it started" : ""}, ready again.`);
+  logLine(T.activacion.deshecha(op.name, here));
   cancelMode(); refreshSight(); renderAll();
 }
 // Take an operative off the table as incapacitated (down = true), or put it back (with at
@@ -332,19 +327,19 @@ export function setIncapacitated(op, down) {
   if (!down) {
     useBase(opR(op));
     spot = nearestFree(op.x, op.y, op.id, opLayer(op), 3);
-    if (!spot) { logLine(`No room to put <b>${op.name}</b> back where it was — clear the spot first.`); return; }
+    if (!spot) { logLine(T.activacion.sinEspacio(op.name)); return; }
   }
   snapshot();
   op.alive = !down;
   if (down) {
     if (state.sel === op) state.sel = null;
     if (state.target === op) state.target = null;
-    logLine(`<b>${op.name}</b> is incapacitated — off the table.`, true);
+    logLine(T.activacion.fuera(op.name), true);
   } else {
     const moved = Math.hypot(spot[0] - op.x, spot[1] - op.y) > 1e-6;
     op.x = spot[0]; op.y = spot[1];
     op.wounds = Math.max(1, op.wounds);
-    logLine(`<b>${op.name}</b> is back on the table (${op.wounds}W)${moved ? ", moved aside: its spot was taken" : ""}.`);
+    logLine(T.activacion.vuelve(op.name, op.wounds, moved));
   }
   cancelMode(); refreshSight(); renderAll();
 }
@@ -360,7 +355,7 @@ export function toggleOrder(oid) {
   snapshot();
   o.order = o.order === "conceal" ? "engage" : "conceal";
   refreshSight();
-  logLine(`<b>${o.name}</b> order: ${o.order === "conceal" ? "◖ Conceal" : "▲ Engage"}.`);
-  hint(`${o.name} is now on ${o.order === "conceal" ? "Conceal (dome token — safe in cover, can't shoot/charge)" : "Engage (starburst token + hot glow — can shoot and charge)"}.`);
+  logLine(T.orden.log(o.name, o.order));
+  hint(T.orden.ayuda(o.name, o.order));
   renderAll();
 }

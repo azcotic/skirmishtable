@@ -16,6 +16,7 @@ import { BH, BW, DECOR, DROPZONES, MAP, OBJECTIVES, OPS, OVERHEAD, TERRAIN } fro
 import { pump } from '../net/sync.js';
 import { NS, el, svg } from './dom.js';
 import { RULES, fmtIn, moveLabel } from '../rules/index.js';
+import { T, pulg } from '../i18n/es.js';
 import { refreshSight, renderCard, renderShots, renderVerdict, tray } from './panels.js';
 import { opsState } from './ops.js';
 import { TTS_OPS } from '../data/tts-ops.js';
@@ -26,8 +27,9 @@ import { sync3DOps, sync3DOverlay, three, view3D } from '../view3d/table3d.js';
 let gStatic, gObj, gOps, gOverlay, gTags;
 // how climbing this terrain is priced under the current ruleset
 function climbText(z) {
-  const M = RULES.moves, can = [M.primary, M.secondary, M.charge].filter(m => m && m.climb).map(m => m.label);
-  return `${fmtIn(climbUp(z))}" up + ${fmtIn(climbDown(z))}" down + the distance across (${can.join("/")} only)`;
+  const M = RULES.moves, can = [["reposition", M.primary], ["dash", M.secondary], ["charge", M.charge]]
+    .filter(([, m]) => m && m.climb).map(([t]) => T.mover.nombre[t]);
+  return T.terreno.trepar(climbUp(z), climbDown(z), can);
 }
 export function buildStatic() {
   svg.innerHTML = "";
@@ -56,7 +58,7 @@ export function buildStatic() {
     el("text", {x:px(dz.x+dz.w/2), y: dz.y < BH/2 ? px(Math.min(1.1, dz.y+dz.h-0.4)) : px(BH-0.5),
       "text-anchor":"middle", fill: dz.team===0?"#b4571f":"#4a7a8c",
       "font-family":"'Big Shoulders',sans-serif", "font-size":15, "font-weight":700,
-      "letter-spacing":"2"}, gStatic).textContent = TEAMNAME[dz.team].toUpperCase() + " DROP ZONE";
+      "letter-spacing":"2"}, gStatic).textContent = T.terreno.zonaDescenso(TEAMNAME[dz.team]);
   }
   // terrain: walls as clean strips, rubble as irregular ruin footprints
   el("clipPath", {id:"boardclip"}, gStatic).appendChild(
@@ -86,7 +88,7 @@ export function buildStatic() {
       const r = el("rect", {x:px(d.x), y:px(d.y), width:px(d.w), height:px(d.h), rx:2,
         fill:"#d9b765", "fill-opacity":0.45, stroke:"#b08d3a", "stroke-width":1, "stroke-dasharray":"3 2"}, gStatic);
       const tip = document.createElementNS(NS, "title");
-      tip.textContent = "Fire step · Vantage platform (Insignificant, Exposed) — doesn't block movement or sight";
+      tip.textContent = T.terreno.escalon;
       r.appendChild(tip);
     }
     for (const t of TERRAIN) {
@@ -98,10 +100,10 @@ export function buildStatic() {
             fill: t.hatch ? "#5a5244" : (WALL_FILL[s.z] || "#2b2a26"), "data-tid":t.id}, gStatic);
           const tip = document.createElementNS(NS, "title");
           tip.textContent = t.hatch
-            ? `Hatchway frame · the opening between the stubs is an open access point`
+            ? T.terreno.escotilla
             : t.noclimb
-            ? `Bulkhead wall · ${s.z}" tall · blocks sight & movement · too tall to climb`
-            : `Ruin wall section · ${s.z}" tall · blocks sight · climb over: ${climbText(s.z)}`;
+            ? T.terreno.mampara(s.z)
+            : T.terreno.muro(s.z, climbText(s.z));
           seg.appendChild(tip);
           if (!t.noclimb && (vert ? s.h : s.w) >= 0.9)
             el("text", {x: px(vert ? s.x + s.w + 0.15 : s.x + s.w/2),
@@ -123,8 +125,8 @@ export function buildStatic() {
       }
       const tip = document.createElementNS(NS, "title");
       tip.textContent = t.kind === "heavy"
-        ? `Heavy terrain · ${t.z}" tall · blocks sight, obscures at range, gives cover · climb over: ${climbText(t.z)}`
-        : `Light terrain · ${t.z}" tall · gives cover, doesn't block sight · climb over: ${climbText(t.z)}`;
+        ? T.terreno.pesado(t.z, climbText(t.z))
+        : T.terreno.ligero(t.z, climbText(t.z));
       elBody.appendChild(tip);
     }
   }
@@ -144,8 +146,7 @@ function renderFineTerrain() {
   el("line", {x1:1, y1:0, x2:1, y2:7, stroke:"#9fb5cb", "stroke-width":2}, pat);
   if (OVERHEAD.length)
     tip(el("path", {d: OVERHEAD.map(r => rp(r)).join(""), fill:"url(#ovhatch)", opacity:0.8}, gStatic),
-      `Upper floor · open ground underneath, and operatives can climb up onto it (${RULES.moves.primary.label}${RULES.moves.charge ? "/" + RULES.moves.charge.label : ""}: the height, ` +
-      `at least 2"; dropping off is free up to 2" an action) — hold Shift while dragging to aim for the floor, or point at it on the 3D table. Up here is a Vantage Point; sight is still judged on the table's plan`);
+      T.terreno.pisoSuperior(T.mover.nombre.reposition + (RULES.moves.charge ? "/" + T.mover.nombre.charge : "")));
   const byKZ = new Map();
   for (const t of TERRAIN) { const key = t.kind + "|" + t.z; if (!byKZ.has(key)) byKZ.set(key, []); byKZ.get(key).push(t); }
   const gShadow = el("g", {opacity:0.16, "clip-path":"url(#boardclip)"}, gStatic);
@@ -158,7 +159,7 @@ function renderFineTerrain() {
   }
   if (DECOR.length)
     tip(el("path", {d: DECOR.map(r => rp(r)).join(""), fill:"#d9b765", "fill-opacity":0.6, stroke:"#b08d3a", "stroke-width":0.6}, gStatic),
-      "Fire step · Vantage platform (Insignificant, Exposed) — doesn't block movement or sight");
+      T.terreno.escalon);
   const WALL_FILL = z => z <= 2 ? "#4a453d" : z === 3 ? "#2e2c28" : z === 4 ? "#1f1e1a" : "#121110";
   const order = [...byKZ.keys()].sort((a, b) => {
     const rank = {light: 0, heavy: 1, wall: 2};
@@ -169,10 +170,10 @@ function renderFineTerrain() {
     const [kind, zs] = key.split("|"), z = +zs, list = byKZ.get(key);
     const fill = kind === "wall" ? WALL_FILL(z) : kind === "heavy" ? (z >= 3 ? "#354b3b" : "#41584a") : "#86a389";
     const text = kind === "wall"
-      ? `Ruin wall · ${z}" tall · blocks sight · climb over: ${climbText(z)}`
+      ? T.terreno.muro(z, climbText(z))
       : kind === "heavy"
-      ? `Heavy terrain · ${z}" tall · blocks sight, obscures at range, gives cover · climb over: ${climbText(z)}`
-      : `Light terrain · ${z}" tall · gives cover, doesn't block sight · climb over: ${climbText(z)}`;
+      ? T.terreno.pesado(z, climbText(z))
+      : T.terreno.ligero(z, climbText(z));
     tip(el("path", {d: list.map(t => rp(t)).join(""), fill, stroke: fill, "stroke-width":0.6, "data-kind":kind}, gStatic), text);
   }
   for (const p of MAP.place || []) {        // rubble heights, as on the rect maps
@@ -199,7 +200,7 @@ function renderObjectives() {
       "stroke-dasharray": owner===-1 ? "3 4" : "none", opacity:.9}, gObj);
     el("text", {x:px(o.x), y:px(o.y)+4, "text-anchor":"middle", fill:"#5a5040",
       "font-family":"'JetBrains Mono',monospace", "font-size":10, "font-weight":600}, gObj)
-      .textContent = owner===-1 ? "—" : `${contest[owner]}APL`;
+      .textContent = owner===-1 ? "—" : T.terreno.objetivo(contest[owner]);
   }
 }
 function star4(cx, cy, ro, ri) { // four-pointed spiked star (official engage icon)
@@ -365,15 +366,16 @@ function renderShadows(eye) {
 export function dragLabelText() {
   const d = state.drag;
   const chained = d.total > d.primAllow + 1e-9 && d.p2;
+  const M = T.mover;
   let txt = chained
-    ? `${moveLabel(d.p1.type)} ${fmtIn(d.primAllow)}" + ${moveLabel(d.p2.type)} ${fmtIn(d.total - d.primAllow)}"/${fmtIn(d.secAllow)}"`
-    : `${moveLabel(d.p1.type)} ${fmtIn(d.total)}" / ${fmtIn(d.primAllow)}"`;
-  if (d.goalZ) txt += ` ▲${fmtIn(d.goalZ)}″ ${LEVELS[d.goalLayer - 1].name}`;
-  else if (d.path && opLayer(d.op)) txt += " ▼ table";
-  if (d.partial) txt += " (closest reachable)";
-  else if (d.clamped && d.total >= d.primAllow + d.secAllow - 1e-9) txt += " (max)";
-  if (!d.valid) txt += ` — ${d.why || "occupied"}`;
-  else if (d.foes && d.foes.length) txt += ` → ${d.foes.map(f => f.name).join(", ")}`;
+    ? M.etiquetaDoble(d.p1.type, d.primAllow, d.p2.type, d.total - d.primAllow, d.secAllow)
+    : M.etiqueta(d.p1.type, d.total, d.primAllow);
+  if (d.goalZ) txt += M.alPiso(d.goalZ, LEVELS[d.goalLayer - 1].name);
+  else if (d.path && opLayer(d.op)) txt += M.aLaMesa;
+  if (d.partial) txt += M.parcial;
+  else if (d.clamped && d.total >= d.primAllow + d.secAllow - 1e-9) txt += M.maximo;
+  if (!d.valid) txt += ` — ${M.motivo[d.why || "occupied"]}`;
+  else if (d.foes && d.foes.length) txt += M.contra(d.foes.map(f => f.name));
   return txt;
 }
 // A charging enemy's route to the ghost, moving from the enemy towards it in the picked
@@ -478,9 +480,9 @@ export function renderOverlay(cursor) {
             stroke: st.kind === "drop" ? "#3f7bb5" : "#b5731f", "stroke-width":3, "stroke-dasharray":"3 3"}, gOverlay);
           // climb label sits below the rungs on a light backing, clear of the move label above
           const lx = px((st.x1+st.x2)/2), ly = px(Math.max(st.y1, st.y2)) + 22;
-          const ltxt = (st.kind === "up" ? `▲${fmtIn(st.up)}″ up onto the floor`
-            : st.kind === "drop" ? `▼ drop ${st.climb}″ (${fmtIn(st.down)}″ counted)`
-            : `▲${fmtIn(st.up)}″ up ▼${fmtIn(st.down)}″ down`) + ` + across = ${fmtIn(st.cost)}″${st.pad ? ` (incl. ${fmtIn(st.pad)}″ wait)` : ""}`;
+          const ltxt = (st.kind === "up" ? T.mover.tramoSube(st.up)
+            : st.kind === "drop" ? T.mover.tramoBaja(st.climb, st.down)
+            : T.mover.tramoCruza(st.up, st.down)) + T.mover.tramoTotal(st.cost, st.pad);
           el("rect", {x: lx - ltxt.length * 3.85 - 6, y: ly - 13, width: ltxt.length * 7.7 + 12, height: 18, rx: 4,
             fill:"#fbf6ea", "fill-opacity":0.92, stroke:"#b5731f", "stroke-width":1}, gOverlay);
           el("text", {x: lx, y: ly, "text-anchor":"middle", fill:"#8a5414",
@@ -521,7 +523,7 @@ export function renderOverlay(cursor) {
         stroke:"#cf4f37", "stroke-width":1.5, "stroke-dasharray":"3 3"}, gOverlay);
       el("text", {x:px(state.drag.goal[0])+16, y:px(state.drag.goal[1])-12, fill:"#cf4f37",
         "font-family":"'JetBrains Mono',monospace", "font-size":13, "font-weight":600}, gOverlay)
-        .textContent = "blocked";
+        .textContent = T.mover.bloqueado;
     }
   }
   // the chosen target's sight cone, and the terrain that gives it cover or obscures it

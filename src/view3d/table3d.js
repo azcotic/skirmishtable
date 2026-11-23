@@ -16,6 +16,7 @@ import { engagements } from '../engine/engage.js';
 import { opsState, placeMarkerAt } from '../ui/ops.js';
 import { TTS_OPS } from '../data/tts-ops.js';
 import { hint } from '../ui/dom.js';
+import { T } from '../i18n/es.js';
 import { armDrag, opMenuAt, setBoardPicker } from '../ui/input.js';
 import { closeOpMenu } from '../ui/opmenu.js';
 import { SHOT_KINDS, shotsFrom } from '../engine/shots.js';
@@ -313,7 +314,7 @@ function sightShade(g, eye) {
 const shotTagMat = {};
 function shotTag(kind) {
   if (!shotTagMat[kind]) {
-    const s = textSprite(SHOT_KINDS[kind].tag, "#f5e9d8", SHOT_COL[kind], 0.6);
+    const s = textSprite(T.disparo.etiqueta[kind], "#f5e9d8", SHOT_COL[kind], 0.6);
     s.material.userData.shared = true;
     shotTagMat[kind] = s;
   }
@@ -523,7 +524,7 @@ export function sync3DOverlay() {
       engageRing(g, d.goal[0], d.goal[1], BR, gz);
       for (const f of foes) engageRing(g, f.x, f.y, opR(f), f.z);
     }
-    const label = cachedText(d.path ? dragLabelText() : "blocked", d.valid && d.path ? "#f5e9d8" : "#ffb4a6", "rgba(20,17,14,0.82)", 0.8);
+    const label = cachedText(d.path ? dragLabelText() : T.mover.bloqueado, d.valid && d.path ? "#f5e9d8" : "#ffb4a6", "rgba(20,17,14,0.82)", 0.8);
     label.position.set(d.goal[0], gz + 2.6, d.goal[1]);
     g.add(label);
     if (threat && d.path) threatGhost(g, threat.at, d.goal, BR, gz, threat.routes);
@@ -910,14 +911,14 @@ export function flashOp3D(op) {
 }
 // The TTS models aren't on this server (third-party assets): say so instead of silently
 // showing block terrain, and offer to load them from Steam.
-const NOTE_NO_MODELS = `Block terrain: this site doesn't host the TTS models. Load them straight from Steam (${Math.round(steamBytes / 1e6)} MB, once).`;
-const NOTE3D = "Drag an operative to move it · drag the table to orbit, scroll to zoom, WASD to pan · the ruler is on the 2D map.";
+const NOTE_NO_MODELS = T.vista.sinModelos(Math.round(steamBytes / 1e6));
+const NOTE3D = T.vista.nota3d;
 function showModels(note) {
   const btn = document.getElementById("loadtts");
   btn.style.display = "none";
   progress.onChange = () => {
     const pct = progress.total ? Math.min(100, Math.round(100 * progress.loaded / progress.total)) : 100;
-    if (pct < 100) note.textContent = `Loading the TTS models and textures… ${pct}% of ${(progress.total / 1e6).toFixed(0)} MB`;
+    if (pct < 100) note.textContent = T.vista.cargando(pct, (progress.total / 1e6).toFixed(0));
     else if (progress.failed) {
       // say so (blocks and cylinders stand in) rather than leave a bare table; the console has the cause
       note.textContent = `${progress.failed} download${progress.failed > 1 ? "s" : ""} from Steam failed: blocks stand in. Check the connection, or an ad/content blocker on cdn.steamusercontent.com.`;
@@ -946,7 +947,7 @@ export function setView(to3d) {
       if (m && view3D) showModels(note);
       else if (!m) {
         ensureMeshPack();
-        if (view3D) { note.textContent = NOTE_NO_MODELS; Object.assign(document.getElementById("loadtts"), { textContent: "Load from Steam" }).style.display = ""; }
+        if (view3D) { note.textContent = NOTE_NO_MODELS; Object.assign(document.getElementById("loadtts"), { textContent: T.vista.descargarSteam }).style.display = ""; }
       }
     });
     setBoardPicker(groundPick);

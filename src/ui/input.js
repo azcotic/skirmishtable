@@ -13,6 +13,7 @@ import { BH, BW, OPS } from '../engine/world.js';
 import { RULES, fmtIn, moveSpec } from '../rules/index.js';
 import { renderAll, renderOverlay } from './board.js';
 import { hint, logLine, svg } from './dom.js';
+import { T } from '../i18n/es.js';
 import { cancelMode, defaultMoveType, refreshSight, snapshot, toggleOrder } from './panels.js';
 import { mayControl } from '../net/sync.js';
 import { cancelMarker, placeMarkerAt } from './ops.js';
@@ -32,7 +33,7 @@ export function setBoardPicker(fn) { pickBoard = fn || svgPoint; }
 // browser's native dblclick never fires on the replaced node.
 let lastTokenClick = {oid: null, t: 0};
 
-const measuring = () => RULES.increment > 0 ? `measured in ${fmtIn(RULES.increment)}″ increments` : "measured exactly";
+const measuring = () => T.mover.medida(RULES.increment);
 
 // pointerdown on a token: arm a drag (it activates once the pointer moves a little)
 export function armDrag(op, ev, from3d = false) {
@@ -120,8 +121,8 @@ function planDrag(x, y, hint, up) {
     d.secAllow = pl.p2 ? pl.p2.allow : 0;
     d.foes = foesNear(end[0], end[1], d.op.team, d.op.id, R, d.goalZ);
     d.why = placeBlocked(end[0], end[1], d.op.id, d.goalLayer) ? "occupied"
-      : charging && !d.foes.length ? "a Charge must end within engagement range"
-      : !charging && (d.foes.length || intoFoes) && RULES.moves.charge ? "engagement range — can't Charge after moving"
+      : charging && !d.foes.length ? "chargeNoFoe"
+      : !charging && (d.foes.length || intoFoes) && RULES.moves.charge ? "engagedAfterMove"
       : null;
     d.valid = !d.why;
   } else {
@@ -138,8 +139,8 @@ function planDrag(x, y, hint, up) {
 function landDrag(d) {
   if (!d.valid || !d.path || !d.goal) {
     hint(d.why && d.why !== "blocked" && d.why !== "occupied"
-      ? `No landing there — ${d.why}. Move cancelled.`
-      : "No landing there — blocked or unreachable. Move cancelled.");
+      ? T.mover.sinLlegada(T.mover.motivo[d.why])
+      : T.mover.sinLlegadaBloqueado);
     renderAll(); return;
   }
   const chained = d.total > d.primAllow + 1e-9 && d.p2;
@@ -150,36 +151,36 @@ function landDrag(d) {
   const charged = d.p1.type === "charge";
   if (charged && RULES.orders && d.op.order === "conceal") {   // only an operative on Engage may charge
     d.op.order = "engage";
-    logLine(`<b>${d.op.name}</b> flips to ▲ Engage to charge.`);
+    logLine(T.orden.pasaATrabarse(d.op.name));
   }
   d.op.ap -= chained ? 2 : 1;
   d.op.used.push(d.p1.type);
   if (chained) d.op.used.push(d.p2.type);
-  const verb = t => moveSpec(t).verb;
-  const climbNote = vert.length ? ` incl. ${vert.map(st => st.kind === "up"
-      ? `climbing ${st.climb}" onto ${st.level.name}'s upper floor (${fmtIn(st.up)}")`
-      : st.kind === "drop" ? `dropping ${st.climb}" off ${st.level.name} (${fmtIn(st.down)}" counted)`
-      : `climbing over ${st.climb}" terrain (${fmtIn(st.up)}" up, ${fmtIn(st.down)}" down)`).join(", then ")}` : "";
-  const repeatNote = repeat ? ' <span class="crit">— repeated move action, players adjudicate</span>' : "";
+  const TM = T.mover;
+  const climbNote = vert.length ? TM.incluye(vert.map(st => st.kind === "up"
+      ? TM.trepaSube(st.climb, st.level.name, st.up)
+      : st.kind === "drop" ? TM.trepaBaja(st.climb, st.level.name, st.down)
+      : TM.trepaCruza(st.climb, st.up, st.down))) : "";
+  const notas = climbNote + (repeat ? TM.repetida : "");
   logLine(chained
-    ? `<b>${d.op.name}</b> ${verb(d.p1.type)} ${fmtIn(d.primAllow)}" then ${verb(d.p2.type)} ${fmtIn(d.total - d.primAllow)}" (2AP)${climbNote}${repeatNote}.`
-    : `<b>${d.op.name}</b> ${verb(d.p1.type)} ${fmtIn(d.total)}" (${fmtIn(d.primAllow)}" allowed)${climbNote}${repeatNote}.`);
+    ? TM.logDoble(d.op.name, d.p1.type, d.primAllow, d.p2.type, d.total - d.primAllow, notas)
+    : TM.log(d.op.name, d.p1.type, d.total, d.primAllow, notas));
   const enemies = OPS.filter(o => o.alive && o.team !== d.op.team && opGap(d.op, o) <= CTRL + 1e-9);
-  if (enemies.length) logLine(`${d.op.name} is now in engagement range of ${enemies.map(e => e.name).join(", ")}.`);
+  if (enemies.length) logLine(TM.enZona(d.op.name, enemies.map(e => e.name)));
   // auto-advance to the other movement of the activation: main move ①, then secondary ②
   const M = RULES.moves;
   const slot1Used = d.op.used.includes("reposition") || d.op.used.includes("charge");
   if (charged) {
     state.moveType = "reposition";
-    hint(`${d.op.name} charged into ${enemies.map(e => e.name).join(", ")} — Fight!`);
+    hint(TM.cargo(d.op.name, enemies.map(e => e.name)));
   } else if (state.moveType !== "dash" && !d.op.used.includes("dash")) {
     state.moveType = "dash";
-    hint(`${d.op.name}: movement ② still available — drag again to ${M.secondary.label} ${fmtIn(M.secondary.allow(d.op))}".`);
+    hint(TM.quedaMov2(d.op.name, M.secondary.allow(d.op)));
   } else if (state.moveType === "dash" && !slot1Used) {
     state.moveType = "reposition";
-    hint(`${d.op.name}: movement ① still available — drag again to ${M.primary.label} ${fmtIn(M.primary.allow(d.op))}".`);
+    hint(TM.quedaMov1(d.op.name, M.primary.allow(d.op)));
   } else {
-    hint(`${d.op.name}: both movements used this activation.`);
+    hint(TM.ambosUsados(d.op.name));
   }
   renderAll();
 }
@@ -197,11 +198,11 @@ export function clickOp(oid) {
   if (!o || !o.alive) return;
   if (state.sel && o.team !== state.sel.team && (state.mode === "target" || state.mode === null)) {
     state.target = o; refreshSight(); renderAll();
-    if (state.mode === "target") hint("Verdict panel explains the call. Shoot if you like the odds.");
+    if (state.mode === "target") hint(T.seleccion.evaluado);
     return;
   }
   state.sel = o; state.target = null; state.lastShot = null; state.moveType = defaultMoveType(o); cancelMode();
-  hint(`${o.name} selected — drag to move, Target for line of sight${RULES.orders ? ", or double-click to toggle its order" : ""}.`);
+  hint(T.seleccion.elegido(o.name, !!RULES.orders));
   renderAll();
 }
 
@@ -238,11 +239,11 @@ export function wireInput() {
     if (!d.active) {
       if (Math.hypot(ev.clientX - d.cx0, ev.clientY - d.cy0) < 6) return;
       if (!mayControl(d.op)) {     // online: not yours to move; letting go still counts as a tap
-        hint(`${d.op.name} belongs to the other player.`); return;
+        hint(T.mover.deOtro(d.op.name)); return;
       }
       d.active = true;
       if (state.sel !== d.op) { state.sel = d.op; state.target = null; state.lastShot = null; state.moveType = defaultMoveType(d.op); }
-      hint(`${d.op.name}: release to ${(moveSpec(state.moveType) || RULES.moves.primary).label.toLowerCase()} — route ${measuring()}.${RULES.moves.charge ? ` Ending within ${fmtIn(CTRL)}″ of an enemy makes it a ${RULES.moves.charge.label}.` : ""}${LEVELS.length && !d.from3d ? " Hold Shift to climb onto an upper floor." : ""}`);
+      hint(T.mover.soltar(d.op.name, moveSpec(state.moveType) ? state.moveType : "reposition", measuring(), RULES.moves.charge ? CTRL : 0, LEVELS.length && !d.from3d));
       renderAll();
     }
     const p = pickBoard(ev);
@@ -261,7 +262,7 @@ export function wireInput() {
     if (!state.drag || ev.pointerId !== state.drag.pid) return;
     const wasActive = state.drag.active;
     state.drag = null;
-    if (wasActive) { hint("Move cancelled."); renderAll(); }
+    if (wasActive) { hint(T.mover.cancelado); renderAll(); }
   });
   svg.addEventListener("click", ev => {
     if (state.suppressClick) return;

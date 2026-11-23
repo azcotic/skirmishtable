@@ -8,6 +8,7 @@ import { BH, BW, MAP, MAPS, OPS, TERRAIN, buildWorld, rosterDefs, scatterRoster 
 import { convertGallowdark, convertVolkusBag, findVolkusBags, parseBSON } from '../import/tts.js';
 import { buildStatic, renderAll, renderTray } from './board.js';
 import { HINT0, hint, logEl, logLine, svg } from './dom.js';
+import { T } from '../i18n/es.js';
 import { cancelMode, doUndo, snapshot, tray, undoStack } from './panels.js';
 import { build3DScene, setView, three, view3D } from '../view3d/table3d.js';
 import { syncBases } from '../view3d/units.js';
@@ -16,9 +17,9 @@ import { mayPlay, maySetUp, pump, requestUndo } from '../net/sync.js';
 import { restartRecording } from '../net/replayer.js';
 
 // online, only the host sets up the table and only the two players act
-const REPLAYING = "You're watching a replay — press Play on from here, or Leave replay.";
-const setupOnly = () => { if (maySetUp()) return false; hint(state.replay ? REPLAYING : "Online, only the host changes the map, rules or resets."); return true; };
-const playOnly = () => { if (mayPlay()) return false; hint(state.replay ? REPLAYING : "You're watching — only the two players can do that."); return true; };
+const REPLAYING = T.partida.viendoGrabacion;
+const setupOnly = () => { if (maySetUp()) return false; hint(state.replay ? REPLAYING : T.partida.soloAnfitrion); return true; };
+const playOnly = () => { if (mayPlay()) return false; hint(state.replay ? REPLAYING : T.partida.soloJugadores); return true; };
 
 // Demo set-up (for now): most operatives start scattered over the board, mostly near
 // cover, instead of in their drop zones. ?deploy=zones in the address turns it off.
@@ -40,15 +41,11 @@ export function loadMap(keyOrMap) {
   if (three) build3DScene();
   const walls = TERRAIN.filter(t => t.kind === "wall").length;
   const hatches = Math.round(TERRAIN.filter(t => t.hatch).length / 2);
-  const deploy = MAP.dropEdge === "long" ? 'long-edge deployment, 3" zones' : 'short-edge deployment, ' + (MAP.dropDepth || 6) + '" zones';
+  const deploy = MAP.dropEdge === "long" ? T.partida.despliegueLargo : T.partida.despliegueCorto(MAP.dropDepth || 6);
   document.getElementById("mapnote").textContent = MAP.fine
-    ? `${MAP.name} · ${BW}"×${BH}" · ${deploy} · ${FEATS.length - 1} terrain pieces, footprints traced from the TTS scans at 0.1" — ` +
-      `bases fit any doorway, alcove or nook they really fit; blue hatch = upper floor you can stand under or climb onto (Shift-drag)` +
-      (MAP.source ? ` · ${MAP.source}` : "")
-    : `${MAP.name} · ${BW}"×${BH}" · ${deploy} · ${walls} wall pieces` +
-      (hatches ? ` · ${hatches} hatchways (lighter stubs = open access points)` : "") +
-      (MAP.source ? ` · ${MAP.source}` : "");
-  logLine(`<b>Killzone loaded:</b> ${MAP.name}${MAP.source ? ` <span class="dice">(${MAP.source})</span>` : ""}.`);
+    ? T.partida.notaFina(MAP.name, BW, BH, deploy, FEATS.length - 1, MAP.source)
+    : T.partida.notaMuros(MAP.name, BW, BH, deploy, walls, hatches, MAP.source);
+  logLine(T.partida.zonaCargada(MAP.name, MAP.source));
 }
 // Rules picker: switching rules restarts the current map (base size, climbing costs and
 // movement change the routing data).
@@ -79,7 +76,7 @@ function renderMapButtons() {
   const rows = new Map();
   for (const [key, m] of Object.entries(MAPS)) {
     if (!m) continue;
-    const group = m.group || "Imported";
+    const group = m.group || T.partida.importados;
     if (!rows.has(group)) {
       const row = document.createElement("div"); row.className = "maprow";
       const lab = document.createElement("span"); lab.className = "mapgroup"; lab.textContent = group;
@@ -106,13 +103,13 @@ async function importTTSFile(file) {
     for (const b of vbags.slice(0, 12)) {
       try {
         const key = "imp" + (n + 1);
-        MAPS[key] = convertVolkusBag(b, b.Nickname || "Imported " + (n + 1));
+        MAPS[key] = convertVolkusBag(b, b.Nickname || T.partida.importado(n + 1));
         n++; if (!first) first = key;
       } catch (e) {}
     }
     if (first) {
       loadMap(first);
-      if (n > 1) logLine(`Imported <b>${n}</b> Volkus layouts from this save — they're all in the killzone list.`);
+      if (n > 1) logLine(T.partida.importVarios(n));
       return;
     }
   }
@@ -128,10 +125,10 @@ export function wireControls() {
   document.getElementById("endtp").onclick = () => {
     if (playOnly()) return;
     snapshot();
-    if (tray.tp >= 4) { logLine("<b>Battle ends after turning point 4.</b> Count your VP!"); return; }
+    if (tray.tp >= 4) { logLine(T.partida.finBatalla); return; }
     tray.tp += 1; tray.cp[0] += 1; tray.cp[1] += 1;
     OPS.forEach(o => { o.ready = true; o.ap = o.apl; o.used = []; });
-    logLine(`<b>Turning point ${tray.tp}.</b> All operatives readied, +1CP each (initiative player would get 1, other 2 — adjust to taste).`);
+    logLine(T.partida.nuevoPI(tray.tp));
     renderAll();
   };
   document.getElementById("undo").onclick = () => { if (!playOnly() && !requestUndo()) doUndo(); };
@@ -139,12 +136,12 @@ export function wireControls() {
   document.getElementById("rulerbtn").onclick = () => {
     if (view3D && state.mode !== "ruler") setView(false);   // the ruler lives on the 2D map
     state.mode = state.mode === "ruler" ? null : "ruler"; state.rulerPts = [];
-    hint(state.mode === "ruler" ? "Ruler: click two points to measure. Esc to exit." : HINT0);
+    hint(state.mode === "ruler" ? T.partida.regla : HINT0);
     renderAll();
   };
   for (const [id, team, key] of [["cpa",0,"cp"],["cpb",1,"cp"],["vpa",0,"vp"],["vpb",1,"vp"]]) {
     document.getElementById(id).style.cursor = "pointer";
-    document.getElementById(id).title = "click +1 · shift-click −1";
+    document.getElementById(id).title = T.partida.contadorTitulo;
     document.getElementById(id).onclick = ev => {
       if (playOnly()) return;
       tray[key][team] = Math.max(0, tray[key][team] + (ev.shiftKey ? -1 : 1)); renderTray(); pump();
@@ -156,8 +153,8 @@ export function wireControls() {
     if (!f) return;
     try { await importTTSFile(f); }
     catch (e) {
-      logLine(`<span class="crit">Import failed:</span> ${String(e && e.message || e)}`);
-      hint("Couldn't read that file as a Tabletop Simulator save.");
+      logLine(T.partida.importFallo(String(e && e.message || e)));
+      hint(T.partida.importNoLeido);
     }
     ev.target.value = "";
   });

@@ -30,6 +30,7 @@ import * as rules from './rules/index.js';
 import { minis, onMinisChange } from './view3d/units.js';
 import { TTS_TEAMS } from './data/tts-teams.js';
 import { aplicarTextos } from './i18n/aplicar.js';
+import { T } from './i18n/es.js';
 
 aplicarTextos();                 // textos de index.html desde src/i18n/es.js
 wireInput();
@@ -46,9 +47,7 @@ onMinisChange(bases => { if (bases) { renderAll(); renderMinis(); } });   // a m
 world.initMaps();
 useRuleset("killteam", false);
 loadMap("v1");
-logLine("Volkus Approved Ops map 1 — every piece's footprint is traced from the Tabletop Simulator scans at 0.1″, so doorways, alcoves and the ground under upper floors are real space: drag an operative into a nook and it stays there if a 28mm base fits. All twelve Volkus Approved Ops layouts (2024 and 2025) are built in — no import needed; pick one in the killzone list.");
-logLine("Rules: Kill Team (2024). The Rules panel switches to an Infinity-style ruleset or the made-up Ashfall house rules — the same table, terrain and routing, different movement, climbing and cover.");
-logLine("Try: drag an operative on the 3D table — over a wall it climbs, into a nook it fits. Drag empty table to orbit; Top-down looks straight down.");
+for (const l of T.partida.bienvenida) logLine(l);
 renderAll();
 renderMinis();
 wireDice(side => mayPlay() && (!online() || net.seat === side));   // a dice box per side: online, roll in your own

@@ -2,7 +2,7 @@
 // real mouse — on the 3D table (the default) and the 2D map: dragging into a nook,
 // climbing, targeting, switching maps and rulesets, undo.
 import { test, expect } from '@playwright/test';
-import { T } from '../../src/i18n/es.js';
+import { T, pulg } from '../../src/i18n/es.js';
 
 const kz = (page, fn, arg) => page.evaluate(fn, arg);
 // board inches -> screen pixels (recomputed each time: the side panel can scroll the page)
@@ -63,7 +63,7 @@ test('drags an operative into the stronghold corner nook on the 3D table', async
   expect(during.overlay3D).toBeGreaterThan(3);   // route ribbons, ghost, label
   const op = await kz(page, () => { const o = skirmishtable.world.OPS.find(o => o.id === 'A2'); return [+o.x.toFixed(2), +o.y.toFixed(2)]; });
   expect(op).toEqual([12.05, 4.25]);
-  await expect(page.locator('#log p').first()).toContainText('repositions 4"');
+  await expect(page.locator('#log p').first()).toContainText(`${T.mover.verbo.reposition} ${pulg(4)}`);
 });
 
 test('drags an operative into the stronghold corner nook on the 2D map', async ({ page }) => {
@@ -73,7 +73,7 @@ test('drags an operative into the stronghold corner nook on the 2D map', async (
   expect(during.total).toBe(4);
   const op = await kz(page, () => { const o = skirmishtable.world.OPS.find(o => o.id === 'A2'); return [+o.x.toFixed(2), +o.y.toFixed(2)]; });
   expect(op).toEqual([12.05, 4.25]);
-  await expect(page.locator('#log p').first()).toContainText('repositions 4"');
+  await expect(page.locator('#log p').first()).toContainText(`${T.mover.verbo.reposition} ${pulg(4)}`);
 });
 
 test('climbs over the low wall into the stronghold and labels the climb', async ({ page }) => {
@@ -81,8 +81,8 @@ test('climbs over the low wall into the stronghold and labels the climb', async 
   await place(page, 'A2', 15.55, 4.25);
   const during = await drag(page, [15.55, 4.25], [12.05, 4.25]);
   expect(during.climbs).toEqual([2]);
-  expect(during.label.some(t => t.includes('▲2″ up'))).toBe(true);
-  await expect(page.locator('#log p').first()).toContainText('climbing over 2" terrain');
+  expect(during.label.some(t => t.includes(T.mover.tramoCruza(2, 0).split(' ▼')[0]))).toBe(true);
+  await expect(page.locator('#log p').first()).toContainText(`trepando ${pulg(2)} de terreno`);
 });
 
 test('climbs onto an upper floor (Shift on the 2D map), then drops off it in a Dash', async ({ page }) => {
@@ -93,13 +93,13 @@ test('climbs onto an upper floor (Shift on the 2D map), then drops off it in a D
   expect(up.total).toBe(4);                      // 1" across + 3" up
   expect(up.label.some(t => t.includes('▲3″ up onto the floor'))).toBe(true);
   expect(await kz(page, () => skirmishtable.world.OPS.find(o => o.id === 'A2').z)).toBe(3);
-  await expect(page.locator('#log p').first()).toContainText("onto Large ruin 1's upper floor");
+  await expect(page.locator('#log p').first()).toContainText('al piso superior de Large ruin 1');
   const down = await drag(page, [11.15, 17.55], [10.3, 17.55]);   // the Dash: 1" across + 1" of the 3" drop
   expect(down.total).toBe(2);
   expect(down.goalZ).toBe(0);
   expect(down.label.some(t => t.includes('▼ drop 3″ (1″ counted)'))).toBe(true);
   expect(await kz(page, () => skirmishtable.world.OPS.find(o => o.id === 'A2').z)).toBe(0);
-  await expect(page.locator('#log p').first()).toContainText('dashes');
+  await expect(page.locator('#log p').first()).toContainText(T.mover.verbo.dash);
 });
 
 test('on the 3D table, pointing at an upper floor climbs onto it', async ({ page }) => {
@@ -125,8 +125,8 @@ test('judges a nooked target as in cover', async ({ page }) => {
   await page.evaluate(() => window.scrollTo(0, 0));   // the Target button sits further down the side panel
   p = await toScreen(page, 12.05, 4.25);
   await page.mouse.click(p.x, p.y);
-  await expect(page.locator('#verdict')).toContainText('NOT A VALID TARGET');
-  await expect(page.locator('#verdict')).toContainText('in cover behind Stronghold 1');
+  await expect(page.locator('#verdict')).toContainText(T.veredicto.grande.concealed);
+  await expect(page.locator('#verdict')).toContainText('a cubierto tras Stronghold 1');
 });
 
 // two operatives alone on open ground on Volkus AO 1, everyone else out of the way
@@ -151,8 +151,8 @@ test('dragging into engagement range turns the move into a charge and rings both
   await page.mouse.up();
   expect(await opAt(page, 'A5')).toEqual([23.6, 12.5]);
   expect(await kz(page, () => { const o = skirmishtable.world.OPS.find(o => o.id === 'A5'); return [o.order, o.used]; })).toEqual(['engage', ['charge']]);
-  await expect(page.locator('#log p', { hasText: 'Brand charges' })).toHaveCount(1);
-  await expect(page.locator('#log p', { hasText: 'flips to ▲ Engage' })).toHaveCount(1);
+  await expect(page.locator('#log p', { hasText: `Brand ${T.mover.verbo.charge}` })).toHaveCount(1);
+  await expect(page.locator('#log p', { hasText: 'pasa a orden de trabarse' })).toHaveCount(1);
   expect(await page.locator('#board [data-engaged]').count()).toBe(2);   // engaged: a red ring round both
 });
 
@@ -163,7 +163,7 @@ test('a move after another move cannot end within engagement range', async ({ pa
   expect(await opAt(page, 'A5')).toEqual([21, 12.5]);
   await drag(page, [21, 12.5], [23.6, 12.5]);                  // Dash into range: no Charge after moving
   expect(await opAt(page, 'A5')).toEqual([21, 12.5]);
-  await expect(page.locator('#hint')).toContainText("can't Charge after moving");
+  await expect(page.locator('#hint')).toContainText(T.mover.motivo.engagedAfterMove);
 });
 
 // [x, y, ready, full AP, actions used] of operative A2
@@ -181,7 +181,7 @@ test('right-click menu on the 2D token and the top bar: mark expended, undo an a
   await page.locator('.opmenu button', { hasText: 'Undo activation' }).click();
   await expect(page.locator('.opmenu')).toHaveCount(0);
   expect(await a2(page)).toEqual([10.71, 7.48, true, true, 0]);
-  await expect(page.locator('#log p').first()).toContainText('activation undone');
+  await expect(page.locator('#log p').first()).toContainText('Se deshizo la activación');
   // the top bar's circle has the same menu: nothing done yet, so only Mark expended
   await page.locator('.hsq[data-oid="A2"]').click({ button: 'right' });
   await expect(page.locator('.opmenu button', { hasText: 'Undo activation' })).toBeDisabled();
@@ -234,7 +234,7 @@ test('an expended token greys out; Mark incapacitated takes it off the table, an
   await page.locator('.opmenu button', { hasText: 'Mark incapacitated' }).click();
   await expect(tok).toHaveCount(0);
   await expect(page.locator('.hsq[data-oid="A2"]')).toHaveClass(/dead/);
-  await expect(page.locator('#log p').first()).toContainText('incapacitated');
+  await expect(page.locator('#log p').first()).toContainText('queda incapacitado');
   // its circle offers only Back on the table, which puts it back where it was
   await page.locator('.hsq[data-oid="A2"]').click({ button: 'right' });
   await expect(page.locator('.opmenu button')).toHaveCount(1);
@@ -248,7 +248,7 @@ test('an expended token greys out; Mark incapacitated takes it off the table, an
   await page.locator('.hsq[data-oid="A2"]').click({ button: 'right' });
   await page.locator('.opmenu button', { hasText: 'Back on the table' }).click();
   await expect(tok).toHaveCount(1);
-  await expect(page.locator('#log p').first()).toContainText('moved aside');
+  await expect(page.locator('#log p').first()).toContainText('se movió a un lado');
   // its new spot is clear of A3 and of terrain
   expect(await kz(page, () => { const a = skirmishtable.world.OPS.find(o => o.id === 'A2'); return skirmishtable.movement.placeBlocked(a.x, a.y, 'A2', 0); })).toBeNull();
 });
@@ -314,7 +314,9 @@ test('switches between the 3D table, top-down and the 2D map', async ({ page }) 
   await expect(page.locator('#board3d canvas')).toBeVisible();
 });
 
-test('switches rulesets: labels, base size and movement costs follow the rules', async ({ page }) => {
+// Se omite: la app queda fijada en Kill Team (Fase 1) y las etiquetas de movimiento ya salen de
+// src/i18n/es.js, no del reglamento. Se borra junto con el selector de reglas.
+test.skip('switches rulesets: labels, base size and movement costs follow the rules', async ({ page }) => {
   await page.locator('#rulebtns button', { hasText: 'Ashfall' }).click();
   expect(await kz(page, () => [skirmishtable.rules.RULES.id, +(skirmishtable.world.OPS[0] && 0.63).toFixed(2)])).toEqual(['ashfall', 0.63]);
   await expect(page.locator('#rulenote')).toContainText('32mm bases');

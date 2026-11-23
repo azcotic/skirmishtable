@@ -1,6 +1,7 @@
 // Fair dice online: host and guest in two tabs (`?net=local`, see online.spec.js). Every
 // roll is a shared commit-reveal roll; each browser checks the other's dice and wounds.
 import { test, expect } from '@playwright/test';
+import { T } from '../../src/i18n/es.js';
 
 const tray = (p, s) => p.evaluate(s => skirmishtable.diceTrays[s].dice.join(''), s);
 const wounds = (p, id) => p.evaluate(id => skirmishtable.world.OPS.find(o => o.id === id).wounds, id);
@@ -80,7 +81,7 @@ test("a guest's shot: both browsers agree on the dice and the damage", async ({ 
 
   // a shared roll can't be undone
   await guest.locator('#undo').click();
-  await expect(guest.locator('#hint')).toContainText("can't be taken back");
+  await expect(guest.locator('#hint')).toContainText(T.deshacer.nadaEnLinea);
 
   for (const p of [host, guest]) await expect(log(p)).not.toContainText('⚠');
   expect(errors).toEqual([]);

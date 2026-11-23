@@ -138,6 +138,9 @@ export const T = {
     cenitalTitulo: 'Mira la mesa desde arriba (vuelve a tocar para la vista inclinada)',
     descargarSteam: 'Descargar de Steam',
     descargarSteamTitulo: 'Descarga a este navegador los escaneos y texturas exactos de Tabletop Simulator desde el CDN de Steam Workshop. Este sitio no los aloja.',
+    nota3d: 'Arrastra un agente para moverlo · arrastra la mesa para girarla, usa la rueda para acercar y WASD para desplazarte · la regla está en el mapa 2D.',
+    sinModelos: mb => `Terreno en bloques: este sitio no aloja los modelos de TTS. Descárgalos directamente de Steam (${mb} MB, una sola vez).`,
+    cargando: (pct, mb) => `Descargando los modelos y texturas de TTS… ${pct} % de ${mb} MB`,
   },
 
   anillos: {
@@ -198,16 +201,230 @@ export const T = {
     importarTitulo: 'Abre una partida guardada de Tabletop Simulator (.json) o un WorkshopUpload (BSON) con un mapa de Gallowdark',
   },
 
+  // ficha del agente seleccionado (panel Agente)
   ficha: {
     vacia: 'Nada seleccionado.',
     apuntar: 'Apuntar',
+    usado: G.usado.es,
+    lesionado: G.lesionado.es,
+    stat: { lpa: G.lpa.abrev, mov: 'Mov.', salv: 'Salv.', heridas: G.heridas.es, pa: `${G.pa.abrev} libres`, movs: 'Movs.' },
+    dosMovimientos: (prim, carga, sec) => `Dos movimientos por activación: ① ${prim}${carga ? ` (o ${carga})` : ''} y ② ${sec}`,
+    menosHerida: '−1 H',
+    menosHeridaTitulo: 'Recibe 1 de daño (queda en el registro)',
+    masHerida: '+1 H',
+    masHeridaTitulo: 'Recupera 1 herida (queda en el registro)',
+    terminar: 'Terminar activación',
+    apuntarBoton: 'Apuntar ⌖',
+    disparar: `${G.disparar.es} 1 ${G.pa.abrev}`,
+    combatir: `${G.combatir.es} 1 ${G.pa.abrev}`,
+    movTitulo: (pulgadas, trepa) => `1 ${G.pa.abrev} · mueve hasta ${pulg(pulgadas)} · ${trepa ? 'puede trepar' : 'no puede trepar'}`,
+    cargaTitulo: pulgadas => `1 ${G.pa.abrev} · mueve hasta ${pulg(pulgadas)}; debe terminar en la ${G.zonaControl.es} de un enemigo`,
+    cargaRestringida: `No puedes ${G.cargar.es} en una activación en la que ya te moviste`,
+    reglas: reglas => reglas.map(r => REGLAS_ARMA[r] || r).join(', '),
+  },
+
+  orden: {
+    boton: orden => orden === 'conceal' ? `◖ ${G.ocultarse.es}` : `▲ ${G.trabarse.es}`,
+    log: (n, orden) => `<b>${n}</b> pasa a orden de ${orden === 'conceal' ? 'ocultarse ◖' : 'trabarse ▲'}.`,
+    ayuda: (n, orden) => orden === 'conceal'
+      ? `${n} tiene ahora orden de ocultarse (ficha de cúpula): a salvo a cubierto, pero no puede ${G.disparar.es} ni ${G.cargar.es}.`
+      : `${n} tiene ahora orden de trabarse (ficha de estrella y brillo): puede ${G.disparar.es} y ${G.cargar.es}.`,
+    pasaATrabarse: n => `<b>${n}</b> pasa a orden de trabarse ▲ para cargar.`,
+  },
+
+  // movimiento: botones, etiqueta del arrastre, pistas y registro
+  mover: {
+    nombre: { reposition: G.reposicionarse.es, dash: G.correr.es, charge: G.cargar.es },
+    verbo: { reposition: G.reposicionarse.verbo, dash: G.correr.verbo, charge: G.cargar.verbo },
+    motivo: {
+      occupied: 'ocupado',
+      blocked: 'bloqueado',
+      chargeNoFoe: `una carga debe terminar en la ${G.zonaControl.es} de un enemigo`,
+      engagedAfterMove: `${G.zonaControl.es} enemiga: no puedes ${G.cargar.es} después de moverte`,
+    },
+    bloqueado: 'bloqueado',
+    // etiqueta junto al fantasma mientras arrastras
+    etiqueta: (tipo, recorrido, permitido) => `${T.mover.nombre[tipo]} ${pulg(recorrido)} / ${pulg(permitido)}`,
+    etiquetaDoble: (t1, a1, t2, a2, max2) => `${T.mover.nombre[t1]} ${pulg(a1)} + ${T.mover.nombre[t2]} ${pulg(a2)}/${pulg(max2)}`,
+    alPiso: (z, nivel) => ` ▲${pulg(z)} ${nivel}`,
+    aLaMesa: ' ▼ mesa',
+    parcial: ' (lo más cerca posible)',
+    maximo: ' (máx.)',
+    contra: nombres => ` → ${nombres.join(', ')}`,
+    // tramos de trepar sobre el mapa 2D
+    tramoSube: up => `▲${pulg(up)} al piso superior`,
+    tramoBaja: (caida, cuenta) => `▼ bajada de ${pulg(caida)} (cuentan ${pulg(cuenta)})`,
+    tramoCruza: (up, down) => `▲${pulg(up)} sube ▼${pulg(down)} baja`,
+    tramoTotal: (costo, espera) => ` + cruce = ${pulg(costo)}${espera ? ` (incl. ${pulg(espera)} de espera)` : ''}`,
+    // registro
+    trepaSube: (h, nivel, up) => `trepando ${pulg(h)} al piso superior de ${nivel} (${pulg(up)})`,
+    trepaBaja: (h, nivel, down) => `bajando ${pulg(h)} de ${nivel} (cuentan ${pulg(down)})`,
+    trepaCruza: (h, up, down) => `trepando ${pulg(h)} de terreno (${pulg(up)} de subida, ${pulg(down)} de bajada)`,
+    incluye: partes => `, incluye ${partes.join(', luego ')}`,
+    repetida: ' <span class="crit">— acción de movimiento repetida; lo deciden los jugadores</span>',
+    log: (n, tipo, recorrido, permitido, notas) => `<b>${n}</b> ${T.mover.verbo[tipo]} ${pulg(recorrido)} (${pulg(permitido)} permitidas)${notas}.`,
+    logDoble: (n, t1, a1, t2, a2, notas) => `<b>${n}</b> ${T.mover.verbo[t1]} ${pulg(a1)} y luego ${T.mover.verbo[t2]} ${pulg(a2)} (2 ${G.pa.abrev})${notas}.`,
+    enZona: (n, enemigos) => `${n} queda en la ${G.zonaControl.es} de ${enemigos.join(', ')}.`,
+    // pistas
+    sinLlegada: motivo => `No puedes terminar ahí: ${motivo}. Movimiento cancelado.`,
+    sinLlegadaBloqueado: 'No puedes terminar ahí: está bloqueado o no se alcanza. Movimiento cancelado.',
+    cargo: (n, enemigos) => `${n} cargó contra ${enemigos.join(', ')}: ¡a ${G.combatir.es}!`,
+    quedaMov2: (n, pulgadas) => `${n}: aún le queda el movimiento ②; arrastra de nuevo para ${G.correr.es} ${pulg(pulgadas)}.`,
+    quedaMov1: (n, pulgadas) => `${n}: aún le queda el movimiento ①; arrastra de nuevo para ${G.reposicionarse.es} ${pulg(pulgadas)}.`,
+    ambosUsados: n => `${n}: ya usó los dos movimientos de esta activación.`,
+    medida: inc => inc > 0 ? `medida en tramos de ${pulg(inc)}` : 'medida exacta',
+    soltar: (n, tipo, medida, carga, shift) => `${n}: suelta para ${T.mover.nombre[tipo]}; ruta ${medida}.` +
+      (carga ? ` Si terminas a ${pulg(carga)} o menos de un enemigo, se convierte en ${G.cargar.es}.` : '') +
+      (shift ? ' Mantén Mayús para trepar a un piso superior.' : ''),
+    deOtro: n => `${n} es del otro jugador.`,
+    cancelado: 'Movimiento cancelado.',
+    yaUsado: accion => `Ya usaste ${accion} en esta activación: arrastrar de nuevo lo repetiría (lo deciden los jugadores).`,
+    elegido: (accion, n, pulgadas) => `${accion} elegido: arrastra a ${n || 'un agente'} para moverlo (hasta ${pulg(pulgadas)}).`,
+  },
+
+  seleccion: {
+    elegido: (n, ordenes) => `${n} seleccionado: arrástralo para moverlo o toca Apuntar para ver la línea de visión${ordenes ? '; tócalo dos veces para cambiar su orden' : ''}.`,
+    apuntando: 'Toca un agente enemigo para evaluar la línea de visión.',
+    evaluado: `El panel Veredicto explica la decisión. ${G.disparar.es} si te convencen las probabilidades.`,
+  },
+
+  // tipos de disparo (clave = kind del motor, src/engine/shots.js)
+  disparo: {
+    tipo: {
+      clear: 'Disparo limpio', cover: G.aCubierto.es[0].toUpperCase() + G.aCubierto.es.slice(1), obscured: 'Ofuscado',
+      concealed: 'No es blanco válido (ocultarse + cobertura)', engaged: 'No es blanco válido (en combate con un aliado)',
+      hidden: 'No visible',
+    },
+    etiqueta: { clear: 'LIMPIO', cover: 'CUBIERTO', obscured: 'OFUSCADO', concealed: 'OCULTO', engaged: 'EN COMBATE', hidden: 'SIN LDV' },
+    noPuede: { conceal: 'tiene orden de ocultarse', engaged: n => `está en la ${G.zonaControl.es} de ${n}` },
+    // motivo corto, para la lista de blancos y el registro
+    porque: {
+      clear: 'sin cobertura ni ofuscación',
+      coverVantage: id => `con orden de ocultarse tras ${id}, visto desde terreno aventajado`,
+      cover: (id, rango, certera) => `${id} a ${pulg(rango)} o menos de él${certera ? `; Certera ${certera} desde terreno aventajado` : ''}`,
+      obscured: (id, cubre) => `terreno pesado ${id} en medio${cubre ? `; además a cubierto (${cubre})` : ''}`,
+      concealed: id => `con orden de ocultarse, a cubierto (${id})`,
+      engaged: n => `en combate con ${n}`,
+      hidden: 'todas las líneas están bloqueadas por muros o terreno pesado',
+    },
+    sinBlanco: 'sin blanco',
+    armaDeCombate: `El arma seleccionada es de combate: usa ${G.combatir.es}.`,
+    noPuedeLog: (n, motivo) => `<b>${n}</b> no puede ${G.disparar.es}: ${motivo}.`,
+    noValido: (n, motivo) => `<b>${n}</b> no es un ${G.blancoValido.es}: ${motivo}.`,
+    yaNo: n => `El disparo de <b>${n}</b> ya no es posible: no se tira.`,
+    aunNo: motivo => `Aún no puedes disparar: ${motivo}.`,
+    tiradaAtq: n => `${n} dispara`,
+    tiradaDef: (n, cobertura) => `${n} salva${cobertura ? ' (+cobertura)' : ''}`,
+    log: (a, b, arma, atq, def, cobertura, dano, notas) =>
+      `<b>${a}</b> dispara a <b>${b}</b> con ${arma} — <span class="dice">atq [${atq}] def [${def}${cobertura ? ' +cobertura' : ''}]</span> → ` +
+      `<b>${dano} de daño</b>${notas.length ? ` <span class='dice'>(${notas.map(T.disparo.nota).join('; ')})</span>` : ''}`,
+    // notas que devuelve el motor (src/engine/dice.js) en inglés
+    nota: s => /^Accurate (\d+)$/.test(s) ? s.replace(/^Accurate/, 'Certera')
+      : ({ 'obscured: crits downgraded, one success discarded': 'ofuscado: los críticos pasan a normales y se descarta un éxito',
+           'cover save banked': 'salvación por cobertura guardada' })[s] || s,
+  },
+
+  combate: {
+    fueraDeZona: rango => `El blanco no está en la ${G.zonaControl.es} (${pulg(rango)}).`,
+    yaNo: n => `El combate de <b>${n}</b> ya no es posible: no se tira.`,
+    aunNo: motivo => `Aún no puedes combatir: ${motivo}.`,
+    tiradaAtq: n => `${n} combate`,
+    tiradaDef: n => `${n} contraataca`,
+    log: (a, b, dadosA, dadosB, hA, hB) =>
+      `<b>${a}</b> combate contra <b>${b}</b> — <span class="dice">${a} [${dadosA}] vs ${b} [${dadosB}]</span> → ${a} ${hA} H, ${b} ${hB} H`,
+    cae: n => ` — <b>¡${n} cae!</b>`,
+  },
+
+  heridas: {
+    log: (n, h, max, dano) => `[${h}/${max}] <b>${n}</b> ${dano ? 'recibió daño' : 'se recuperó'}`,
+    incapacitado: ' — <b>¡incapacitado!</b>',
+    lesionado: ` — ${G.lesionado.es}`,
+  },
+
+  activacion: {
+    termina: n => `<b>${n}</b> termina su activación.`,
+    deshecha: (n, volvio) => `Se deshizo la activación de <b>${n}</b>${volvio ? '; vuelve a donde empezó' : ''} y queda apostado de nuevo.`,
+    sinEspacio: n => `No hay espacio para devolver a <b>${n}</b> a donde estaba: despeja el lugar primero.`,
+    fuera: n => `<b>${n}</b> queda incapacitado y sale de la mesa.`,
+    vuelve: (n, h, movido) => `<b>${n}</b> vuelve a la mesa (${h} H)${movido ? '; se movió a un lado porque su lugar estaba ocupado' : ''}.`,
+  },
+
+  deshacer: {
+    nada: 'No hay nada que deshacer.',
+    nadaEnLinea: 'No hay nada que deshacer. En línea, una tirada compartida no se puede deshacer.',
+    hecho: 'Se deshizo la última acción.',
   },
 
   blancos: {
     ayuda: 'Selecciona o arrastra un agente para ver a qué puede disparar.',
+    sinLlegada: 'No hay dónde terminar el movimiento: no hay disparos que mostrar.',
+    cabecera: (n, llegada, validos, total) => `${n}${llegada ? ' en el punto de llegada' : ''} · <b>${validos}</b> ${validos === 1 ? G.blancoValido.es : G.blancoValido.plural} de ${total}`,
+    noPuede: motivo => ` · <b>no puede ${G.disparar.es}</b>: ${motivo}`,
   },
 
   veredicto: {
     ayuda: 'Selecciona un agente, toca Apuntar y luego toca un enemigo.',
+    grande: {
+      engaged: 'NO ES BLANCO VÁLIDO: EN COMBATE', hidden: 'NO VISIBLE', obscured: 'VÁLIDO: OFUSCADO',
+      concealed: 'NO ES BLANCO VÁLIDO', cover: 'VÁLIDO: A CUBIERTO', clear: 'BLANCO VÁLIDO',
+    },
+    aliadoCerca: (n, rango) => `el aliado ${n} está a ${pulg(rango)} o menos de él`,
+    sinLinea: 'no hay línea de visión despejada: el terreno la bloquea',
+    ofuscado: (id, desdeTirador, desdeBlanco) => `el terreno pesado ${id} cruza una línea de cobertura a más de ${pulg(desdeTirador)} del tirador y ${pulg(desdeBlanco)} del blanco → se descarta un éxito y los críticos cuentan como normales`,
+    tambienCubierto: (id, aventajado) => `además a cubierto tras ${id}${aventajado ? ' (orden de ocultarse, visto desde terreno aventajado)' : ''} → salvación por cobertura`,
+    oculto: (id, pesado) => `orden de ocultarse + a cubierto tras ${id}${pesado ? ' (pesado)' : ''}`,
+    cubiertoAventajado: id => `orden de ocultarse, pero el disparo baja desde terreno aventajado por encima de la cobertura ligera (${id}) → salvación por cobertura`,
+    cubierto: (id, rango) => `${id} se interpone a ${pulg(rango)} o menos del blanco → salvación por cobertura`,
+    limpio: 'disparo limpio: sin cobertura ni ofuscación',
+    certera: n => `desde terreno aventajado: Certera ${n}`,
+    ocultoSinCobertura: 'orden de ocultarse pero sin cobertura: sigue siendo un blanco válido',
+    muyCerca: rango => `a ${pulg(rango)} o menos: sin cobertura ni ofuscación`,
+    distancia: d => `distancia ${num(Math.max(0, d))}″ entre peanas`,
+    noPuede: (n, motivo) => `<b>${n} no puede ${G.disparar.es}</b>: ${motivo}`,
+  },
+
+  // tooltips y rótulos del mapa 2D
+  terreno: {
+    trepar: (up, down, acciones) => `${pulg(up)} de subida + ${pulg(down)} de bajada + lo que cruza (solo ${acciones.join('/')})`,
+    zonaDescenso: equipo => `ZONA DE DESCENSO ${equipo.toUpperCase()}`,
+    escalon: 'Escalón de tiro · plataforma de terreno aventajado (insignificante, expuesta): no bloquea el movimiento ni la visión',
+    escotilla: 'Marco de escotilla · la abertura entre los tramos es un punto de acceso abierto',
+    mampara: z => `Mampara · ${pulg(z)} de alto · bloquea la visión y el movimiento · demasiado alta para trepar`,
+    muro: (z, trepar) => `Muro de ruina · ${pulg(z)} de alto · bloquea la visión · trepar: ${trepar}`,
+    pesado: (z, trepar) => `Terreno pesado · ${pulg(z)} de alto · bloquea la visión, ofusca a distancia, da cobertura · trepar: ${trepar}`,
+    ligero: (z, trepar) => `Terreno ligero · ${pulg(z)} de alto · da cobertura, no bloquea la visión · trepar: ${trepar}`,
+    pisoSuperior: acciones => `Piso superior · debajo hay suelo libre y los agentes pueden trepar a él (${acciones}: la altura, ` +
+      'mínimo 2″; bajar es gratis hasta 2″ por acción). Mantén Mayús al arrastrar para apuntar al piso, o señálalo en la mesa 3D. ' +
+      'Arriba es terreno aventajado; la visión se sigue evaluando sobre el plano de la mesa.',
+    objetivo: lpa => `${lpa} ${G.lpa.abrev}`,
+  },
+
+  // bandeja, mapas e importación (controls.js)
+  partida: {
+    viendoGrabacion: 'Estás viendo una grabación: sal de ella para jugar.',
+    soloAnfitrion: 'En línea, solo el anfitrión cambia el mapa o las reglas, o reinicia.',
+    soloJugadores: 'Estás mirando: solo los dos jugadores pueden hacer eso.',
+    finBatalla: `<b>La batalla termina después del ${G.puntoInflexion.es} 4.</b> ¡Cuenten sus ${PV}!`,
+    nuevoPI: n => `<b>${G.puntoInflexion.es[0].toUpperCase() + G.puntoInflexion.es.slice(1)} ${n}.</b> Todos los agentes quedan apostados; +1 ${PM} cada uno (el jugador con la iniciativa recibiría 1 y el otro 2: ajústalo a mano).`,
+    regla: 'Regla: toca dos puntos para medir. Esc para salir.',
+    contadorTitulo: 'toca para +1 · Mayús + clic para −1',
+    importFallo: msg => `<span class="crit">Falló la importación:</span> ${msg}`,
+    importNoLeido: 'No se pudo leer ese archivo como partida guardada de Tabletop Simulator.',
+    importVarios: n => `Se importaron <b>${n}</b> despliegues de Volkus de esta partida: están todos en la lista de zonas de aniquilación.`,
+    importados: 'Importados',
+    importado: n => `Importado ${n}`,
+    zonaCargada: (nombre, fuente) => `<b>Zona de aniquilación cargada:</b> ${nombre}${fuente ? ` <span class="dice">(${fuente})</span>` : ''}.`,
+    despliegueLargo: 'despliegue por el borde largo, zonas de 3″',
+    despliegueCorto: fondo => `despliegue por el borde corto, zonas de ${pulg(fondo)}`,
+    notaFina: (nombre, ancho, alto, despliegue, piezas, fuente) => `${nombre} · ${ancho}″×${alto}″ · ${despliegue} · ${piezas} piezas de terreno, con la huella trazada de los escaneos de TTS a 0,1″: ` +
+      'las peanas caben en cualquier puerta, hueco o rincón donde realmente quepan; el rayado azul es un piso superior bajo el que puedes estar o al que puedes trepar (Mayús + arrastrar)' +
+      (fuente ? ` · ${fuente}` : ''),
+    notaMuros: (nombre, ancho, alto, despliegue, muros, escotillas, fuente) => `${nombre} · ${ancho}″×${alto}″ · ${despliegue} · ${muros} tramos de muro` +
+      (escotillas ? ` · ${escotillas} escotillas (los tramos más claros son puntos de acceso abiertos)` : '') + (fuente ? ` · ${fuente}` : ''),
+    bienvenida: [
+      'Volkus Approved Ops, mapa 1: la huella de cada pieza está trazada de los escaneos de Tabletop Simulator a 0,1″, así que puertas, huecos y el suelo bajo los pisos superiores son espacio real. Arrastra un agente a un rincón y se queda ahí si cabe su peana de 28 mm. Los doce despliegues de Volkus Approved Ops (2024 y 2025) ya vienen incluidos; elige uno en la lista de zonas de aniquilación.',
+      'Reglas: Kill Team (2024).',
+      'Prueba: arrastra un agente en la mesa 3D; trepa los muros y entra en los rincones donde cabe. Arrastra la mesa vacía para girarla; Cenital la mira desde arriba.',
+    ],
   },
 };

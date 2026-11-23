@@ -2,6 +2,7 @@
 // WebRTC transport for a BroadcastChannel, so the test needs no public relays; everything
 // above the transport (hosting, joining, seats, the host's check, applying state) is real.
 import { test, expect } from '@playwright/test';
+import { T } from '../../src/i18n/es.js';
 
 const opX = (page, id) => page.evaluate(id => skirmishtable.world.OPS.find(o => o.id === id).x, id);
 // what landDrag does at the end of a move: change the operative, then render
@@ -50,7 +51,7 @@ test('host and guest share one table', async ({ context }) => {
 
   // only the host changes the map
   await guest.locator('#mapbtns button[title="Gallowdark AO2"]').click();
-  await expect(guest.locator('#hint')).toContainText('only the host');
+  await expect(guest.locator('#hint')).toContainText(T.partida.soloAnfitrion);
   expect(await guest.evaluate(() => skirmishtable.world.MAP.name)).toBe('Gallowdark AO1');
 
   expect(errors).toEqual([]);
