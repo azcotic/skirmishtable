@@ -28,6 +28,7 @@ import { wireSidePanel } from './ui/sidepanel.js';
 import { wireAcciones } from './ui/acciones.js';
 import { despliegueActivo, wireDespliegue } from './ui/despliegue.js';
 import { wireVista2D } from './ui/vista2d.js';
+import { wireInicio } from './ui/inicio.js';
 import { cancelMode } from './ui/panels.js';
 import * as table3d from './view3d/table3d.js';
 import * as rules from './rules/index.js';
@@ -67,6 +68,7 @@ wireStatusCards();
 wireNet();                      // host or join if the address says so (#host= / #room=)
 wireShare();                    // or open a shared snapshot (#game=)
 wireReplay();                   // record this game; or open a replay (#replay=)
+wireInicio();                   // pantallas de inicio: modo, mapa, comandos, despliegue (si no hay partida en la dirección)
 // la mesa 3D es la vista por defecto, salvo durante el despliegue (se despliega en el mapa 2D)
 if (window.THREE && THREE.OrbitControls) table3d.setView(!despliegueActivo());
 

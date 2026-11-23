@@ -71,7 +71,7 @@ function tipHTML(op) {
   if (inj) notes.push(T.hud.notaLesionado(effMove(op)));
   if (op.alive && op.used.length) notes.push(T.hud.hizo(op.used));
   return `<div class="tn" style="color:${TEAMCOL_LT[op.team]}">${esc(op.id)} · ${esc(op.name)}</div>` +
-    `<div class="tk">${esc(model || capName(op.kind))}${model ? " · " + esc(op.kind) : ""} · <b class="${st}">${STATUS_LABEL[st]}</b></div>` +
+    `<div class="tk">${esc(model || T.tipos[op.kind] || capName(op.kind))}${model ? " · " + esc(T.tipos[op.kind] || op.kind) : ""} · <b class="${st}">${STATUS_LABEL[st]}</b></div>` +
     `<div class="ts">${stats.map(([k, v]) => `<span><b>${v}</b> ${k}</span>`).join("")}</div>${weapons}` +
     (notes.length ? `<div class="tnote">${notes.map(esc).join("<br>")}</div>` : "");
 }

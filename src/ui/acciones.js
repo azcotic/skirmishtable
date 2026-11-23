@@ -27,9 +27,11 @@ export function renderAcciones() {
     const quitar = document.getElementById("quitarsel");
     if (quitar) quitar.hidden = true;
     bar.classList.remove("con-agente");
+    bar.classList.add("especial");
     if (bar._html !== propio) { bar.innerHTML = propio; bar._html = propio; }
     return;
   }
+  bar.classList.remove("especial");
   const conAgente = !!(state.sel && state.sel.alive);
   const botones = (conAgente ? DEL_AGENTE : DE_LA_PARTIDA).map(([id, extra]) => {
     const src = document.getElementById(id);

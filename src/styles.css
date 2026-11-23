@@ -399,6 +399,7 @@ body { overflow: hidden; overscroll-behavior: none; }
      tablero caería en una fila de alto automático (0 px) */
   display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   grid-template-areas: "top" "nota" "rep" "mesa" "abajo";
+  grid-template-columns: minmax(0, 1fr);   /* nada puede ensanchar la página más que la pantalla */
   height: 100vh; height: 100dvh;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
@@ -457,6 +458,16 @@ body { overflow: hidden; overscroll-behavior: none; }
 .acciones .accion.used { opacity: .6; }
 .acciones .accion.restricted { opacity: .45; }
 .acciones .accion:disabled { opacity: .35; }
+/* modo propio (despliegue): dos filas que se desplazan de lado, botones anchos con dos líneas */
+.abajo, .acciones { min-width: 0; }      /* la barra que se desplaza de lado no estira la página */
+.acciones.especial { grid-auto-flow: column; grid-template-columns: none; grid-template-rows: 44px 44px;
+  grid-auto-columns: minmax(168px, 1fr); overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+.acciones .accion b, .acciones .accion small { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acciones .accion small { font-family: "JetBrains Mono", monospace; font-weight: 400; font-size: 10px; opacity: .8; }
+/* el color del bando que actúa (Ash naranja, Slate azul) */
+.acciones .accion.eq0 { --eq: #e0672f; } .acciones .accion.eq1 { --eq: #5b93a6; }
+.acciones .accion.eq0, .acciones .accion.eq1 { border-color: var(--eq); }
+.acciones .accion.eq0.active, .acciones .accion.eq1.active { background: var(--eq); border-color: var(--eq); color: #14110e; }
 
 .hojatabs { display: flex; gap: 2px; }
 .hojatabs button { flex: 1; min-height: 40px; padding: 0 2px; font-size: 12px; background: transparent; border-color: transparent; }
@@ -500,3 +511,48 @@ body { overflow: hidden; overscroll-behavior: none; }
 
 /* despliegue: los agentes que aún no están en la mesa, en el marcador flotante */
 button.hsq.reserva { border-style: dashed; background: transparent; opacity: .75; }
+
+/* ======================================================================================
+   Pantallas de inicio (src/ui/inicio.js): una decisión por pantalla, botones grandes.
+   ====================================================================================== */
+.inicio {
+  position: fixed; inset: 0; z-index: 100; overflow-y: auto; overscroll-behavior: contain;
+  background: radial-gradient(120% 70% at 50% 0%, #2a1c12 0%, #14110e 60%);
+  padding: calc(12px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+}
+.inicio[hidden] { display: none; }
+.pant { max-width: 560px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; gap: 12px; }
+.pant-cab { display: flex; align-items: center; justify-content: space-between; min-height: 48px; }
+.pant-marca { font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 20px; text-transform: uppercase; letter-spacing: .04em; }
+.pant-marca b { color: #e0672f; }
+.pant-atras { width: 48px; height: 48px; padding: 0; font-size: 22px; border-radius: 50%; }
+.pant-puntos { display: flex; gap: 6px; }
+.pant-puntos i { width: 8px; height: 8px; border-radius: 50%; background: #3a332a; }
+.pant-puntos i.hecho { background: #8a5a36; }
+.pant-puntos i.ahora { background: #e0672f; width: 22px; border-radius: 4px; }
+.pant-titulo { font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 32px; line-height: 1.05;
+  text-transform: uppercase; letter-spacing: .02em; margin: 8px 0 0; color: #f3ece2; }
+.pant-sub { margin: 0; color: #9a9184; }
+.pant-opciones { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.pant-op { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
+  min-height: 72px; padding: 14px 16px; border-radius: 12px; background: #1d1914; border: 1px solid #3a332a; }
+.pant-op:hover, .pant-op.activa { border-color: #e0672f; background: #2a1f17; }
+.pant-op:active { transform: scale(.98); }
+.pant-op:disabled { opacity: .45; }
+.pant-op-t { font-family: "Big Shoulders", sans-serif; font-weight: 700; font-size: 22px; color: #f3ece2; }
+.pant-op-d { font-size: 12px; color: #9a9184; line-height: 1.4; }
+.pant-pronto { position: absolute; top: 12px; right: 12px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+  padding: 2px 8px; border-radius: 10px; background: #3a332a; color: #e8e2d8; }
+.pant-grupo h3 { margin: 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #a89a80; }
+.pant-mapas { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+.pant-mapa { min-height: 56px; border-radius: 10px; font-family: "Big Shoulders", sans-serif; font-weight: 700; font-size: 20px;
+  background: #1d1914; border: 1px solid #3a332a; }
+.pant-mapa.activa, .pant-mapa:hover { border-color: #e0672f; background: #2a1f17; }
+.pant-resumen { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0; padding: 16px; border-radius: 12px;
+  background: #1d1914; border: 1px solid #3a332a; }
+.pant-resumen dt { color: #9a9184; } .pant-resumen dd { margin: 0; font-weight: 600; }
+.pant-link { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #3a332a; background: #1d1914; color: #e8e2d8; font-family: inherit; }
+.pant-pie { margin-top: auto; padding-top: 12px; }
+.pant-jugar { width: 100%; min-height: 60px; border-radius: 14px; border: 0; background: #e0672f; color: #14110e;
+  font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 26px; text-transform: uppercase; letter-spacing: .04em; }
+.pant-jugar:hover { background: #f08a4b; color: #14110e; }

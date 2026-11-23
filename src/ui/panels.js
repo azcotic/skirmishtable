@@ -165,7 +165,7 @@ export function renderCard() {
   const repoUsed = state.sel.used.includes("reposition"), dashUsed = state.sel.used.includes("dash"), chargeUsed = state.sel.used.includes("charge");
   const slot1Used = repoUsed || chargeUsed;
   c.innerHTML = `
-    <div class="opname" style="color:${TEAMCOL_LT[state.sel.team]}">${state.sel.id} · ${state.sel.name} <span class="tag">${state.sel.kind}</span>
+    <div class="opname" style="color:${TEAMCOL_LT[state.sel.team]}">${state.sel.id} · ${state.sel.name} <span class="tag">${T.tipos[state.sel.kind] || state.sel.kind}</span>
       ${inj ? `<span class="tag warn">${T.ficha.lesionado}</span>` : ''} ${state.sel.ready ? '' : `<span class="tag">${T.ficha.usado}</span>`}</div>
     <div class="stats">
       <div><div class="v">${state.sel.apl}</div><div class="k">${T.ficha.stat.lpa}</div></div>

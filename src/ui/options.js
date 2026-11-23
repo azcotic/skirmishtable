@@ -21,7 +21,7 @@ if (!["on", "off"].includes(options.idle)) options.idle = calm ? "off" : "on";
 if (!["turnos", "azar"].includes(options.despliegue)) options.despliegue = "turnos";
 const hooks = [];
 export const onOptionChange = fn => hooks.push(fn);
-function setOption(k, v) {
+export function setOption(k, v) {
   options[k] = v; stored[k] = v;
   try { localStorage.setItem(KEY, JSON.stringify(stored)); } catch (e) { /* private window: just don't remember */ }
   for (const fn of hooks) fn(k);

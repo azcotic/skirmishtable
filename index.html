@@ -16,6 +16,9 @@
      con la pista, la barra de acciones (src/ui/acciones.js) y las pestañas. En teléfono y tablet cada pestaña
      abre una hoja inferior sobre el tablero; desde 1024 px de ancho la hoja es un panel lateral. -->
 
+<!-- pantallas de inicio de partida, una decisión por pantalla (src/ui/inicio.js) -->
+<section id="inicio" class="inicio" hidden aria-live="polite"></section>
+
 <div class="app">
 <header class="topbar">
   <h1>Skirmish<span>Table</span></h1>
@@ -92,6 +95,7 @@
           <button class="mini" id="endtp" data-t="bandeja.finPI" data-t-title="bandeja.finPITitulo"></button>
           <button class="mini" id="undo" data-t="bandeja.deshacer" data-t-title="bandeja.deshacerTitulo"></button>
           <button class="mini" id="reset" data-t="bandeja.reiniciar"></button>
+          <button class="mini" id="nuevapartida" data-t="bandeja.nueva" data-t-title="bandeja.nuevaTitulo"></button>
           <button class="mini" id="rulerbtn" data-t="bandeja.regla" data-t-title="bandeja.reglaTitulo"></button>
         </div>
       </div>
