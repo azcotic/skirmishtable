@@ -17,7 +17,7 @@ import { fairNote, rollFor } from '../net/roll.js';
 import { renderMinis } from './minis.js';
 import { T, pulg } from '../i18n/es.js';
 import { renderAcciones } from './acciones.js';
-import { accionesLegales, puede } from '../game/acciones.js';
+import { accionesLegales, puede, puedeCambiarOrden } from '../game/acciones.js';
 import { conectarTurno, pistaDeTurno, porQueNoActua, puedeActuar, todosUsados } from './turno.js';
 import { control } from './control.js';
 // el agente al que ya se le sugirió terminar su activación por quedarse sin PA
@@ -97,7 +97,7 @@ export function doShoot() {
     let line = T.disparo.log(a.name, b.name, r.w.name, fmtDice(r.atk.dice), fmtDice(r.dfn.dice), r.dfn.cover, r.dmg, r.notes);
     if (b.wounds === 0) { b.alive = false; line += T.heridas.incapacitado; }
     else if (isInjured(b)) line += T.heridas.lesionado;
-    logLine(line + fairNote(n), r.dmg > 0);
+    logLine(line + fairNote(n), r.dmg > 0, true);   // también en un aviso en pantalla
     rolled(n, done);
   });
   if (why) hint(T.disparo.aunNo(why));
@@ -130,7 +130,7 @@ export function doFight() {
     let line = T.combate.log(a.name, b.name, fmtDice(r.ra.dice), fmtDice(r.rb.dice), a.wounds, b.wounds);
     if (!b.alive) line += T.combate.cae(b.name);
     if (!a.alive) line += T.combate.cae(a.name);
-    logLine(line + fairNote(n), true);
+    logLine(line + fairNote(n), true, true);
     rolled(n, done);
   });
   if (why) hint(T.combate.aunNo(why));
@@ -197,7 +197,11 @@ export function renderCard() {
       <button class="mini" id="wup" title="${T.ficha.masHeridaTitulo}" ${state.sel.wounds >= state.sel.maxW ? "disabled" : ""}>${T.ficha.masHerida}</button>
     </div>
     <div class="btnrow">
-      ${RULES.orders ? `<button id="ordbtn">${T.orden.boton(state.sel.order)}</button>` : ""}
+      ${RULES.orders ? (() => {   // la orden actual, y qué hará el botón (o por qué ya no se puede cambiar)
+        const fija = !puedeCambiarOrden(state.sel).ok, o = state.sel.order;
+        return `<button id="ordbtn" class="orden ${o}${fija ? " fijada" : ""}" title="${fija ? T.orden.fijada : T.orden.titulo(o)}"${fija ? " disabled" : ""}>` +
+          `${fija ? T.orden.botonFijo(o) : T.orden.boton(o)}</button>`;
+      })() : ""}
       <button id="endact"${state.sel.ready && state.sel.ap <= 0 ? ' class="sugerido"' : ""}>${T.ficha.terminar}</button>
       <button id="verficha">${T.fichaDatos.ver}</button>
     </div>
@@ -213,7 +217,7 @@ export function renderCard() {
       <button id="shootbtn" ${(!state.target || !state.lastShot || !SHOT_KINDS[state.lastShot.kind].valid || cannotShoot(selEye()) || WPN[state.sel.weapon].type!=="R") ? "disabled" : ""}>${T.ficha.disparar}</button>
       <button id="fightbtn" ${meleeFoes.length ? "" : "disabled"}>${T.ficha.combatir}</button>
     </div>`;
-  if (RULES.orders) c.querySelector("#ordbtn").onclick = () => { snapshot(); state.sel.order = state.sel.order === "conceal" ? "engage" : "conceal"; refreshSight(); renderAll(); };
+  if (RULES.orders) c.querySelector("#ordbtn").onclick = () => toggleOrder(state.sel.id);
   c.querySelector("#endact").onclick = () => endActivation(state.sel);
   c.querySelectorAll("input[name=wpn]").forEach(r => r.onchange = () => { state.sel.weapon = r.value; refreshSight(); renderAll(); });
   c.querySelector("#wdn").onclick = () => adjustWounds(state.sel, -1);
@@ -416,6 +420,7 @@ export function toggleOrder(oid) {
   if (!o || !o.alive || !mayControl(o)) return;
   const noActua = porQueNoActua(o);
   if (noActua) { hint(noActua); return; }
+  if (!puedeCambiarOrden(o).ok) { hint(T.orden.fijada); return; }   // solo al empezar la activación
   snapshot();
   o.order = o.order === "conceal" ? "engage" : "conceal";
   refreshSight();

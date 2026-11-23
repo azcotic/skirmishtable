@@ -59,7 +59,7 @@ export function wireFicha() {
   // "Ver ficha" en las acciones del agente seleccionado (panels.js lo pinta; aquí se atiende para
   // no importar ficha.js desde panels.js, que crearía un ciclo de módulos)
   document.addEventListener("click", ev => {
-    if (ev.target.closest && ev.target.closest("#verficha") && state.sel) abrirFicha(state.sel);
+    if (ev.target.closest && ev.target.closest("#verficha, .verficha") && state.sel) abrirFicha(state.sel);
   });
   dlg.addEventListener("pointerdown", () => { tocadaDesdeQueAbrio = true; });
   dlg.addEventListener("click", ev => {

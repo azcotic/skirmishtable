@@ -445,7 +445,7 @@ body { overflow: hidden; overscroll-behavior: none; }
    la barra cambia de botones, y el tablero no debe moverse ni encogerse bajo el dedo */
 .filapista { display: flex; align-items: center; gap: 6px; min-height: 36px; }
 .filapista .hint { flex: 1 1 auto; min-width: 0; }
-#quitarsel { flex: none; width: 40px; min-height: 36px; font-size: 16px; }
+#quitarsel, #fichasel { flex: none; width: 40px; min-height: 36px; font-size: 16px; }
 .abajo .hint { height: calc(2 * 1.35em); line-height: 1.35; overflow: hidden;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 /* 4 columnas en teléfono; letra condensada para que "Reposicionarse 6″" quepa */
@@ -461,6 +461,28 @@ body { overflow: hidden; overscroll-behavior: none; }
 .acciones .accion:disabled { opacity: .35; }
 .acciones .accion.ia { border-color: #8d5fa8; color: #d9bff0; }
 .acciones .accion.ficha { border-style: dashed; }
+/* la orden: muestra la actual (💀 trabarse en rojo, 🕵️ ocultarse en azul grisáceo) y qué hará */
+#ordbtn.orden, .acciones .accion.orden { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
+#ordbtn.orden .oico, .acciones .accion.orden .oico { font-size: 16px; line-height: 1; }
+#ordbtn.orden small, .acciones .accion.orden small { font-family: "JetBrains Mono", monospace; font-weight: 400; font-size: 9px; opacity: .85; }
+#ordbtn.orden.engage, .acciones .accion.orden.engage { border-color: #c0392b; background: #3a1714; color: #ffd8d2; }
+#ordbtn.orden.conceal, .acciones .accion.orden.conceal { border-color: #5b7f99; background: #18242e; color: #d6e6f2; }
+#ordbtn.orden.fijada, .acciones .accion.orden.fijada { opacity: .75; }
+.acciones .accion.orden { flex-direction: row; gap: 4px; flex-wrap: wrap; }
+.acciones .accion.orden b { display: inline; }
+.acciones .accion.orden small { flex-basis: 100%; }
+
+/* avisos en el centro de la pantalla (dom.js, aviso): los dados se leen sin abrir el registro */
+.avisos { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 80; width: min(92vw, 420px);
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.aviso { pointer-events: auto; padding: 12px 14px; border-radius: 12px; background: rgba(20, 17, 14, .96); color: #f3ece2;
+  border: 1px solid #5a4a3a; box-shadow: 0 10px 30px rgba(0, 0, 0, .55); font-size: 14px; line-height: 1.4;
+  animation: avisoEntra .2s ease-out; transition: opacity .25s, transform .25s; }
+.aviso.golpe { border-color: #e0672f; }
+.aviso .dice { color: #b8ad9e; } .aviso .crit { color: #ff9b6b; font-weight: 700; }
+.aviso.saliendo { opacity: 0; transform: scale(.96); }
+@keyframes avisoEntra { from { opacity: 0; transform: translateY(8px) scale(.97); } }
+@media (prefers-reduced-motion: reduce) { .aviso { animation: none; transition: none; } }
 /* sin PA: "Terminar activación" sugerido */
 .acciones .accion.sugerido, #endact.sugerido, #endtp.sugerido { border-color: #6faf82; background: #24402c; color: #d8f0dc; animation: sugerido 1.2s ease-in-out infinite; }
 @keyframes sugerido { 50% { box-shadow: 0 0 0 3px rgba(111, 175, 130, .45); } }

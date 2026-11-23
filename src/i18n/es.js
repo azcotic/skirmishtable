@@ -263,12 +263,21 @@ export const T = {
   },
 
   orden: {
-    boton: orden => orden === 'conceal' ? `◖ ${G.ocultarse.es}` : `▲ ${G.trabarse.es}`,
-    log: (n, orden) => `<b>${n}</b> pasa a orden de ${orden === 'conceal' ? 'ocultarse ◖' : 'trabarse ▲'}.`,
-    ayuda: (n, orden) => orden === 'conceal'
-      ? `${n} tiene ahora orden de ocultarse (ficha de cúpula): a salvo a cubierto, pero no puede ${G.disparar.es} ni ${G.cargar.es}.`
-      : `${n} tiene ahora orden de trabarse (ficha de estrella y brillo): puede ${G.disparar.es} y ${G.cargar.es}.`,
-    pasaATrabarse: n => `<b>${n}</b> pasa a orden de trabarse ▲ para cargar.`,
+    // 💀 trabarse (activo: dispara, carga, combate) · 🕵️ ocultarse (a salvo a cubierto)
+    icono: { engage: '💀', conceal: '🕵️' },
+    nombre: { engage: G.trabarse.es, conceal: G.ocultarse.es },
+    // el botón muestra la orden actual y qué hará al tocarlo
+    boton: orden => `<span class="oico">${T.orden.icono[orden]}</span><b>${T.orden.nombre[orden]}</b>` +
+      `<small>cambiar a ${T.orden.icono[orden === 'conceal' ? 'engage' : 'conceal']} ${T.orden.nombre[orden === 'conceal' ? 'engage' : 'conceal'].toLowerCase()}</small>`,
+    botonFijo: orden => `<span class="oico">${T.orden.icono[orden]}</span><b>${T.orden.nombre[orden]}</b><small>orden fijada</small>`,
+    titulo: orden => `Orden actual: ${T.orden.nombre[orden].toLowerCase()}. Tócalo para cambiarla a ${T.orden.nombre[orden === 'conceal' ? 'engage' : 'conceal'].toLowerCase()}. Se elige al empezar la activación: puedes cambiarla hasta que el agente haga su primera acción.`,
+    fijada: 'La orden se elige al empezar la activación: este agente ya hizo una acción, así que su orden queda fijada hasta su próxima activación.',
+    log: (n, orden) => `<b>${n}</b> pasa a orden de ${orden === 'conceal' ? 'ocultarse 🕵️' : 'trabarse 💀'}.`,
+    ayuda: (n, orden) => (orden === 'conceal'
+      ? `${n} tiene ahora orden de ocultarse 🕵️: a salvo a cubierto, pero no puede ${G.disparar.es} ni ${G.cargar.es}.`
+      : `${n} tiene ahora orden de trabarse 💀: puede ${G.disparar.es}, ${G.cargar.es} y combatir.`) +
+      ' Puedes volver a cambiarla mientras no haga ninguna acción.',
+    pasaATrabarse: n => `<b>${n}</b> pasa a orden de trabarse 💀 para cargar.`,
   },
 
   // movimiento: botones, etiqueta del arrastre, pistas y registro
@@ -572,6 +581,7 @@ export const T = {
       sinArmaDistancia: 'el arma elegida no es a distancia',
       sinBlanco: `no hay ningún ${G.blancoValido.es}`,
       sinArmaCombate: 'no tiene armas de combate',
+      ordenFijada: 'la orden se elige al empezar la activación y ya hizo una acción',
     },
   },
 
@@ -618,8 +628,8 @@ export const T = {
     aria: (id, n, estado, h, max) => `${id} ${n}, ${estado}${h != null ? `, ${h}/${max} heridas` : ''}`,
     quedan: n => `${n} por activar`,
     stat: { lpa: G.lpa.abrev, mov: 'Mov.', salv: 'Salv.', heridas: G.heridas.es },
-    notaOcultarse: `◖ Ocultarse: no puede ${G.disparar.es} ni ${G.cargar.es}; a salvo a cubierto`,
-    notaTrabarse: `▲ Trabarse: puede ${G.disparar.es} y ${G.cargar.es}`,
+    notaOcultarse: `🕵️ Ocultarse: no puede ${G.disparar.es} ni ${G.cargar.es}; a salvo a cubierto`,
+    notaTrabarse: `💀 Trabarse: puede ${G.disparar.es}, ${G.cargar.es} y combatir`,
     notaLesionado: mov => `Lesionado (menos de la mitad de sus heridas): mueve ${pulg(mov)} y empeora su Impactar`,
     hizo: acciones => `Ya hizo: ${acciones.map(a => T.mover.nombre[a] || ({ shoot: G.disparar.es, fight: G.combatir.es })[a] || a).join(', ')}`,
     hojaTitulo: `Hoja de puntuación: ${PV} de operaciones crítica, táctica y de eliminación por punto de inflexión, y ${PM}`,

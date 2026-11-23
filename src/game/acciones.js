@@ -85,6 +85,16 @@ export function puede(op, accion, ops) {
   return no("desconocida");
 }
 
+// La orden (trabarse u ocultarse) se elige al empezar la activación, antes de la primera acción;
+// mientras no haya hecho ninguna se puede volver a cambiar. Después queda fijada hasta su
+// próxima activación.
+export function puedeCambiarOrden(op) {
+  if (!op || !op.alive) return { ok: false, motivo: "fuera" };
+  if (!op.ready) return { ok: false, motivo: "usado" };
+  if ((op.used && op.used.length) || (op.ap ?? op.apl) < op.apl) return { ok: false, motivo: "ordenFijada" };
+  return { ok: true };
+}
+
 // Todas las acciones con su coste y si se pueden ahora (para la IA y para la interfaz).
 export function accionesLegales(op, ops) {
   return ACCIONES.map(a => ({ accion: a, coste: COSTE[a], ...puede(op, a, ops) }));

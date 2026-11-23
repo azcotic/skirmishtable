@@ -11,7 +11,7 @@ import { state } from '../state.js';
 
 // [id del botón original, clase extra]
 const DEL_AGENTE = [["mv-reposition", "mov"], ["mv-dash", "mov"], ["mv-charge", "mov"], ["ordbtn", ""],
-  ["tgtbtn", ""], ["shootbtn", "fuerte"], ["fightbtn", "fuerte"], ["endact", ""], ["verficha", "ficha"]];
+  ["tgtbtn", ""], ["shootbtn", "fuerte"], ["fightbtn", "fuerte"], ["endact", ""]];
 const DE_LA_PARTIDA = [["endtp", ""], ["undo", ""], ["rulerbtn", ""], ["iasugerir", "ia"]];
 
 let alQuitarSeleccion = () => {};
@@ -24,8 +24,7 @@ export function renderAcciones() {
   if (!bar) return;
   const propio = especial && especial.html();
   if (propio != null) {
-    const quitar = document.getElementById("quitarsel");
-    if (quitar) quitar.hidden = true;
+    for (const id of ["quitarsel", "fichasel"]) { const b = document.getElementById(id); if (b) b.hidden = true; }
     bar.classList.remove("con-agente");
     bar.classList.add("especial");
     if (bar._html !== propio) { bar.innerHTML = propio; bar._html = propio; }
@@ -40,8 +39,8 @@ export function renderAcciones() {
     return `<button class="${cls}" data-press="${id}"${src.title ? ` title="${src.title.replace(/"/g, "&quot;")}"` : ""}` +
       `${src.disabled ? " disabled" : ""}>${src.innerHTML}</button>`;
   });
-  const quitar = document.getElementById("quitarsel");
-  if (quitar) quitar.hidden = !conAgente;
+  // ✕ quitar la selección y 📋 ver su ficha, en la línea de la pista (la barra no cambia de alto)
+  for (const id of ["quitarsel", "fichasel"]) { const b = document.getElementById(id); if (b) b.hidden = !conAgente; }
   const html = botones.join("");
   bar.classList.toggle("con-agente", conAgente);
   if (bar._html !== html) { bar.innerHTML = html; bar._html = html; }

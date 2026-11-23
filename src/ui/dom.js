@@ -9,9 +9,11 @@ export const logEl = document.getElementById("log");
 // tap: online play collects this browser's lines to send; rec: the replay recorder's
 // copy of every game line (replayer.js); mute: lines that stay local
 export const logHooks = { tap: null, rec: null, mute: false };
-export function logLine(html, hit) {
+// conAviso: además del registro, un aviso en el centro de la pantalla (resultados de los dados)
+export function logLine(html, hit, conAviso = false) {
   const p = document.createElement("p"); if (hit) p.className = "hit";
   p.innerHTML = html; logEl.prepend(p);
+  if (conAviso) aviso(html, hit);
   if (logHooks.tap && !logHooks.mute) logHooks.tap(html, !!hit);
   if (logHooks.rec && !logHooks.mute) logHooks.rec(p.textContent);
 }
@@ -32,9 +34,29 @@ export function logRemote(html, hit) {
   const t = document.createElement("template"); t.innerHTML = html;   // inert: nothing loads or runs
   const p = document.createElement("p"); if (hit) p.className = "hit";
   safeCopy(t.content, p); logEl.prepend(p);
+  if (/atq \[| vs /.test(p.textContent)) aviso(p.innerHTML, hit);   // dados del otro jugador
   if (logHooks.rec) logHooks.rec(p.textContent);
 }
 export function hint(t) { document.getElementById("hint").textContent = t; }
+
+// Un aviso en el centro de la pantalla que se quita a los 5 s (o al tocarlo): el resultado de
+// los dados, que en el teléfono no se ve porque el registro está en su pestaña. En escritorio,
+// con el panel lateral a la vista, solo si el panel está plegado.
+const ANCHO = typeof matchMedia === "function" ? matchMedia("(min-width: 1024px)") : { matches: false };
+export function aviso(html, golpe = false) {
+  const caja = document.getElementById("avisos");
+  if (!caja) return;
+  const main = document.querySelector(".main");
+  if (ANCHO.matches && main && !main.classList.contains("folded")) return;
+  const a = document.createElement("div");
+  a.className = "aviso" + (golpe ? " golpe" : "");
+  a.innerHTML = html;
+  const quitar = () => { a.classList.add("saliendo"); setTimeout(() => a.remove(), 250); };
+  a.onclick = quitar;
+  caja.prepend(a);
+  while (caja.children.length > 3) caja.lastElementChild.remove();
+  setTimeout(quitar, 5000);
+}
 
 /* ---------- board rendering ---------- */
 export const svg = document.getElementById("board");
