@@ -776,6 +776,73 @@ body.ancho #panelbtn { display: none; }
 .main.ancho .hoja .hojatabs [data-tab="agente"] { display: none; }
 .main.ancho .hoja .hojacuerpo { flex: 1 1 auto; }
 .main.ancho .hoja .panel[data-tab] { display: none; }
-.main.ancho .hoja[data-tab=partida] .panel[data-tab=partida], .main.ancho .hoja[data-tab=mision] .panel[data-tab=mision],
-.main.ancho .hoja[data-tab=registro] .panel[data-tab=registro], .main.ancho .hoja[data-tab=mas] .panel[data-tab=mas] { display: block; }
+.main.ancho .hoja[data-tab=mision] .panel[data-tab=mision], .main.ancho .hoja[data-tab=registro] .panel[data-tab=registro],
+.main.ancho .hoja[data-tab=mas] .panel[data-tab=mas] { display: block; }
+/* el menú empieza cerrado y abajo: solo las pestañas; al abrir una, ocupa como mucho media columna */
+.main.ancho .hoja[data-tab=""] .hojacuerpo { display: none; }
+.main.ancho .hoja .hojatabs { border-top: 1px solid #2e2921; padding: 6px 8px; }
+.main.ancho .hoja .hojacuerpo { flex: 0 1 46%; border-top: 1px solid #2e2921; }
 .main.ancho .hoja .panel[hidden] { display: none !important; }
+
+/* la lista de unidades de la columna derecha: retrato, nombre, heridas y estado */
+.lista { display: none; }
+.main.ancho .lista { display: flex; flex-direction: column; flex: 1 1 0; min-height: 120px; overflow-y: auto; overscroll-behavior: contain; padding: 8px 10px; gap: 6px; }
+.main.ancho .lista[hidden] { display: none; }
+.lista .lu-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+.lista .lu-cab .mini { min-height: 36px; min-width: 44px; }
+.lista .lu-filas { display: flex; flex-direction: column; gap: 4px; }
+.lista .lu { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 4px 8px; text-align: left; border: 1px solid #3a332a; border-radius: 8px; background: #1b1610; color: inherit; }
+.lista .lu.sel { border-color: #e8722e; background: #3a2a18; }
+.lista .lu.blanco { border-color: #c0392b; }
+.lista .lu.usado { opacity: .6; }
+.lista .lu.muerto { opacity: .35; }
+.lista .lu-cara { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #e8722e; background: #26301f; object-fit: cover; }
+.lista .lu-letra { display: inline-flex; align-items: center; justify-content: center; color: #14110e; font: 800 13px "Big Shoulders", sans-serif; }
+.lista .lu-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.lista .lu-txt b { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lista .lu-txt small { font-size: 11px; color: #9a9184; }
+.lista .lu-barra { display: block; height: 4px; border-radius: 2px; background: #2a241d; overflow: hidden; }
+.lista .lu-barra i { display: block; height: 100%; background: #6faf82; }
+.lista .lu-barra i.herido { background: #d3a04a; }
+
+/* la lista de agentes por desplegar (y la barra de acciones especial): una fila por agente, con su retrato */
+.acc-cara { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 2px solid #e8722e; background: #26301f; object-fit: cover; }
+.acc-letra { display: inline-flex; align-items: center; justify-content: center; color: #14110e; font: 800 12px "Big Shoulders", sans-serif; }
+.acciones .accion .acc-txt { display: flex; flex-direction: column; min-width: 0; text-align: left; }
+.acciones.especial .accion:has(.acc-cara) { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; padding: 2px 8px; text-align: left; }
+.acciones.especial .accion .acc-txt b, .acciones.especial .accion .acc-txt small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.main.ancho .hoja .acciones.especial { grid-template-columns: minmax(0, 1fr); max-height: 46vh; overflow-y: auto; }
+/* despliegue en el escritorio ancho: los agentes por colocar, una fila cada uno con su retrato */
+.main.ancho .hoja .acciones.especial { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: 54px;
+  overflow-x: hidden; overflow-y: auto; max-height: none; flex: 1 1 auto; align-content: start; }
+.main.ancho .hoja .acciones.especial .accion { min-width: 0; }
+
+/* ======================================================================================
+   Teléfono y tablet (< 1024 px): la zona de abajo en dos mitades, como en el escritorio:
+   a la izquierda lo que estás haciendo (el agente: retrato, PA, pista); a la derecha las acciones
+   (o la lista de agentes por desplegar). Las pestañas quedan en una tira debajo.
+   ====================================================================================== */
+.minicard { display: none; }
+@media (max-width: 1023px) {
+  .abajo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "info acc" "tabs tabs"; gap: 4px 8px; align-items: start; }
+  .abajo .filapista { grid-area: info; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; gap: 4px; min-height: 0; max-height: 188px; overflow: hidden; }
+  .abajo .acciones { grid-area: acc; min-width: 0; }
+  .abajo .hojatabs { grid-area: tabs; }
+  .abajo .filapista .pasel { order: 1; flex: 1 1 auto; min-width: 0; }
+  .abajo .filapista #volarsel, .abajo .filapista #fichasel, .abajo .filapista #quitarsel { order: 1; width: 36px; }
+  .abajo .filapista .minicard { order: 2; flex: 1 0 100%; }
+  .abajo .filapista .hint { order: 3; flex: 1 0 100%; height: auto; font-size: 12px; line-height: 1.35; -webkit-line-clamp: 5; }
+  .minicard:not([hidden]) { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border: 1px solid #3a332a; border-radius: 8px; background: #1b1610; }
+  .mc-cara { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 2px solid #e8722e; background: #26301f; object-fit: cover; }
+  .mc-letra { display: inline-flex; align-items: center; justify-content: center; color: #14110e; font: 800 13px "Big Shoulders", sans-serif; }
+  .mc-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+  .mc-txt b { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc-txt small { font-size: 11px; color: #9a9184; }
+  .mc-barra { display: block; height: 4px; border-radius: 2px; background: #2a241d; overflow: hidden; }
+  .mc-barra i { display: block; height: 100%; background: #6faf82; }
+  /* acciones: dos columnas, cuatro filas (arriba movimientos y orden; abajo apuntar, disparar, combatir y terminar) */
+  .abajo .acciones.con-agente, .abajo .acciones { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: 44px; min-height: 0; justify-content: stretch; }
+  /* despliegue: los agentes por colocar, en filas que se desplazan */
+  .abajo .acciones.especial { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: 48px;
+    max-height: 188px; overflow-x: hidden; overflow-y: auto; }
+}

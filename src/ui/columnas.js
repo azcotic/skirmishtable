@@ -1,15 +1,16 @@
 /**
- * Escritorio ancho (≥ 1100 px): el tablero ocupa el centro y los lados dejan de estar vacíos.
+ * Escritorio ancho (≥ 1280 px): el tablero ocupa el centro y los lados dejan de estar vacíos.
  *   · Izquierda (#colinfo): lo que estás haciendo y la ficha del agente: la pista con los PA libres,
  *     la tarjeta del agente con su retrato, el veredicto y los blancos.
- *   · Derecha (el panel lateral de siempre): las acciones del agente arriba y, debajo, el menú con las
- *     pestañas Partida, Misión, Registro y Más.
+ *   · Derecha (el panel lateral de siempre): las acciones del agente (o la lista de agentes por
+ *     desplegar), debajo la lista de unidades con su retrato (lista.js) y abajo el menú con las
+ *     pestañas Registro, Misión y Más (la Partida va dentro de Más), cerrado hasta que lo abres.
  * No se duplica nada: se reubican los mismos bloques de index.html (los renderizadores los buscan
  * por id) y, al estrechar la ventana, vuelven a la zona del pulgar y a la hoja inferior del teléfono.
  */
 import { T } from '../i18n/es.js';
 
-const ANCHO = typeof matchMedia === "function" ? matchMedia("(min-width: 1100px)") : { matches: false, addEventListener() {} };
+const ANCHO = typeof matchMedia === "function" ? matchMedia("(min-width: 1280px)") : { matches: false, addEventListener() {} };
 let info = null;
 
 const $ = id => document.getElementById(id);
@@ -25,7 +26,7 @@ function aAncho() {
   main.insertBefore(info, main.firstChild);
   info.appendChild(abajo.querySelector(".filapista"));
   for (const p of [...cuerpo.querySelectorAll(":scope > .panel[data-tab=\"agente\"]")]) { p.dataset.casa = "agente"; info.appendChild(p); }
-  hoja.insertBefore($("acciones"), cuerpo);
+  hoja.insertBefore($("acciones"), $("listaunidades") || cuerpo);
   hoja.insertBefore(abajo.querySelector(".hojatabs"), cuerpo);
   main.classList.add("ancho"); document.body.classList.add("ancho");
 }
@@ -54,5 +55,5 @@ function ajustar() {
 export const esAncho = () => ANCHO.matches;
 export function wireColumnas() {
   ANCHO.addEventListener("change", ajustar);
-  if (ANCHO.matches) aAncho();
+  if (ANCHO.matches) { aAncho(); window.dispatchEvent(new Event("resize")); }   // el mapa revisa su orientación
 }

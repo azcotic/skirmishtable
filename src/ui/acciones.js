@@ -8,7 +8,9 @@
  * el original. Así las reglas de qué se puede hacer siguen en un solo lugar.
  */
 import { state } from '../state.js';
-import { T } from '../i18n/es.js';
+import { T, pulg } from '../i18n/es.js';
+import { TEAMCOL } from '../config.js';
+import { retrato } from '../view3d/units.js';
 
 // [id del botón original, clase extra]
 const DEL_AGENTE = [["mv-reposition", "mov"], ["mv-dash", "mov"], ["mv-charge", "mov"], ["ordbtn", ""],
@@ -32,7 +34,7 @@ export function renderAcciones() {
   especial = null;
   for (const m of especiales) { const h = m.html(); if (h != null) { propio = h; especial = m; break; } }
   if (propio != null) {
-    for (const id of ["quitarsel", "fichasel", "volarsel"]) { const b = document.getElementById(id); if (b) b.hidden = true; }
+    for (const id of ["quitarsel", "fichasel", "volarsel", "minicard"]) { const b = document.getElementById(id); if (b) b.hidden = true; }
     bar.classList.remove("con-agente");
     bar.classList.add("especial");
     if (bar._html !== propio) { bar.innerHTML = propio; bar._html = propio; }
@@ -51,6 +53,18 @@ export function renderAcciones() {
   });
   // ✕ quitar la selección y 📋 ver su ficha, en la línea de la pista (la barra no cambia de alto)
   for (const id of ["quitarsel", "fichasel"]) { const b = document.getElementById(id); if (b) b.hidden = !conAgente; }
+  // la tarjeta mini del agente (teléfono: a la izquierda, junto a sus acciones): retrato, nombre y atributos
+  const mc = document.getElementById("minicard");
+  if (mc) {
+    mc.hidden = !conAgente;
+    if (conAgente) {
+      const s = state.sel, r = retrato(s);
+      const cara = r ? `<img class="mc-cara" src="${r}" alt="" style="border-color:${TEAMCOL[s.team]}">` : `<span class="mc-cara mc-letra" style="background:${TEAMCOL[s.team]}">${s.id}</span>`;
+      const html = `${cara}<span class="mc-txt"><b>${s.id} · ${s.name.replace(/[<>&"]/g, "")}</b><small>${pulg(s.move)} · ${s.save}+ · ${s.wounds}/${s.maxW} H</small>` +
+        `<span class="mc-barra"><i style="width:${Math.max(0, Math.round(100 * s.wounds / s.maxW))}%"></i></span></span>`;
+      if (mc._html !== html) { mc.innerHTML = html; mc._html = html; }
+    }
+  }
   // PA que le quedan al agente seleccionado: círculos llenos = libres, vacíos = gastados
   const pa = document.getElementById("pasel");
   if (pa) {

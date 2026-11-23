@@ -78,6 +78,8 @@
   <!-- hoja inferior (teléfono/tablet) o panel lateral (≥1024 px); data-tab = pestaña de cada panel -->
   <aside id="sidepanel" class="hoja">
     <div class="hojaasa"><button class="mini icono" id="hojacerrar" data-t-aria="hoja.cerrar" data-t-title="hoja.cerrar">✕</button></div>
+    <!-- las unidades del bando, con su retrato (escritorio ancho; src/ui/lista.js) -->
+    <div id="listaunidades" class="lista" hidden></div>
     <div class="hojacuerpo">
       <div class="panel" id="oppanel" data-tab="agente">
         <h2 data-t="paneles.agente"></h2>
@@ -94,7 +96,7 @@
         <div id="shots"><span class="hint" data-t="blancos.ayuda"></span></div>
       </div>
 
-      <div class="panel" data-tab="partida">
+      <div class="panel" data-tab="mas">
         <h2 data-t="bandeja.titulo"></h2>
         <div class="tray">
           <div class="cell"><div class="v" id="tpv">1</div><div class="k" data-t="bandeja.puntoInflexion"></div></div>
@@ -112,19 +114,19 @@
         </div>
       </div>
 
-      <div class="panel" data-tab="partida">
+      <div class="panel" data-tab="mas">
         <h2><span data-t="paneles.zona"></span> <span class="tag" id="buildtag" style="margin-left:6px;letter-spacing:.06em" data-t="zona.version" data-t-title="zona.versionTitulo"></span></h2>
         <div id="mapbtns"></div>
         <div class="hint" id="mapnote"></div>
       </div>
 
-      <div class="panel" data-tab="partida">
+      <div class="panel" data-tab="mas">
         <h2 data-t="paneles.miniaturas"></h2>
         <div id="minis"></div>
       </div>
 
       <!-- Kill Team es el único reglamento: el selector queda oculto (src/rules/ conserva los demás) -->
-      <div class="panel" data-tab="partida" hidden>
+      <div class="panel" data-tab="mas" hidden>
         <h2 data-t="paneles.reglas"></h2>
         <div class="btnrow" id="rulebtns"></div>
         <div class="hint" id="rulenote"></div>
@@ -181,6 +183,7 @@
 <footer class="abajo">
   <div class="filapista">
     <div class="pasel" id="pasel" hidden></div>
+    <div class="minicard" id="minicard" hidden></div>
     <div class="hint" id="hint" data-t="ayuda.inicio" aria-live="polite"></div>
     <button class="mini icono" id="volarsel" hidden data-t-title="mover.volarTitulo" data-t-aria="mover.volarTitulo">🪽</button>
     <button class="mini icono verficha" id="fichasel" hidden data-t-title="fichaDatos.ver" data-t-aria="fichaDatos.ver">📋</button>
@@ -189,9 +192,8 @@
   <div class="acciones" id="acciones" role="toolbar" data-t-aria="acciones.titulo"></div>
   <nav class="hojatabs" role="tablist" data-t-aria="hoja.titulo">
     <button role="tab" data-tab="agente" data-t="hoja.agente"></button>
-    <button role="tab" data-tab="partida" data-t="hoja.partida"></button>
-    <button role="tab" data-tab="mision" data-t="hoja.mision"></button>
     <button role="tab" data-tab="registro" data-t="hoja.registro"></button>
+    <button role="tab" data-tab="mision" data-t="hoja.mision"></button>
     <button role="tab" data-tab="mas" data-t="hoja.mas"></button>
   </nav>
 </footer>

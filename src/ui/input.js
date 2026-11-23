@@ -284,9 +284,9 @@ function landDrag(d) {
 }
 
 // a click (or tap) on a token: order flip on double-click, targeting, or selection
-export function clickOp(oid) {
+export function clickOp(oid, sinDoble = false) {
   const now = performance.now();
-  if (lastTokenClick.oid === oid && now - lastTokenClick.t < 400) {
+  if (!sinDoble && lastTokenClick.oid === oid && now - lastTokenClick.t < 400) {
     lastTokenClick = {oid: null, t: 0};
     if (RULES.orders) toggleOrder(oid);
     return;

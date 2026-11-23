@@ -37,12 +37,21 @@ export function aplicarVista() {
 }
 export function reiniciarVista() { vista.s = 1; vista.cx = vista.cy = null; aplicarVista(); }
 
-// ¿Vertical u horizontal? Se decide por la forma de la caja del tablero. Si cambia, se
-// vuelve a dibujar el mapa entero (el giro va en el grupo raíz y en cada texto).
+// ¿Vertical u horizontal?
+//  · Escritorio ancho (con las columnas de columnas.js): siempre horizontal.
+//  · Teléfono de pie (pantalla estrecha y más alta que ancha): siempre vertical, aunque las barras del
+//    navegador le dejen poco alto al tablero.
+//  · Lo demás (tablet, ventana mediana, teléfono acostado): por la forma de la caja del tablero.
+export function deseaVertical(caja) {
+  if (document.body.classList.contains("ancho")) return false;
+  if (innerWidth < 700 && innerHeight > innerWidth) return true;
+  return caja.height > caja.width * 1.05;
+}
+// Si cambia, se vuelve a dibujar el mapa entero (el giro va en el grupo raíz y en cada texto).
 export function revisarOrientacion() {
   const caja = svg.parentElement && svg.parentElement.getBoundingClientRect();
   if (!caja || !caja.width || !caja.height) return false;
-  const v = caja.height > caja.width * 1.05;
+  const v = deseaVertical(caja);
   if (v === vista.vertical) return false;
   vista.vertical = v; lienzo.girarTextos = v;
   vista.s = 1; vista.cx = vista.cy = null;
@@ -79,7 +88,7 @@ const medio = () => { const [a, b] = [...punteros.values()]; return { x: (a.x + 
 export function wireVista2D() {
   // orientación inicial, antes de dibujar el primer mapa
   const caja = svg.parentElement && svg.parentElement.getBoundingClientRect();
-  if (caja && caja.width && caja.height) vista.vertical = lienzo.girarTextos = caja.height > caja.width * 1.05;
+  if (caja && caja.width && caja.height) vista.vertical = lienzo.girarTextos = deseaVertical(caja);
   svg.style.touchAction = "none";   // el pellizco es del mapa, no de la página
   svg.addEventListener("wheel", ev => {
     ev.preventDefault();

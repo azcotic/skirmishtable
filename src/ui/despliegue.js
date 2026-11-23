@@ -9,7 +9,7 @@
  * La dirección lo puede fijar: ?deploy=zones (cada bando en su zona) o ?deploy=scatter.
  */
 import { T } from '../i18n/es.js';
-import { TEAMNAME } from '../config.js';
+import { TEAMCOL, TEAMNAME } from '../config.js';
 import { BH, BW, DROPZONES, OPS } from '../engine/world.js';
 import { chocaConAgente, dentroDeZona, desplegar, enDespliegue, porDesplegar, retirarParaDesplegar, turnoDespliegue } from '../engine/deploy.js';
 import { nearestFree, useBase } from '../engine/movement.js';
@@ -20,7 +20,7 @@ import { snapshot } from './panels.js';
 import { renderAll } from './board.js';
 import { options } from './options.js';
 import { setModoEspecial } from './acciones.js';
-import { modelIndex, teamOf } from '../view3d/units.js';
+import { modelIndex, retrato, teamOf } from '../view3d/units.js';
 import { KINDS } from '../engine/world.js';
 import { abrirFicha } from './ficha.js';
 import { control, esDeLaIA } from './control.js';
@@ -145,13 +145,19 @@ function restoAlAzar() {
 // La barra de acciones durante el despliegue: los agentes que faltan del bando en turno
 // (tocar uno lo elige) y, en solitario, "Resto al azar".
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+// el retrato del agente (o su número) a la izquierda de su botón
+function caraDe(o) {
+  const r = retrato(o);
+  return r ? `<img class="acc-cara" src="${r}" alt="" style="border-color:${TEAMCOL[o.team]}">`
+    : `<span class="acc-cara acc-letra" style="background:${TEAMCOL[o.team]}">${esc(o.id)}</span>`;
+}
 function accionesHTML() {
   if (!despliegueActivo()) return null;
   const t = turno(), mio = mayControl({ team: t }) && !esDeLaIA(t), sig = siguiente();
   // cada botón en el color del bando que despliega: qué es el agente, y su nombre y heridas
   const lista = mio ? porDesplegar(OPS, t).map(o =>
     `<button class="accion eq${t}${o === sig ? " active" : ""}" data-esp="${o.id}" title="${esc(T.despliegue.elegirTitulo(queEs(o)) + " · " + T.despliegue.verFicha)}">` +
-    `<b>${esc(o.id)} · ${esc(queEs(o))}</b><small>${esc(T.despliegue.detalle(o.move, o.save, o.maxW))}</small></button>`) : [];
+    `${caraDe(o)}<span class="acc-txt"><b>${esc(o.id)} · ${esc(queEs(o))}</b><small>${esc(T.despliegue.detalle(o.move, o.save, o.maxW))}</small></span></button>`) : [];
   if (!online() && control.ia === null) lista.push(`<button class="accion" data-esp="azar" title="${esc(T.despliegue.restoAzarTitulo)}">${T.despliegue.restoAzar}</button>`);
   return lista.join("");
 }

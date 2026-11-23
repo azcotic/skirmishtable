@@ -11,8 +11,8 @@ import { T } from '../i18n/es.js';
 const KEY = "skirmishtable.sidebar";        // escritorio: "open" = panel lateral visible
 const KEY_AV = "skirmishtable.avanzado";    // la sección Avanzado, abierta o cerrada
 const ANCHO = typeof matchMedia === "function" ? matchMedia("(min-width: 1024px)") : { matches: true, addEventListener() {} };
-// escritorio ancho (columnas.js): el menú de la derecha siempre tiene una pestaña abierta; la del agente va a la izquierda
-const MUY_ANCHO = typeof matchMedia === "function" ? matchMedia("(min-width: 1100px)") : { matches: false, addEventListener() {} };
+// escritorio ancho (columnas.js): el menú de la derecha empieza cerrado; la pestaña del agente va a la izquierda
+const MUY_ANCHO = typeof matchMedia === "function" ? matchMedia("(min-width: 1280px)") : { matches: false, addEventListener() {} };
 
 let open = false;   // escritorio
 let tab = "";       // teléfono/tablet: pestaña abierta ("" = hoja cerrada)
@@ -21,7 +21,6 @@ try { open = localStorage.getItem(KEY) === "open"; } catch (e) {}
 const avisarTamano = () => window.dispatchEvent(new Event("resize"));   // la mesa 3D y las cajas de dados se ajustan a su caja
 
 function apply() {
-  if (MUY_ANCHO.matches && (!tab || tab === "agente")) tab = "partida";
   const main = document.querySelector(".main"), aside = document.getElementById("sidepanel");
   const btn = document.getElementById("panelbtn");
   main.classList.toggle("folded", !open);
@@ -36,13 +35,12 @@ function apply() {
 // Abre una pestaña de la hoja (o la cierra si ya estaba abierta). Exportada para que otros
 // módulos puedan llevar al jugador a un panel, p. ej. el registro.
 export function abrirPestana(nombre) {
-  if (MUY_ANCHO.matches) { if (nombre !== "agente") tab = nombre; apply(); return; }
+  if (MUY_ANCHO.matches && nombre === "agente") return;   // la tarjeta del agente está a la izquierda (columnas.js)
   tab = tab === nombre ? "" : nombre;
   apply();
 }
 export const cerrarHoja = () => {
   document.getElementById("sidepanel").classList.remove("alta");
-  if (MUY_ANCHO.matches) return;
   if (tab) { tab = ""; apply(); }
 };
 
@@ -96,7 +94,7 @@ export function wireSidePanel() {
   for (const b of document.querySelectorAll(".hojatabs [data-tab]")) b.onclick = () => abrirPestana(b.dataset.tab);
   document.getElementById("hojacerrar").onclick = cerrarHoja;
   ANCHO.addEventListener("change", avisarTamano);
-  MUY_ANCHO.addEventListener("change", () => { if (!MUY_ANCHO.matches) tab = ""; apply(); });
+  MUY_ANCHO.addEventListener("change", () => { tab = ""; apply(); });
   // la barra de acciones y la pista cambian de alto: el tablero (y la mesa 3D) se reajustan
   if (window.ResizeObserver) {
     const stage = document.querySelector(".stage");

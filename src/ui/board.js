@@ -4,6 +4,7 @@
 import { state } from '../state.js';
 import { CTRL, ENGAGE_COL, OBJ_R, TEAMCOL, TEAMCOL_LT, TEAMGREY, TEAMNAME } from '../config.js';
 import { renderHud } from './hud.js';
+import { renderLista } from './lista.js';
 import { VOLKUS_PIECES } from '../data/volkus-pieces.js';
 import { isInjured } from '../engine/dice.js';
 import { blobPoints, dist, opR, px, wallSegments } from '../engine/geometry.js';
@@ -581,7 +582,7 @@ export function renderTray() {
 }
 export function renderAll(cursor) {
   refreshSight();               // the chosen target's call, as things stand after this change
-  renderObjectives(); renderOps(); renderOverlay(cursor); renderTray(); renderCard(); renderVerdict(); renderHud();
+  renderObjectives(); renderOps(); renderOverlay(cursor); renderTray(); renderCard(); renderVerdict(); renderHud(); renderLista();
   if (view3D && three) sync3DOps();
   pump();                       // online: send the game if this render follows a change
 }

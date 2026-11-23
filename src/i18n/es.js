@@ -702,6 +702,14 @@ export const T = {
       no: 'No, guardarla para después',
     },
   },
+  // lista de unidades de la columna derecha (src/ui/lista.js)
+  lista: {
+    titulo: n => `Unidades de ${n}`,
+    cambiarTitulo: 'Ver las unidades del otro bando',
+    tocar: n => `Seleccionar a ${n}`,
+    usado: 'usado',
+    fuera: 'fuera de combate',
+  },
   // la partida guardada, Reiniciar y Salir (src/ui/guardado.js, menú ⚙)
   guardado: {
     reiniciar: '↻ Reiniciar partida',
