@@ -7,7 +7,7 @@ import { effHit, fightRoll, isInjured, meleeKey, shootRoll } from '../engine/dic
 import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
 import { SHOT_KINDS, cannotShoot, judgeShot, shotsFrom } from '../engine/shots.js';
-import { OPS } from '../engine/world.js';
+import { KINDS, OPS } from '../engine/world.js';
 import { SHOT_COL, renderAll } from './board.js';
 import { HINT0, fmtDice, hint, logLine } from './dom.js';
 import { RULES, fmtIn, moveSpec } from '../rules/index.js';
@@ -166,7 +166,7 @@ export function renderCard() {
   const repoUsed = state.sel.used.includes("reposition"), dashUsed = state.sel.used.includes("dash"), chargeUsed = state.sel.used.includes("charge");
   const slot1Used = repoUsed || chargeUsed;
   c.innerHTML = `
-    <div class="opname" style="color:${TEAMCOL_LT[state.sel.team]}">${state.sel.id} · ${state.sel.name} <span class="tag">${T.tipos[state.sel.kind] || state.sel.kind}</span>
+    <div class="opname" style="color:${TEAMCOL_LT[state.sel.team]}">${state.sel.id} · ${state.sel.name} ${KINDS[state.sel.kind] && KINDS[state.sel.kind].comando ? (KINDS[state.sel.kind].lider ? `<span class="tag">${T.fichaDatos.lider}</span>` : "") : `<span class="tag">${T.tipos[state.sel.kind] || state.sel.kind}</span>`}
       ${inj ? `<span class="tag warn">${T.ficha.lesionado}</span>` : ''} ${state.sel.ready ? '' : `<span class="tag">${T.ficha.usado}</span>`}</div>
     <div class="stats">
       <div><div class="v">${state.sel.apl}</div><div class="k">${T.ficha.stat.lpa}</div></div>

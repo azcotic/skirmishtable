@@ -27,6 +27,9 @@ import { TEAMNAME } from '../config.js';
 import { teamOf } from '../view3d/units.js';
 import { ARDIDES } from '../i18n/nombres.js';
 import { pmDelPI, puedeUsarArdid, quienDecide, tirarD6, COSTE_ARDID } from '../game/fases.js';
+import { OPS, rosterInit } from '../engine/world.js';
+import { modelosPara, plantillaDefs } from '../data/teams/index.js';
+import { setPick } from '../view3d/units.js';
 import { mayControl } from '../net/sync.js';
 
 const KEY = "skirmishtable.inicio";
@@ -222,7 +225,14 @@ function empezar() {
   setOption("despliegue", eleccion.despliegue);
   setTeam(0, eleccion.comando[0] || null);
   setTeam(1, eleccion.comando[1] || null);
+  // los agentes de cada bando: el comando de prueba con sus fichas reales (o fichas simples)
+  rosterInit([0, 1].flatMap(s => plantillaDefs(s, eleccion.comando[s])));
   loadMap(eleccion.mapa);
+  // cada agente con el modelo 3D que le corresponde
+  for (const s of [0, 1]) {
+    const picks = modelosPara(OPS.filter(o => o.team === s), teamOf(s));
+    for (const [id, i] of Object.entries(picks)) setPick(s, id, i);
+  }
   renderMinis();
   cerrarHoja();
   if (eleccion.modo === "linea" && !online()) { hostGame(); ir("invitar"); return; }

@@ -13,13 +13,14 @@ import { effHit } from '../engine/dice.js';
 import { RULES } from '../rules/index.js';
 import { teamOf } from '../view3d/units.js';
 import { queEs } from './despliegue.js';
+import { KINDS } from '../engine/world.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
 export function abrirFicha(op) {
   const dlg = document.getElementById("ficha");
   if (!dlg || !op) return;
-  const t = teamOf(op.team), F = T.fichaDatos;
+  const t = teamOf(op.team), F = T.fichaDatos, perfil = KINDS[op.kind] || {};
   const stats = [
     [G.movimiento.es, pulg(RULES.moves.primary.allow(op))],
     [G.lpa.abrev, op.apl],
@@ -36,13 +37,13 @@ export function abrirFicha(op) {
     <div class="fcab">
       <span class="fid">${esc(op.id)}</span>
       <div class="ftit"><h2 id="fichatitulo">${esc(queEs(op))}</h2>
-        <p>${esc(op.name)} · ${esc(TEAMNAME[op.team])}${t ? " · " + esc(t.name) : ""}</p></div>
+        <p>${perfil.lider ? `<span class="flider">${F.lider}</span> ` : ""}${esc(TEAMNAME[op.team])}${t ? " · " + esc(t.name) : ""}</p></div>
       <button class="mini icono" data-cerrar="1" aria-label="${F.cerrar}">✕</button>
     </div>
     <div class="fstats">${stats.map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join("")}</div>
     <table class="farmas"><thead><tr><th>${F.nombre}</th><th>${G.ataques.abrev}</th><th>${G.impactar.abrev}</th><th>${G.dano.abrev}</th><th>${F.reglasArmas}</th></tr></thead>
       <tbody>${armas}</tbody></table>
-    <p class="fnota">${F.provisional}</p>
+    <p class="fnota">${perfil.comando ? F.oficial : F.provisional}</p>
     <button class="ffin" data-cerrar="1">${F.cerrar}</button>`;
   tocadaDesdeQueAbrio = false;
   if (!dlg.open) dlg.showModal();

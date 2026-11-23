@@ -30,6 +30,8 @@ import { despliegueActivo, wireDespliegue } from './ui/despliegue.js';
 import { wireVista2D } from './ui/vista2d.js';
 import { wireInicio } from './ui/inicio.js';
 import { wireFicha } from './ui/ficha.js';
+import { registrarComandos } from './data/teams/index.js';
+registrarComandos();              // perfiles reales de Garra Némesis y Aquelarre Disforme (KINDS y WPN)
 import { cancelMode } from './ui/panels.js';
 import * as table3d from './view3d/table3d.js';
 import * as rules from './rules/index.js';

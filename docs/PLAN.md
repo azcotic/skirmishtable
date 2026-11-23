@@ -160,6 +160,11 @@ el tablero no se mueva bajo el dedo al seleccionar. Quedan para la Fase 4: girar
 - Barra de acciones contextual con las acciones de Kill Team.
 
 ### Fase 3b — Equipos y fichas 2D (2–3 días)
+**Hecho (fichas):** perfiles reales de Garra Némesis y Aquelarre Disforme como números en
+`src/data/teams/` (atributos, armas con ATAQ./IMP./DAÑO y nombre de sus reglas), registrados en las tablas
+del motor al arrancar; "¡A jugar!" arma el comando de prueba de cada bando con su modelo 3D. Pendiente:
+elegir los agentes del comando (hoy, una plantilla fija de 6), equipo de facción y fichas 2D con imagen.
+
 - Fijar la versión de Warpcoven (Garra Némesis ya está en el catálogo).
 - Perfiles numéricos de los dos equipos.
 - Generador de fichas 2D desde el modelo 3D + respaldo con iniciales.

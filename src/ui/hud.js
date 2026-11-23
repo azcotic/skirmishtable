@@ -12,7 +12,7 @@ import { G, T, pulg } from '../i18n/es.js';
 import { state } from '../state.js';
 import { TEAMCOL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
 import { effHit, effMove, isInjured } from '../engine/dice.js';
-import { OPS } from '../engine/world.js';
+import { KINDS, OPS } from '../engine/world.js';
 import { mayPlay } from '../net/sync.js';
 import { RULES, fmtIn } from '../rules/index.js';
 import { flashOp3D } from '../view3d/table3d.js';
@@ -71,7 +71,7 @@ function tipHTML(op) {
   if (inj) notes.push(T.hud.notaLesionado(effMove(op)));
   if (op.alive && op.used.length) notes.push(T.hud.hizo(op.used));
   return `<div class="tn" style="color:${TEAMCOL_LT[op.team]}">${esc(op.id)} · ${esc(op.name)}</div>` +
-    `<div class="tk">${esc(model || T.tipos[op.kind] || capName(op.kind))}${model ? " · " + esc(T.tipos[op.kind] || op.kind) : ""} · <b class="${st}">${STATUS_LABEL[st]}</b></div>` +
+    `<div class="tk">${esc((KINDS[op.kind] && KINDS[op.kind].nombre) || model || T.tipos[op.kind] || capName(op.kind))} · <b class="${st}">${STATUS_LABEL[st]}</b></div>` +
     `<div class="ts">${stats.map(([k, v]) => `<span><b>${v}</b> ${k}</span>`).join("")}</div>${weapons}` +
     (notes.length ? `<div class="tnote">${notes.map(esc).join("<br>")}</div>` : "");
 }

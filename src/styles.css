@@ -571,6 +571,7 @@ dialog.ficha::backdrop { background: rgba(10, 8, 6, .7); }
 .ftit h2 { margin: 0; font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 22px; line-height: 1.05;
   text-transform: uppercase; color: #f3ece2; }
 .ftit p { margin: 2px 0 0; font-size: 11px; color: #b8ad9e; }
+.flider { display: inline-block; padding: 0 6px; border-radius: 8px; background: var(--eq); color: #14110e; font-weight: 600; }
 .fstats { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #3a332a; }
 .fstats div { display: flex; flex-direction: column; align-items: center; padding: 10px 4px; border-right: 1px solid #2e2921; }
 .fstats div:last-child { border-right: 0; }

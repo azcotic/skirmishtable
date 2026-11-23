@@ -110,7 +110,22 @@ export const REGLAS_ARMA = {
   'Punishing': 'Castigadora', 'Range': 'Alcance', 'Relentless': 'Implacable', 'Rending': 'Desgarradora',
   'Saturate': 'Saturación', 'Seek': 'Buscadora', 'Severe': 'Severa', 'Shock': 'Choque',
   'Silent': 'Silenciosa', 'Stun': 'Aturdidora', 'Torrent': 'Ráfaga',
+  // palabras clave y reglas propias de un comando (el * remite a su ficha)
+  'PSYCHIC': 'Psíquica', 'Terrorchem*': 'Terrotoxinas*', 'Mindburn*': 'Quemar mente*', 'Shield*': 'Escudo*',
 };
+// Una regla de arma en español, con su parámetro: 'Range 8"' -> 'Alcance 8″',
+// 'Heavy (Reposition only)' -> 'Pesada (solo Reposicionarse)', 'Seek Light' -> 'Buscadora (Ligero)'.
+const CLAVES_REGLAS = Object.keys(REGLAS_ARMA).sort((a, b) => b.length - a.length);
+export function traducirRegla(r) {
+  const s = String(r).trim();
+  if (REGLAS_ARMA[s]) return REGLAS_ARMA[s];
+  const k = CLAVES_REGLAS.find(c => s.startsWith(c + ' '));
+  if (!k) return s;
+  let resto = s.slice(k.length + 1).replace(/"/g, '″')
+    .replace('(Reposition only)', `(solo ${G.reposicionarse.es})`).replace('(Dash only)', `(solo ${G.correr.es})`);
+  if (k === 'Seek' && resto === 'Light') resto = '(Ligero)';
+  return `${REGLAS_ARMA[k]} ${resto}`;
+}
 
 const PI = G.puntoInflexion.abrev, PM = G.pm.abrev, PV = G.pv.abrev;
 
@@ -244,7 +259,7 @@ export const T = {
     movTitulo: (pulgadas, trepa) => `1 ${G.pa.abrev} · mueve hasta ${pulg(pulgadas)} · ${trepa ? 'puede trepar' : 'no puede trepar'}`,
     cargaTitulo: pulgadas => `1 ${G.pa.abrev} · mueve hasta ${pulg(pulgadas)}; debe terminar en la ${G.zonaControl.es} de un enemigo`,
     cargaRestringida: `No puedes ${G.cargar.es} en una activación en la que ya te moviste`,
-    reglas: reglas => reglas.map(r => REGLAS_ARMA[r] || r).join(', '),
+    reglas: reglas => reglas.map(traducirRegla).join(', '),
   },
 
   orden: {
@@ -507,7 +522,9 @@ export const T = {
     distancia: 'a distancia',
     combate: 'de combate',
     cerrar: 'Cerrar',
-    provisional: 'Ficha provisional: atributos y armas de prueba. Con las fichas oficiales del comando se verán los reales.',
+    provisional: 'Ficha provisional: atributos y armas de prueba (fichas simples, sin comando).',
+    oficial: 'Atributos y armas de la ficha oficial del comando. Las reglas con * y las habilidades del agente están en su ficha.',
+    lider: 'Líder',
   },
 
   // estado de un agente (marcador flotante y menú)
@@ -517,7 +534,7 @@ export const T = {
   despliegue: {
     empieza: equipo => `<b>Despliegue.</b> Los jugadores se alternan para colocar a sus agentes, uno a uno, empezando por ${equipo}. Cada agente va completamente dentro de su ${G.zonaDescenso.es}, con orden de ocultarse.`,
     toca: (equipo, n, id) => `Despliegue · turno de ${equipo}: toca dentro de su ${G.zonaDescenso.es} para colocar a ${n} (${id}).`,
-    detalle: (n, h) => `${n} · ${h} H`,
+    detalle: (mov, salv, h) => `${pulg(mov)} · ${salv}+ · ${h} H`,
     esperando: equipo => `Despliegue · turno de ${equipo}: espera a que coloque un agente.`,
     fueraDeZona: equipo => `Fuera de la ${G.zonaDescenso.es} de ${equipo}: la peana debe quedar completamente dentro.`,
     noCabe: `No cabe ahí: el terreno lo impide. Toca otro punto de la ${G.zonaDescenso.es}.`,

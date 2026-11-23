@@ -21,11 +21,14 @@ import { renderAll } from './board.js';
 import { options } from './options.js';
 import { setModoEspecial } from './acciones.js';
 import { modelIndex, teamOf } from '../view3d/units.js';
+import { KINDS } from '../engine/world.js';
 import { abrirFicha } from './ficha.js';
 
-// qué es el agente: su modelo si el bando tiene comando (p. ej. "Hechicero del Destino"),
-// si no, su tipo genérico ("Líder", "Francotirador"…)
+// qué es el agente: su perfil de la ficha del comando (p. ej. "Hechicero del Destino"); si no
+// tiene, el modelo del mod de su bando; si no, su tipo genérico ("Líder", "Francotirador"…)
 export function queEs(op) {
+  const k = KINDS[op.kind];
+  if (k && k.nombre) return k.nombre;
   const t = teamOf(op.team);
   if (t && t.models.length) return t.models[modelIndex(op, t.models.length)].name;
   return T.tipos[op.kind] || op.kind;
@@ -125,7 +128,7 @@ function accionesHTML() {
   // cada botón en el color del bando que despliega: qué es el agente, y su nombre y heridas
   const lista = mio ? porDesplegar(OPS, t).map(o =>
     `<button class="accion eq${t}${o === sig ? " active" : ""}" data-esp="${o.id}" title="${esc(T.despliegue.elegirTitulo(queEs(o)) + " · " + T.despliegue.verFicha)}">` +
-    `<b>${esc(o.id)} · ${esc(queEs(o))}</b><small>${esc(T.despliegue.detalle(o.name, o.maxW))}</small></button>`) : [];
+    `<b>${esc(o.id)} · ${esc(queEs(o))}</b><small>${esc(T.despliegue.detalle(o.move, o.save, o.maxW))}</small></button>`) : [];
   if (!online()) lista.push(`<button class="accion" data-esp="azar" title="${esc(T.despliegue.restoAzarTitulo)}">${T.despliegue.restoAzar}</button>`);
   return lista.join("");
 }
