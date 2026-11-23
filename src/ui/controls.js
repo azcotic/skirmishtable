@@ -17,7 +17,7 @@ import { PM_INICIALES, pmDelPI } from '../game/fases.js';
 let alNuevoPI = () => { const g = pmDelPI(tray.tp, tray.ini); tray.cp[0] += g[0]; tray.cp[1] += g[1]; renderTray(); };
 export const setAlNuevoPI = fn => { alNuevoPI = fn; };
 import { anunciarDespliegue, modoDespliegue, prepararDespliegue } from './despliegue.js';
-import { cancelMode, doUndo, snapshot, tray, undoStack } from './panels.js';
+import { cancelMode, doUndo, reiniciarActivaciones, snapshot, tray, undoStack } from './panels.js';
 import { build3DScene, setView, three, view3D } from '../view3d/table3d.js';
 import { syncBases } from '../view3d/units.js';
 import { RULES, RULESETS, fmtIn, setRuleset } from '../rules/index.js';
@@ -139,7 +139,7 @@ export function wireControls() {
     if (playOnly()) return;
     snapshot();
     if (tray.tp >= 4) { logLine(T.partida.finBatalla); return; }
-    tray.tp += 1; tray.ardides = [[], []];
+    tray.tp += 1; tray.ardides = [[], []]; reiniciarActivaciones();
     OPS.forEach(o => { o.ready = true; o.ap = o.apl; o.used = []; });
     logLine(T.partida.nuevoPI(tray.tp));
     renderAll();

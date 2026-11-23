@@ -512,6 +512,25 @@ export const T = {
     irMesa: 'Ir a la mesa',
   },
 
+  // la IA (src/ai/facil.js, src/ui/ia.js)
+  ia: {
+    boton: '¿Qué haría la IA?',
+    botonTitulo: 'La IA fácil propone una activación para el bando al que le toca (no la ejecuta)',
+    sinPlan: 'La IA no encuentra ningún agente apostado que activar.',
+    log: (equipo, texto) => `<b>IA (${equipo}):</b> ${texto}`,
+    pct: p => `${Math.round(p * 100)} %`,
+    plan: {
+      disparar: (op, b, arma, e, p) => `${op} dispara a ${b} con ${arma}: ${num(e)} de daño esperado, ${Math.round(p * 100)} % de incapacitarlo.`,
+      moverYDisparar: (op, b, arma, e, p) => `${op} se reposiciona y dispara a ${b} con ${arma}: ${num(e)} de daño esperado, ${Math.round(p * 100)} % de incapacitarlo.`,
+      cargar: (op, b, e, p, rec) => `${op} carga contra ${b} y combate: ${num(e)} de daño esperado (${Math.round(p * 100)} % de incapacitarlo); recibiría unos ${num(rec)}.`,
+      combatir: (op, b, e, p, rec) => `${op} combate contra ${b}: ${num(e)} de daño esperado (${Math.round(p * 100)} % de incapacitarlo); recibiría unos ${num(rec)}.`,
+      objetivo: op => `${op} va a controlar un objetivo, con orden de ocultarse.`,
+      cubrirse: op => `${op} se reposiciona a un lugar más seguro, con orden de ocultarse.`,
+      esperar: op => `${op} no tiene nada útil que hacer: se queda oculto y termina su activación.`,
+    },
+    riesgo: (carga, expuesto) => carga || expuesto ? ` Allí ${carga} ${carga === 1 ? 'enemigo podría' : 'enemigos podrían'} cargarle y ${expuesto} dispararle sin cobertura.` : ' Allí no corre peligro inmediato.',
+  },
+
   // por qué una acción no está permitida (src/game/acciones.js)
   reglas: {
     accion: { reposition: G.reposicionarse.es, dash: G.correr.es, fallBack: G.retroceder.es, charge: G.cargar.es,

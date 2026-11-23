@@ -459,6 +459,7 @@ body { overflow: hidden; overscroll-behavior: none; }
 .acciones .accion.used { opacity: .6; }
 .acciones .accion.restricted { opacity: .45; }
 .acciones .accion:disabled { opacity: .35; }
+.acciones .accion.ia { border-color: #8d5fa8; color: #d9bff0; }
 /* modo propio (despliegue): dos filas que se desplazan de lado, botones anchos con dos líneas */
 .abajo, .acciones { min-width: 0; }      /* la barra que se desplaza de lado no estira la página */
 .acciones.especial { grid-auto-flow: column; grid-template-columns: none; grid-template-rows: 44px 44px;

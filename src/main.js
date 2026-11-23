@@ -30,6 +30,7 @@ import { despliegueActivo, wireDespliegue } from './ui/despliegue.js';
 import { wireVista2D } from './ui/vista2d.js';
 import { wireInicio } from './ui/inicio.js';
 import { wireFicha } from './ui/ficha.js';
+import { wireIA } from './ui/ia.js';
 import { registrarComandos } from './data/teams/index.js';
 registrarComandos();              // perfiles reales de Garra Némesis y Aquelarre Disforme (KINDS y WPN)
 import { cancelMode } from './ui/panels.js';
@@ -54,6 +55,7 @@ wireOptions();
 wireSidePanel();
 wireDespliegue();
 wireFicha();
+wireIA();
 // ✕ en la barra de acciones: quitar la selección
 wireAcciones(() => { state.sel = null; state.target = null; state.lastShot = null; cancelMode(); renderAll(); });
 onMinisChange(bases => { if (bases) { renderAll(); renderMinis(); } });   // a model measured: rings, reach and fit follow its base

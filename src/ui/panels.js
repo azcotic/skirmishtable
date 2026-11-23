@@ -312,9 +312,13 @@ export function allowance() {
   const spec = moveSpec(state.moveType) || RULES.moves.primary;
   return spec.allow(state.sel);
 }
+// el bando que activó por última vez en este punto de inflexión (para saber a quién le toca)
+export let ultimoBando = null;
+export const reiniciarActivaciones = () => { ultimoBando = null; };
 // Mark an operative expended: its activation is over for this turning point.
 export function endActivation(op) {
   if (!op || !op.alive || !op.ready || !mayControl(op)) return;
+  ultimoBando = op.team;
   snapshot(); op.ready = false; op.ap = op.apl; op.used = [];
   if (state.sel === op) state.moveType = "reposition";
   logLine(T.activacion.termina(op.name)); cancelMode(); renderAll();
