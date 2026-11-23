@@ -4,8 +4,9 @@
 import { state } from '../state.js';
 import { CTRL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
 import { aplicarCombate, bloquear, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
-  distanciaRegla, isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
-import { elegirCombate, elegirRepeticion } from './tirada.js';
+  armaPara, distanciaRegla, isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
+import { elegirCombate, elegirDestino, elegirRepeticion } from './tirada.js';
+import { conectarArdides, dadosGuardados, gastarDestino } from './ardides.js';
 import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
 import { SHOT_KINDS, cannotShoot, judgeShot, shotsFrom } from '../engine/shots.js';
@@ -28,9 +29,10 @@ import { control, esDeLaIA } from './control.js';
 // Repetición de mando (ardid de tiroteo, 1 PM, sin límite de usos): repetir un dado fallado.
 // Pregunta al jugador (la IA decide sola: repite su peor fallo si le queda PM). Cambia `dados`
 // en el lugar y devuelve true si se usó.
-async function repeticionDeMando(team, dados, exito, die, titulo, quien, contexto = [], inutil = false) {
+// fijos: índices de dados que no se pueden repetir (los puestos con El destino es mi arma)
+async function repeticionDeMando(team, dados, exito, die, titulo, quien, contexto = [], inutil = false, fijos = null) {
   if (tray.cp[team] < 1) return false;
-  const ok = dados.map(exito);
+  const ok = dados.map((v, k) => exito(v) || !!(fijos && fijos.has(k)));
   if (ok.every(Boolean)) return false;
   let i;
   if (esDeLaIA(team)) {
@@ -44,6 +46,33 @@ async function repeticionDeMando(team, dados, exito, die, titulo, quien, context
   logLine(T.repeticion.log(TEAMNAME[team], antes, dados[i]));
   return true;
 }
+// El destino es mi arma: antes de repetir, cada bando con dados guardados puede cambiar un dado de
+// ataque de esta secuencia (suyo o del rival). grupos: [{team, nombre, dados, exito(v), fijos}].
+// Devuelve los grupos cambiados. La IA solo mejora sus propios dados.
+async function usarDestino(grupos) {
+  const cambiados = new Set();
+  for (const s of [0, 1]) {
+    const g = dadosGuardados(s);
+    if (!g.length) continue;
+    let e = null;
+    if (esDeLaIA(s)) {
+      const mejor = g.map((v, k) => [v, k]).sort((x, y) => y[0] - x[0])[0];
+      for (const [j, gr] of grupos.entries()) {
+        if (gr.team !== s || !gr.exito(mejor[0])) continue;
+        const i = gr.dados.findIndex(v => !gr.exito(v));
+        if (i >= 0) { e = { g: mejor[1], grupo: j, i }; break; }
+      }
+    } else {
+      e = await elegirDestino({ quien: TEAMNAME[s], guardados: g,
+        grupos: grupos.map(gr => ({ nombre: gr.nombre, dados: gr.dados, exito: gr.dados.map(gr.exito) })) });
+    }
+    if (!e) continue;
+    const gr = grupos[e.grupo], antes = gr.dados[e.i], v = gastarDestino(s, e.g);
+    gr.dados[e.i] = v; gr.fijos.add(e.i); cambiados.add(e.grupo);
+    logLine(T.destino.log(TEAMNAME[s], antes, v, gr.nombre));
+  }
+  return [...cambiados];
+}
 // el agente al que ya se le sugirió terminar su activación por quedarse sin PA
 let avisadoSinPA = null;
 let avisadoOrden = null;
@@ -51,6 +80,7 @@ let avisadoOrden = null;
 /* ---------- state / undo / log ---------- */
 // ini: bando con la iniciativa (null antes de decidirla); ardides: los usados en este PI
 export let tray = {tp:1, cp:[2,2], vp:[0,0], ini:null, ardides:[[],[]]};
+conectarArdides(tray);                // los ardides leen qué se usó en este punto de inflexión
 export const undoStack = [];
 // other modules' state that undo restores too ({get, set}; the ops & score panel)
 export const undoExtras = [];
@@ -195,10 +225,13 @@ export function doShoot() {
     if (n != null || online()) r = shootRoll(what, a, b, die);   // en línea: sin decisiones a mitad de tirada
     else {
       // fuera de línea: se puede usar Repetición de mando en el ataque y en la defensa
-      const w = WPN[what.w], hit = effHit(a, w), cd = critDesde(w.rules);
+      const w = armaPara(WPN[what.w], a, b, "disparo"), hit = effHit(a, w), cd = critDesde(w.rules);
       const atk = rollAttack(Math.max(0, w.atk - certera(what, w)), hit, w.rules, die);
+      const exitoAtk = v => v !== 1 && (v >= cd || v >= hit), fijos = new Set();
+      if ((await usarDestino([{ team: a.team, nombre: a.name, dados: atk.dice, exito: exitoAtk, fijos }])).length)
+        Object.assign(atk, clasificarAtaque(atk.dice, hit, w.rules));
       const ctxAtk = T.repeticion.ctxAtaque(atk.crit, w.dmgC, atk.norm, w.dmgN, b.name, b.save, !!what.cover);
-      if (await repeticionDeMando(a.team, atk.dice, v => v !== 1 && (v >= cd || v >= hit), die, T.repeticion.ataque, a.name, ctxAtk))
+      if (await repeticionDeMando(a.team, atk.dice, exitoAtk, die, T.repeticion.ataque, a.name, ctxAtk, false, fijos))
         Object.assign(atk, clasificarAtaque(atk.dice, hit, w.rules));
       r = resolverDisparo(what, w, hit, atk, b, die);
       // lo que sacó el atacante y cuánto cambiaría el daño si la repetición sale bien
@@ -265,16 +298,24 @@ export function doFight() {
     else {
       // fuera de línea: Repetición de mando y, en cada turno, golpear o bloquear (la IA decide sola)
       const est = iniciarCombate(what, a, b, die);
-      for (const [k, op, roll, hit, w] of [[0, a, est.ra, est.hitA, est.wa], [1, b, est.rb, est.hitB, est.wb]]) {
+      const lados = [[0, a, est.ra, est.hitA, est.wa], [1, b, est.rb, est.hitB, est.wb]];
+      const reclasificar = (k, roll, hit, w) => {
+        Object.assign(roll, clasificarAtaque(roll.dice, hit, w.rules));
+        est.pools[k].crit = roll.crit; est.pools[k].norm = roll.norm + (est.acc[k] || 0);
+      };
+      // El destino es mi arma: antes de repetir, sobre los dados de cualquiera de los dos
+      const fijosC = [new Set(), new Set()];
+      const grupos = lados.map(([k, op, roll, hit, w]) => ({ team: op.team, nombre: op.name, dados: roll.dice,
+        exito: v => v !== 1 && (v >= critDesde(w.rules) || v >= hit), fijos: fijosC[k] }));
+      for (const k of await usarDestino(grupos)) reclasificar(k, lados[k][2], lados[k][3], lados[k][4]);
+      for (const [k, op, roll, hit, w] of lados) {
         const cd = critDesde(w.rules);
         // los éxitos de los dos y sus heridas: el rival ya tiró
         const p = est.pools[k], q = est.pools[1 - k], rival = k === 0 ? b : a;
         const ctx = T.repeticion.ctxCombate(p.crit, p.w.dmgC, p.norm, p.w.dmgN, est.vida[k].wounds,
           rival.name, q.crit, q.w.dmgC, q.norm, q.w.dmgN, est.vida[1 - k].wounds);
-        if (await repeticionDeMando(op.team, roll.dice, v => v !== 1 && (v >= cd || v >= hit), die, T.repeticion.combate, op.name, ctx)) {
-          Object.assign(roll, clasificarAtaque(roll.dice, hit, w.rules));
-          est.pools[k].crit = roll.crit; est.pools[k].norm = roll.norm;
-        }
+        if (await repeticionDeMando(op.team, roll.dice, v => v !== 1 && (v >= cd || v >= hit), die, T.repeticion.combate, op.name, ctx, false, fijosC[k]))
+          reclasificar(k, roll, hit, w);
       }
       const quedan = k => est.pools[k].crit + est.pools[k].norm > 0;
       est.fin = !quedan(0) && !quedan(1);

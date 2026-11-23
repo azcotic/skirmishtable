@@ -33,6 +33,8 @@ import { OPS, rosterInit } from '../engine/world.js';
 import { agenteDeMuestra, comandoPorId, eleccionesDe, modelosPara, pesoAgente, plantillaDefs, puedeAnadir, seleccionesMax,
   validarComando } from '../data/teams/index.js';
 import { abrirFicha } from './ficha.js';
+import { ARDID, dadosGuardados, guardarDestino, quitarDestino } from './ardides.js';
+import { d6 } from '../engine/dice.js';
 import { gradoActual, puntuarKillOp, reiniciarPuntos } from './ops.js';
 import { setPick } from '../view3d/units.js';
 import { bandoEnTurno } from './turno.js';
@@ -200,7 +202,7 @@ function contenido() {
       const usados = (tray.ardidesT && tray.ardidesT[lado]) || [];
       const html = (!lista.length ? `<p class="pant-nota">${E.sinArdides}</p>` : lista.map(n => {
         const usado = usados.includes(n);
-        return opcion("ardidT:" + n, esc(n), usado ? E.ardidUsado : E.ardidCoste,
+        return opcion("ardidT:" + n, esc(n), `${T.ardidDesc[n] ? esc(T.ardidDesc[n]) + "<br>" : ""}${usado ? E.ardidUsado : E.ardidCoste}`,
           { activa: usado, deshabilitada: !mio || (!usado && !puedeUsarArdid(tray.cp, tray.ardidesT || [[], []], lado, n)) });
       }).join("")) + `<p class="pant-nota">${E.repeticionNota}</p>`;
       const otro = control.ia === null ? `<button class="pant-secundario" id="pantotrobando">${E.verOtro(esc(TEAMNAME[1 - lado]))}</button>` : "";
@@ -213,7 +215,10 @@ function contenido() {
       const usados = (tray.ardides && tray.ardides[lado]) || [];
       const html = !lista.length ? `<p class="pant-nota">${E.sinArdides}</p>` : lista.map(n => {
         const usado = usados.includes(n);
-        return opcion("ardid:" + n, esc(n), usado ? E.ardidUsado : E.ardidCoste,
+        // qué hace (si lo sabemos) y, para El destino es mi arma, los dados que guardó
+        const desc = `${T.ardidDesc[n] ? esc(T.ardidDesc[n]) + "<br>" : ""}${usado ? E.ardidUsado : E.ardidCoste}` +
+          (usado && n === ARDID.destino ? ` · ${T.destino.guardados(dadosGuardados(lado))}` : "");
+        return opcion("ardid:" + n, esc(n), desc,
           { activa: usado, deshabilitada: !mio || (!usado && !puedeUsarArdid(tray.cp, tray.ardides || [[], []], lado, n)) });
       }).join("");
       const ultimo = paso === "ardidesB";
@@ -353,9 +358,14 @@ function alternarArdid(lado, n, clave = "ardides") {
   if (usados.includes(n)) {
     usados.splice(usados.indexOf(n), 1); tray.cp[lado] += COSTE_ARDID;
     logLine(T.estrategia.logDevuelto(TEAMNAME[lado], n));
+    if (n === ARDID.destino) quitarDestino(lado);
   } else if (puedeUsarArdid(tray.cp, tray[clave], lado, n)) {
     usados.push(n); tray.cp[lado] -= COSTE_ARDID;
     logLine(T.estrategia.logArdid(TEAMNAME[lado], n));
+    if (n === ARDID.destino) {          // tira 2D6 y los guarda para el tiroteo
+      const [x, y] = guardarDestino(lado, d6);
+      logLine(T.destino.guarda(TEAMNAME[lado], x, y, x + y < 9));
+    }
   }
   renderAll();
   render();

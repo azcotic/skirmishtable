@@ -21,6 +21,11 @@ import { WPN } from '../config.js';
 /* ---------- dice ---------- */
 export const d6 = () => 1 + Math.floor(Math.random()*6);
 
+// Cambios al arma con que se tira según el momento de la partida (p. ej. los ardides:
+// src/ui/ardides.js): f(arma, atacante, rival, "disparo" | "combate") -> arma (una copia si cambia)
+export const ajustesArma = [];
+export const armaPara = (w, a, b, modo) => ajustesArma.reduce((x, f) => f(x, a, b, modo) || x, w);
+
 // Una regla de arma de la lista: true si está sin número, su número si lo tiene, o null.
 // "Piercing" no coincide con "Piercing Crits 1" ni "Seek" con "Seek Light".
 export function regla(rules, nombre) {
@@ -115,7 +120,7 @@ export function effMove(op) { return isInjured(op) ? Math.max(4, op.move-2) : op
 // Null if the weapon isn't one of the shooter's ranged weapons.
 // selfDmg: daño que se hace el tirador con un arma de Sobrecalentamiento.
 export function shootRoll(what, a, b, die = d6) {
-  const w = WPN[what.w];
+  const w = WPN[what.w] && armaPara(WPN[what.w], a, b, "disparo");
   if (!w || w.type !== "R" || !a.weapons.includes(what.w)) return null;
   const hit = effHit(a, w);
   const atk = rollAttack(Math.max(0, w.atk - certera(what, w)), hit, w.rules, die);
@@ -193,13 +198,15 @@ export const meleeKey = op => WPN[op.weapon] && WPN[op.weapon].type === "M" ? op
 export function iniciarCombate(what, a, b, die = d6) {
   const ok = (op, k) => WPN[k] && WPN[k].type === "M" && (k === "knife" || op.weapons.includes(k));
   if (!ok(a, what.wa) || !ok(b, what.wb)) return null;
-  const wa = WPN[what.wa], wb = WPN[what.wb];
+  const wa = armaPara(WPN[what.wa], a, b, "combate"), wb = armaPara(WPN[what.wb], b, a, "combate");
   const hitA = effHit(a, wa), hitB = effHit(b, wb);
-  const ra = rollAttack(wa.atk, hitA, wa.rules, die), rb = rollAttack(wb.atk, hitB, wb.rules, die);
-  return { wa, wb, hitA, hitB, ra, rb,
+  // Certera x: x dados guardados como éxitos normales sin tirarlos (acc)
+  const acc = [wa, wb].map(w => Math.min(numero(w.rules, "Accurate"), w.atk));
+  const ra = rollAttack(wa.atk - acc[0], hitA, wa.rules, die), rb = rollAttack(wb.atk - acc[1], hitB, wb.rules, die);
+  return { wa, wb, hitA, hitB, ra, rb, acc,
     vida: [{ wounds: a.wounds, alive: a.alive }, { wounds: b.wounds, alive: b.alive }],
-    pools: [{ crit: ra.crit, norm: ra.norm, w: wa, shock: false }, { crit: rb.crit, norm: rb.norm, w: wb, shock: false }],
-    turno: 0, pasos: [], fin: ra.crit + ra.norm + rb.crit + rb.norm === 0 };
+    pools: [{ crit: ra.crit, norm: ra.norm + acc[0], w: wa, shock: false }, { crit: rb.crit, norm: rb.norm + acc[1], w: wb, shock: false }],
+    turno: 0, pasos: [], fin: ra.crit + ra.norm + acc[0] + rb.crit + rb.norm + acc[1] === 0 };
 }
 // Lo que puede hacer el que tiene el turno: [{tipo: "golpe", con}, {tipo: "bloqueo", con, contra}]
 export function opcionesCombate(est) {

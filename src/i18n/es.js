@@ -507,7 +507,7 @@ export const T = {
     logIni: (equipo, g0, g1, e0, e1) => `<b>Iniciativa: ${equipo}.</b> ${PM}: +${g0} ${e0}, +${g1} ${e1}.`,
     logDados: (e0, d0, e1, d1) => `Tirada de iniciativa: ${e0} ${d0}, ${e1} ${d1}.`,
     ardidesTitulo: 'Ardides de estrategia',
-    ardidesSub: (equipo, pm) => `${equipo} tiene ${pm} ${PM}. Cada ardid cuesta 1 ${PM} y se usa una vez por punto de inflexión. Su efecto está en la ficha del comando.`,
+    ardidesSub: (equipo, pm) => `${equipo} tiene ${pm} ${PM}. Cada ardid cuesta 1 ${PM} y se usa una vez por punto de inflexión; su efecto dura todo el punto de inflexión.`,
     esperaArdides: equipo => `Turno de ${equipo}: espera a que elija sus ardides.`,
     sinArdides: 'Este bando no tiene comando elegido: no hay ardides que mostrar.',
     ardidCoste: `Usar por 1 ${PM}`,
@@ -671,6 +671,26 @@ export const T = {
     ecos: n => `Ecos de la Disformidad: ${n} puede cambiar su orden y hacer dos acciones distintas de 1 ${G.pa.abrev} (una vez por batalla).`,
     pasa: equipo => `<b>${equipo}</b> pasa (no reacciona).`,
     iaDispara: b => `reacciona y dispara a ${b}.`,
+  },
+
+  // Qué hace cada ardid, con nuestras palabras (por su nombre oficial: src/i18n/nombres.js).
+  // Los que no están aquí se muestran sin descripción.
+  ardidDesc: {
+    'Protección etérea': 'Si disparan a uno de tus agentes, las armas con Penetración 1 tienen en su lugar Penetración en críticos 1.',
+    'El destino es mi arma': 'Tira 2D6 y guárdalos. En el tiroteo de este PI, puedes poner uno en lugar de un dado de ataque recién tirado (tuyo o del rival), uno por secuencia; no se puede repetir. Si sumaban menos de 9, al usar uno se descarta el otro.',
+    'Hermandad de hechiceros': 'Las armas psíquicas de tus Hechiceros tienen Equilibrada, o Incesante si hay otro Hechicero amigo a 9″ o menos.',
+    'Rebaño salvaje': 'Las armas de combate de tus Tzaangor tienen Certera 1; y también Severa si un amigo los asiste o combaten a 6″ o menos de un Hechicero amigo que los vea.',
+  },
+  destino: {
+    titulo: 'El destino es mi arma',
+    quien: equipo => `${equipo}: tus dados guardados`,
+    guardadoAria: v => `Dado guardado: ${v}`,
+    explica: 'Elige uno de tus dados guardados (arriba) y toca el dado de ataque que quieres reemplazar. Uno por secuencia; el que pongas no se puede repetir.',
+    dadosDe: n => `Dados de ataque de ${n}`,
+    noUsar: 'No usarlo ahora',
+    guarda: (equipo, x, y, bajo) => `<b>${equipo}</b> guarda ${x} y ${y} con El destino es mi arma${bajo ? ' (suman menos de 9: al usar uno se descarta el otro)' : ''}.`,
+    guardados: dados => dados.length ? `guardados: ${dados.join(' y ')}` : 'sin dados guardados',
+    log: (equipo, antes, v, n) => `<b>${equipo}</b> usa El destino es mi arma: el ${antes} de ${n} pasa a ser un ${v}.`,
   },
 
   // Elecciones de facción (src/data/teams: `elecciones`): pantallas de inicio y ficha.

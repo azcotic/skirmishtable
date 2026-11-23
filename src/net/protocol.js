@@ -180,6 +180,11 @@ export function cleanTray(t, d) {
   const out = { tp: num(t.tp, d.tp), cp: pair(t.cp, d.cp), vp: pair(t.vp, d.vp) };
   // fase de estrategia: quién tiene la iniciativa y los ardides usados en este punto de inflexión
   if (t.ini === 0 || t.ini === 1) out.ini = t.ini;
+  // El destino es mi arma: los dados guardados de cada bando
+  if (Array.isArray(t.destino)) out.destino = [0, 1].map(i => {
+    const x = t.destino[i];
+    return x && Array.isArray(x.dados) ? { dados: x.dados.filter(v => Number.isInteger(v) && v >= 1 && v <= 6).slice(0, 2), bajo: !!x.bajo } : null;
+  });
   for (const clave of ["ardides", "ardidesT"])   // de estrategia y de tiroteo
     if (Array.isArray(t[clave]))
       out[clave] = [0, 1].map(i => Array.isArray(t[clave][i]) ? t[clave][i].filter(x => typeof x === "string").slice(0, 8).map(x => x.slice(0, 60)) : []);

@@ -663,6 +663,8 @@ dialog.ficha::backdrop { background: rgba(10, 8, 6, .7); }
 .pant-agente-info span { font-size: 11px; color: #9a9184; }
 .pant-veces { color: #f0a276; }
 .pant-pendiente { font-style: normal; color: #c9a070; }
+#tirada .tdado.guardado { border-color: #8a6fc0; color: #e2d6ff; }
+#tirada .tdado.guardado.elegido { background: #6b5a8c; color: #fff; }
 .fregla { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: #d8cfc2; }
 .fregla em { font-style: normal; color: #c9a070; }
 .pant-agente-info small.medio { background: #6b5a8c; color: #f3ece2; }

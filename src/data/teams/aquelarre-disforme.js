@@ -74,16 +74,16 @@ export default {
     ],
   }],
   agentes: {
-    hechiceroDestino:   { nombre: "Hechicero del Destino", lider: true, astartes: true, apl: 3, move: 6, save: 3, wounds: 14, armas: ["proyectilCondenacion", "pistolaBolterInfierno", "bastonPsicofuerza"] },
-    hechiceroTempireo:  { nombre: "Hechicero Tempíreo", lider: true, astartes: true, apl: 3, move: 6, save: 3, wounds: 14, armas: ["descargaFlujo", "pistolaBolterInfierno", "bastonPsicofuerza"] },
-    hechiceroFuego:     { nombre: "Hechicero del Fuego Disforme", lider: true, astartes: true, apl: 3, move: 6, save: 3, wounds: 14, armas: ["tormentaFuego", "quemarMente", "pistolaBolterInfierno", "bastonPsicofuerza"] },
+    hechiceroDestino:   { nombre: "Hechicero del Destino", lider: true, astartes: true, palabras: ["hechicero"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["proyectilCondenacion", "pistolaBolterInfierno", "bastonPsicofuerza"] },
+    hechiceroTempireo:  { nombre: "Hechicero Tempíreo", lider: true, astartes: true, palabras: ["hechicero"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["descargaFlujo", "pistolaBolterInfierno", "bastonPsicofuerza"] },
+    hechiceroFuego:     { nombre: "Hechicero del Fuego Disforme", lider: true, astartes: true, palabras: ["hechicero"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["tormentaFuego", "quemarMente", "pistolaBolterInfierno", "bastonPsicofuerza"] },
     tiradorRubrica:     { nombre: "Tirador Marine Rúbrica", astartes: true, apl: 3, move: 5, save: 2, wounds: 14, armas: ["canonConcentrado", "canonBarrido", "punos"] },
     portaiconoRubrica:  { nombre: "Portaicono Marine Rúbrica", astartes: true, apl: 3, move: 5, save: 2, wounds: 14, armas: ["bolterInfierno", "punos"] },
     combatienteRubrica: { nombre: "Combatiente Marine Rúbrica", astartes: true, apl: 3, move: 5, save: 2, wounds: 14, armas: ["bolterInfierno", "punos"] },
-    campeonTzaangor:    { nombre: "Campeón Tzaangor", apl: 2, move: 6, save: 5, wounds: 10, armas: ["granHacha"] },
-    portacuernoTzaangor: { nombre: "Portacuerno Tzaangor", apl: 2, move: 6, save: 5, wounds: 9, armas: ["daga"] },
-    portaiconoTzaangor: { nombre: "Portaicono Tzaangor", apl: 2, move: 6, save: 5, wounds: 9, armas: ["daga"] },
-    combatienteTzaangor: { nombre: "Combatiente Tzaangor", apl: 2, move: 6, save: 5, wounds: 9, armas: ["armasTzaangor"] },
+    campeonTzaangor:    { nombre: "Campeón Tzaangor", palabras: ["tzaangor"], apl: 2, move: 6, save: 5, wounds: 10, armas: ["granHacha"] },
+    portacuernoTzaangor: { nombre: "Portacuerno Tzaangor", palabras: ["tzaangor"], apl: 2, move: 6, save: 5, wounds: 9, armas: ["daga"] },
+    portaiconoTzaangor: { nombre: "Portaicono Tzaangor", palabras: ["tzaangor"], apl: 2, move: 6, save: 5, wounds: 9, armas: ["daga"] },
+    combatienteTzaangor: { nombre: "Combatiente Tzaangor", palabras: ["tzaangor"], apl: 2, move: 6, save: 5, wounds: 9, armas: ["armasTzaangor"] },
   },
   // composición (hoja de equipo, revisión más reciente): 5 selecciones; cada Tzaangor cuenta como
   // media selección; al menos un hechicero; cada agente una sola vez salvo los combatientes

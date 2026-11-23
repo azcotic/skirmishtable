@@ -37,6 +37,36 @@ export function elegirRepeticion({ titulo, quien, dados, exito, pm, contexto = [
     <button class="tno" data-v="null">${R.noUsar}</button>`, null);
 }
 
+// El destino es mi arma: elegir uno de los dados guardados y el dado de ataque que reemplaza.
+// grupos: [{nombre, dados, exito: [bool]}]. Devuelve {g, grupo, i} o null (no usarlo ahora).
+export function elegirDestino({ quien, guardados, grupos }) {
+  const D = T.destino;
+  return new Promise(resolve => {
+    const d = dlg();
+    if (!d) { resolve(null); return; }
+    let g = 0;
+    const pintar = () => {
+      d.innerHTML = `<h2>${esc(D.titulo)}</h2><p class="tquien">${esc(D.quien(quien))}</p>
+        <div class="tdados">${guardados.map((v, k) => `<button class="tdado guardado${k === g ? " elegido" : ""}" data-g="${k}"` +
+          ` aria-label="${esc(D.guardadoAria(v))}">${v}</button>`).join("")}</div><p>${esc(D.explica)}</p>
+        ${grupos.map((gr, j) => `<p class="tquien">${esc(D.dadosDe(gr.nombre))}</p><div class="tdados">${gr.dados.map((v, i) =>
+          `<button class="tdado${gr.exito[i] ? " exito" : ""}" data-r='${JSON.stringify({ grupo: j, i })}'>${v}</button>`).join("")}</div>`).join("")}
+        <button class="tno" data-no="1">${esc(D.noUsar)}</button>`;
+    };
+    const fin = v => { d.onclick = null; d.oncancel = null; if (d.open) d.close(); resolve(v); };
+    pintar();
+    d.onclick = ev => {
+      const b = ev.target.closest && ev.target.closest("button");
+      if (!b) return;
+      if (b.dataset.g !== undefined) { g = +b.dataset.g; pintar(); return; }
+      if (b.dataset.r) { fin({ g, ...JSON.parse(b.dataset.r) }); return; }
+      if (b.dataset.no) fin(null);
+    };
+    d.oncancel = ev => { ev.preventDefault(); fin(null); };
+    if (!d.open) d.showModal();
+  });
+}
+
 // est: el combate (src/engine/dice.js); nombres/equipos de [atacante, defensor].
 export function elegirCombate(est, { nombres, opciones }) {
   const C = T.combateInt, i = est.turno;

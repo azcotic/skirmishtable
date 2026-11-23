@@ -21,6 +21,7 @@ function probar(f) {
 // funciones que reciben listas u otros tipos: sus argumentos de ejemplo
 const ARGS = {
   'orden.boton': ['engage'],
+  'destino.guardados': [[3, 5]],
   'disparo.secundarios': ['area', ['B1', 'B2']],
   'disparo.devArea': [4, 2, ['B1', 'A2']],
   'combateInt.bloqueo': ['crit', ['crit', 'norm']],
