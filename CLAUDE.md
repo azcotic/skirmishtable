@@ -55,9 +55,23 @@ npm ci                  # instalar dependencias bloqueadas (usar ci, no install)
 npm run dev -- --host   # servidor de desarrollo, accesible desde el teléfono en la misma red
 npm test                # tests del motor (Vitest)
 npm run build           # build de producción -> dist/
-npm run test:e2e        # Playwright contra el build (incluye perfiles de móvil)
+npm run test:e2e        # Playwright contra el build: los 32 tests (lento)
+npm run test:e2e:core   # por grupos: core (17), mobile (5), net (9), picture (1)
+npm run test:e2e:failed # solo los que fallaron en la última ejecución
 npm run tts:teams       # regenerar el catálogo de equipos de Steam
 ```
+
+Los tests e2e son lentos en este equipo (disco duro, WebGL por software): corre solo el grupo
+que toca tu cambio y deja la suite completa para antes del PR.
+
+- El build solo se rehace si cambió algo de `src/`, `index.html`, etc. (`scripts/e2e.mjs`);
+  `-- --build` lo fuerza. Los argumentos extra van a Playwright: `npm run test:e2e:core -- -g "undo"`.
+- En local corren 2 navegadores a la vez (`E2E_WORKERS` lo cambia); con más, los tests se
+  ahogan y fallan por timeout en `page.goto`, sin que el código tenga la culpa.
+- Cada worktree usa su propio puerto (derivado de su carpeta; `E2E_PORT` lo fija), así que
+  dos worktrees pueden correr e2e a la vez sin compartir servidor.
+- Unitarios: Vitest guarda las transformaciones entre ejecuciones (`fsModuleCache`), así que
+  la segunda vez es bastante más rápida. Para un archivo: `npx vitest run tests/unit/shots.test.js`.
 
 ## Notas del repo
 

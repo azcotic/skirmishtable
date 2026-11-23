@@ -7,5 +7,5 @@ import { inlineIntoHtml } from './scripts/inline-plugin.js';
 export default defineConfig({
   plugins: [inlineIntoHtml()],
   build: { target: 'es2020', outDir: 'dist', cssCodeSplit: false, modulePreload: false, assetsInlineLimit: 100000000 },
-  test: { include: ['tests/unit/**/*.test.js'], environment: 'node' },
+  test: { include: ['tests/unit/**/*.test.js'], environment: 'node', fsModuleCache: true },   // fsModuleCache: guarda las transformaciones entre ejecuciones
 });
