@@ -19,7 +19,7 @@ function aTexto(datos) {
     const ns = Object.keys(datos[c]);
     ns.forEach((n, j) => {
       const e = datos[c][n];
-      lineas.push(`  ${JSON.stringify(n)}: { "p": ${JSON.stringify(e.p)}, "t": ${JSON.stringify(e.t)} }${j < ns.length - 1 ? ',' : ''}`);
+      lineas.push(`  ${JSON.stringify(n)}: { "p": ${JSON.stringify(e.p)}, "t": ${JSON.stringify(e.t)}${e.g === undefined ? '' : `, "g": ${e.g}`} }${j < ns.length - 1 ? ',' : ''}`);
     });
     lineas.push(` }${i < cs.length - 1 ? ',' : ''}`);
   });
@@ -45,7 +45,8 @@ export function guardarEncuadres() {
               limpio[c] = {};
               for (const [n, e] of Object.entries(agentes)) {
                 if (!clave(n) || !e || !num3(e.p) || !num3(e.t)) throw new Error('agente');
-                limpio[c][n] = { p: e.p, t: e.t };
+                if (e.g !== undefined && !(typeof e.g === 'number' && Number.isFinite(e.g) && Math.abs(e.g) <= 720)) throw new Error('frente');
+                limpio[c][n] = e.g === undefined ? { p: e.p, t: e.t } : { p: e.p, t: e.t, g: e.g };
               }
             }
             writeFileSync(ARCHIVO, [
@@ -53,7 +54,9 @@ export function guardarEncuadres() {
               ' * Encuadres de los retratos 2D (src/view3d/retratos.js), elegidos a mano en la pantalla',
               ' * #/encuadres (src/ui/encuadres.js, solo con el servidor de desarrollo): por comando y agente, la',
               ' * posición de la cámara `p` y el punto al que mira `t`, relativos a la figura (en alturas de la',
-              ' * figura). Solo números: ningún contenido de terceros. Lo escribe esa pantalla al guardar.',
+              ' * figura), y `g`, el frente de la miniatura en grados (0 = +z, 90 = +x; la mesa 3D la gira para que',
+              ' * mire hacia donde apunta su línea de visión). Solo números: ningún contenido de terceros. Lo escribe',
+              ' * esa pantalla al guardar.',
               ' * Clave: id del mod en el catálogo de Steam y nombre del agente.',
               ' */',
               `export const ENCUADRES = ${aTexto(limpio)};`,

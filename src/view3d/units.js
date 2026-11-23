@@ -12,7 +12,8 @@ import { opR } from '../engine/geometry.js';
 import { BH, BW, OPS } from '../engine/world.js';
 import { noteFailure, steamMaterial, steamParts } from './models.js';
 import { idleClone, idleFields, idleGeometry, idlePhase } from './idle.js';
-import { retratoDe } from './retratos.js';
+import { frenteDe, retratoDe } from './retratos.js';
+import { state } from '../state.js';
 
 const PREF = "skirmishtable.minis";
 // per side: the team mod's id (or null for plain tokens) and the model index per operative
@@ -212,7 +213,10 @@ export function unitObject(op, r) {
   // fit the model's base to the operative's base (no base: the mod's inches), stand it on
   // the table, face the centre
   const k = t.userData.diameter ? 2 * opR(op) / t.userData.diameter : 1;
-  const yaw = Math.atan2(BW / 2 - op.x, BH / 2 - op.y);   // the scans face +z once mirrored
+  // hacia dónde mira: el blanco, si es el agente seleccionado y tiene uno; si no, el centro de la mesa. El frente
+  // de cada modelo (su `g`, fijado en #/encuadres) se hace coincidir con esa dirección: los escaneos no miran todos a +z
+  const mira = state.sel === op && state.target && state.target.alive ? state.target : { x: BW / 2, y: BH / 2 };
+  const yaw = Math.atan2(mira.x - op.x, mira.y - op.y) - frenteDe(minis.sides[op.team].team, model.name) * Math.PI / 180;
   obj.matrixAutoUpdate = false;
   obj.matrix.makeTranslation(op.x, 0, op.y)
     .multiply(new THREE.Matrix4().makeRotationY(yaw))

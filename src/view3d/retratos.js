@@ -34,8 +34,14 @@ export function encuadreGuardado(comando, nombre) {
 }
 // Guarda el encuadre en memoria y en el archivo del proyecto (solo el servidor de desarrollo lo escribe).
 // Devuelve una promesa: true si quedó escrito en el archivo.
+// El frente de una miniatura en grados (0 = +z, que es lo que se supone si no se fijó): la mesa 3D la gira
+// para que ese lado mire hacia donde apunta su línea de visión
+export function frenteDe(comando, nombre) {
+  const e = encuadreGuardado(comando, nombre);
+  return e && Number.isFinite(e.g) ? e.g : 0;
+}
 export function guardarEncuadre(comando, nombre, enc) {
-  (sesion[comando] = sesion[comando] || {})[nombre] = { p: enc.p.map(redondear), t: enc.t.map(redondear) };
+  (sesion[comando] = sesion[comando] || {})[nombre] = { p: enc.p.map(redondear), t: enc.t.map(redondear), ...(Number.isFinite(enc.g) ? { g: redondear(enc.g) } : {}) };
   return escribirArchivo();
 }
 export function borrarEncuadre(comando, nombre) {
@@ -140,12 +146,19 @@ export function prepararEscena(plantilla) {
   // el origen de las coordenadas del encuadre: bajo la figura, en su centro
   return { escena, obj, f, alto, origen: new THREE.Vector3(f.med.x, f.min.y, f.med.z) };
 }
-// Encuadre automático (cámara de frente a donde parece mirar, algo elevada, busto): { p, t }
-export function encuadreAuto(esc) {
+// Hacia dónde parece mirar la figura, en grados (0 = +z): por dónde pesan la mochila y la capa
+export function frenteAuto(esc) {
+  const g = Math.round(Math.atan2(esc.f.mira[0], esc.f.mira[1]) * 180 / Math.PI);
+  return (g + 360) % 360;
+}
+// Encuadre automático (cámara de frente a donde mira la figura, algo elevada, busto): { p, t }.
+// g: el frente en grados, si se conoce; si no, el que parece tener.
+export function encuadreAuto(esc, g) {
   const { f, alto, origen } = esc, ancho = Math.max(f.max.x - f.min.x, f.max.z - f.min.z);
+  const mira = Number.isFinite(g) ? [Math.sin(g * Math.PI / 180), Math.cos(g * Math.PI / 180)] : f.mira;
   const foco = new THREE.Vector3(f.med.x, f.max.y - alto * 0.34, f.med.z);
   const radio = Math.max(alto * 0.4, ancho * 0.34), dist = radio / Math.sin(FOV * Math.PI / 360), el = 20 * Math.PI / 180;
-  const pos = new THREE.Vector3(foco.x + f.mira[0] * Math.cos(el) * dist, foco.y + Math.sin(el) * dist, foco.z + f.mira[1] * Math.cos(el) * dist);
+  const pos = new THREE.Vector3(foco.x + mira[0] * Math.cos(el) * dist, foco.y + Math.sin(el) * dist, foco.z + mira[1] * Math.cos(el) * dist);
   return { p: pos.sub(origen).divideScalar(alto).toArray(), t: foco.sub(origen).divideScalar(alto).toArray() };
 }
 // Pone la cámara según el encuadre { p, t } (relativo a la figura)

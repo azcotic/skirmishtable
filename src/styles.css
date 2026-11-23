@@ -848,3 +848,11 @@ body.ancho #panelbtn { display: none; }
   .abajo .acciones.especial { grid-auto-flow: row; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: 48px;
     max-height: 188px; overflow-x: hidden; overflow-y: auto; }
 }
+
+/* el frente de la miniatura en el editor de encuadres */
+#encuadres .enc-frente { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: 560px; }
+#encuadres .enc-frente input[type=range] { flex: 1 1 180px; min-height: 44px; }
+#encuadres .enc-frente output { min-width: 4ch; text-align: right; font-family: "JetBrains Mono", monospace; color: #e8722e; }
+#encuadres .enc-frente .mini { min-height: 44px; padding: 0 10px; }
+#encuadres .enc-frenteayuda { margin: 0; }
+#encuadres .enc-lienzo canvas.enc-base { position: absolute; left: 8px; top: 8px; width: 150px; height: 150px; border-radius: 50%; border: 2px solid #5a4a36; background: #14110e; pointer-events: none; }
