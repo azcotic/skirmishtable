@@ -47,4 +47,13 @@ export default {
   },
   // comando de prueba: dos hechiceros, tres Marines Rúbrica y un campeón Tzaangor
   plantilla: ["hechiceroDestino", "hechiceroFuego", "tiradorRubrica", "portaiconoRubrica", "combatienteRubrica", "campeonTzaangor"],
+  // configuraciones de ejemplo (pantallas de inicio); la composición se comprobará más adelante
+  ejemplos: [
+    { nombre: "Aquelarre", desc: "Hechiceros con escolta de Marines Rúbrica y un campeón.",
+      agentes: ["hechiceroDestino", "hechiceroFuego", "tiradorRubrica", "portaiconoRubrica", "combatienteRubrica", "campeonTzaangor"] },
+    { nombre: "Muro Rúbrica", desc: "Lentos pero muy resistentes (2+): avanzar y aguantar.",
+      agentes: ["hechiceroTempireo", "tiradorRubrica", "portaiconoRubrica", "combatienteRubrica", "combatienteRubrica", "combatienteRubrica"] },
+    { nombre: "Horda Tzaangor", desc: "Rápidos y numerosos: llegar al combate cuanto antes.",
+      agentes: ["hechiceroDestino", "campeonTzaangor", "portacuernoTzaangor", "portaiconoTzaangor", "combatienteTzaangor", "combatienteTzaangor"] },
+  ],
 };

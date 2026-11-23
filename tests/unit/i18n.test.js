@@ -32,6 +32,9 @@ const ARGS = {
   'mover.soltar': ['A1', 'charge', 'medida exacta', 1, true],
   'disparo.log': ['A1', 'B1', 'Bólter', '6 4', '3', true, 3, ['Accurate 1', 'cover save banked']],
   'combate.log': ['A1', 'B1', '6 4', '5 2', 2, 0],
+  'repeticion.ctxAtaque': [2, 6, 1, 5, 'Campeón', 5, true],
+  'repeticion.ctxDefensa': ['Aullador', 2, 5, 1, 4, 0, 9, 5, 4],
+  'repeticion.ctxCombate': [2, 5, 1, 4, 14, 'Campeón', 1, 5, 0, 4, 10],
   'hud.aria': ['A1', 'Vekk', 'Apostado', 10, 14],
   'hud.hizo': [['reposition', 'shoot']],
   'operaciones.puntos': ['Ash', 2, 0, 3, 5],
@@ -43,8 +46,10 @@ const ARGS = {
   'partida.notaFina': ['Volkus AO 1', 30, 22, 'despliegue', 40, ''],
   'partida.notaMuros': ['Gallowdark', 30, 22, 'despliegue', 12, 2, 'fuente'],
 };
-const valor = (v, ruta) => typeof v !== 'function' ? v
-  : ARGS[ruta] ? v(...ARGS[ruta]) : probar(v);
+// algunos textos son varias líneas (un array): se comprueban juntas
+const unir = s => Array.isArray(s) ? s.join(' ') : s;
+const valor = (v, ruta) => unir(typeof v !== 'function' ? v
+  : ARGS[ruta] ? v(...ARGS[ruta]) : probar(v));
 
 // conjugaciones de voseo que no deben aparecer nunca (el usuario lo considera inaceptable)
 const VOSEO = /\b(vos|sos|tenés|querés|podés|sabés|hacé|tocá|arrastrá|seleccioná|elegí|ingresá|buscá|agregá|revisá|probá|mirá|dale|che)\b/i;

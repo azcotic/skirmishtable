@@ -25,11 +25,14 @@ function preguntar(html, porDefecto) {
 }
 
 // dados: valores; exito: [bool] por dado. Devuelve el índice a repetir o null.
-export function elegirRepeticion({ titulo, quien, dados, exito, pm }) {
+// contexto: líneas de texto con lo que hace falta saber para decidir (lo que sacó el rival, el
+// daño que recibirías ahora y si repetir puede cambiarlo)
+export function elegirRepeticion({ titulo, quien, dados, exito, pm, contexto = [] }) {
   const R = T.repeticion;
+  const ctx = contexto.length ? `<div class="tctx">${contexto.map(l => `<p>${esc(l)}</p>`).join("")}</div>` : "";
   const caras = dados.map((v, i) => `<button class="tdado${exito[i] ? " exito" : ""}" data-v="${i}"${exito[i] ? " disabled" : ""}` +
     ` aria-label="${esc(R.dadoAria(v, exito[i]))}">${v}</button>`).join("");
-  return preguntar(`<h2>${esc(titulo)}</h2><p class="tquien">${esc(quien)}</p>
+  return preguntar(`<h2>${esc(titulo)}</h2><p class="tquien">${esc(quien)}</p>${ctx}
     <p>${esc(R.explica(pm))}</p><div class="tdados">${caras}</div>
     <button class="tno" data-v="null">${R.noUsar}</button>`, null);
 }

@@ -483,6 +483,8 @@ dialog.tirada::backdrop { background: rgba(10, 8, 6, .7); }
 dialog.tirada h2 { margin: 0 0 4px; font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 22px; text-transform: uppercase; color: #f3ece2; }
 dialog.tirada .tquien { margin: 0 0 8px; color: #f0a276; font-weight: 600; }
 dialog.tirada p { margin: 6px 0; font-size: 12px; color: #b8ad9e; }
+.tctx { margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: #14110e; border: 1px solid #3a332a; }
+dialog.tirada .tctx p { margin: 3px 0; font-size: 13px; color: #e8e2d8; }
 .tdados { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
 .tdado { width: 52px; height: 52px; padding: 0; border-radius: 10px; font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 26px;
   background: #3a1714; border: 2px solid #c0392b; color: #ffd8d2; }
@@ -645,6 +647,21 @@ dialog.ficha::backdrop { background: rgba(10, 8, 6, .7); }
 .pant-dados .eq0 b { color: #f08a4b; } .pant-dados .eq1 b { color: #7fb6c9; }
 .pant-marca-eq { position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 3px 3px 0; }
 .pant-marca-eq.eq0 { background: #e0672f; } .pant-marca-eq.eq1 { background: #5b93a6; }
+/* configuraciones de ejemplo y armar el comando */
+.pant-agentes { display: block; margin-top: 6px; font-size: 11px; color: #c9bfb2; line-height: 1.5; }
+.pant-elegidos { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; }
+.pant-chip { min-height: 36px; padding: 4px 10px; border-radius: 18px; background: #2a1f17; border: 1px solid #e0672f; color: #f3ece2; font-size: 12px; }
+.pant-sec { margin: 10px 0 2px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #a89a80; }
+.pant-agente { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: #1d1914; border: 1px solid #3a332a; }
+.pant-agente.elegido { border-color: #8a5a36; }
+.pant-agente-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pant-agente-info b { font-family: "Big Shoulders", sans-serif; font-size: 18px; font-weight: 700; color: #f3ece2; }
+.pant-agente-info small { font-family: "JetBrains Mono", monospace; font-size: 9px; padding: 0 5px; border-radius: 6px; background: #e0672f; color: #14110e; vertical-align: middle; }
+.pant-agente-info span { font-size: 11px; color: #9a9184; }
+.pant-veces { color: #f0a276; }
+.pant-ver, .pant-mas { flex: none; width: 44px; height: 44px; padding: 0; border-radius: 10px; font-size: 18px; }
+.pant-mas { border-color: #e0672f; color: #f0a276; }
+.pant-jugar:disabled { background: #4a3a2c; color: #9a9184; }
 .pant-fin-ganador { font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 30px; text-transform: uppercase;
   text-align: center; padding: 18px 12px; border-radius: 14px; background: #2a1f17; border: 1px solid #e0672f; color: #f3ece2; }
 .pant-fin-bando { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 14px; border-radius: 12px;

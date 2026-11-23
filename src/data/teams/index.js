@@ -25,13 +25,26 @@ export function registrarComandos() {
   }
 }
 
-// Las definiciones [id, bando, nombre, tipo] del comando de prueba de un bando; sin comando
-// (fichas simples), los agentes genéricos de siempre.
-export function plantillaDefs(side, teamId) {
+// Agentes por comando (por ahora; las reglas de composición de cada comando vendrán después)
+export const TAM_COMANDO = 6;
+
+// Las definiciones [id, bando, nombre, tipo] de los agentes de un bando: los elegidos (claves de
+// agente) o la plantilla de prueba; sin comando (fichas simples), los genéricos de siempre.
+export function plantillaDefs(side, teamId, claves = null) {
   const c = comandoPorId(teamId);
   if (!c) return DEFAULT_ROSTER.filter(d => d[1] === side);
   const letra = side === 0 ? "A" : "B";
-  return c.plantilla.map((k, i) => [letra + (i + 1), side, c.agentes[k].nombre, `${c.prefijo}.${k}`]);
+  const lista = (claves && claves.length ? claves : c.plantilla).filter(k => c.agentes[k]);
+  return lista.map((k, i) => [letra + (i + 1), side, c.agentes[k].nombre, `${c.prefijo}.${k}`]);
+}
+
+// Un agente de muestra (para ver su ficha antes de elegirlo): como uno de la mesa, sin colocar.
+export function agenteDeMuestra(side, teamId, clave) {
+  const c = comandoPorId(teamId), k = c && `${c.prefijo}.${clave}`, p = k && KINDS[k];
+  if (!p) return null;
+  return { id: "＋", team: side, name: p.nombre, kind: k, apl: p.apl, ap: p.apl, move: p.move, save: p.save,
+    wounds: p.wounds, maxW: p.wounds, weapons: [...p.weapons], weapon: p.weapons[0], alive: true, ready: true,
+    deployed: false, used: [], order: "conceal" };
 }
 
 // El índice del modelo 3D de cada agente: el primer modelo libre del mod cuyo nombre empieza

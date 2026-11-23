@@ -30,7 +30,8 @@ import { teamOf } from '../view3d/units.js';
 import { ARDIDES } from '../i18n/nombres.js';
 import { pmDelPI, puedeUsarArdid, quienDecide, tirarD6, COSTE_ARDID } from '../game/fases.js';
 import { OPS, rosterInit } from '../engine/world.js';
-import { modelosPara, plantillaDefs } from '../data/teams/index.js';
+import { TAM_COMANDO, agenteDeMuestra, comandoPorId, modelosPara, plantillaDefs } from '../data/teams/index.js';
+import { abrirFicha } from './ficha.js';
 import { setPick } from '../view3d/units.js';
 import { bandoEnTurno } from './turno.js';
 import { mayControl } from '../net/sync.js';
@@ -38,9 +39,10 @@ import { mayControl } from '../net/sync.js';
 const KEY = "skirmishtable.inicio";
 // los comandos de prueba (ids del catálogo de Steam): Garra Némesis y Aquelarre Disforme
 const COMANDOS_PRUEBA = ["3352828814", "3348897103"];
-const ORDEN = ["modo", "mapa", "comando0", "comando1", "despliegue", "resumen"];
+const ORDEN = ["modo", "mapa", "comando0", "plantilla0", "comando1", "plantilla1", "despliegue", "resumen"];
 
-const eleccion = { modo: null, mapa: null, comando: [null, null], despliegue: null };
+// plantilla: los agentes elegidos de cada bando (claves); config: el nombre de la configuración
+const eleccion = { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], despliegue: null };
 let paso = "modo";
 const pila = [];
 let tirada = null;          // fase de estrategia en línea: {dados: [a, b], decide: 0|1|null}
@@ -85,6 +87,33 @@ function contenido() {
       opcion("aprender", I.aprender, I.aprenderDesc, { deshabilitada: true, extra: `<span class="pant-pronto">${I.pronto}</span>` }) };
     case "mapa": return { titulo: I.mapaTitulo, sub: I.mapaSub, html: opcionesMapa() };
     case "comando0": return { titulo: I.comandoTitulo, sub: I.comandoSub, html: opcionesComando(0) };
+    case "plantilla0": case "plantilla1": {   // 3 configuraciones de ejemplo y "Elige tú mismo"
+      const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]);
+      const html = c.ejemplos.map((e, k) => opcion("ej:" + k, esc(e.nombre),
+        `${esc(e.desc)}<br><span class="pant-agentes">${e.agentes.map(a => esc(c.agentes[a].nombre)).join(" · ")}</span>`,
+        { activa: eleccion.config[s] === e.nombre })).join("") +
+        opcion("propia", I.propia, I.propiaDesc(TAM_COMANDO), { activa: eleccion.config[s] === I.propia });
+      return { titulo: s === 0 ? I.configTitulo : I.configTituloRival, sub: esc(c.nombre), html };
+    }
+    case "elegir0": case "elegir1": {          // armar el comando agente por agente
+      const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = eleccion.plantilla[s] || [];
+      const lleno = lista.length >= TAM_COMANDO;
+      const elegidos = lista.length
+        ? lista.map((k, i) => `<button class="pant-chip" data-v="rm:${i}" aria-label="${esc(I.quitar(c.agentes[k].nombre))}">${esc(c.agentes[k].nombre)} ✕</button>`).join("")
+        : `<p class="pant-nota">${I.ningunoAun}</p>`;
+      const disponibles = Object.entries(c.agentes).map(([k, a]) => {
+        const veces = lista.filter(x => x === k).length;
+        return `<div class="pant-agente${veces ? " elegido" : ""}">
+          <div class="pant-agente-info"><b>${esc(a.nombre)}${a.lider ? ` <small>${T.fichaDatos.lider}</small>` : ""}${veces ? ` <span class="pant-veces">×${veces}</span>` : ""}</b>
+            <span>${I.statsCortas(a.move, a.apl, a.save, a.wounds)}</span></div>
+          <button class="pant-ver" data-v="ver:${k}" aria-label="${esc(I.verFicha(a.nombre))}">👁</button>
+          <button class="pant-mas" data-v="add:${k}"${lleno ? " disabled" : ""} aria-label="${esc(I.anadir(a.nombre))}">＋</button></div>`;
+      }).join("");
+      return { titulo: I.armarTitulo, sub: `${esc(c.nombre)} · ${I.cuenta(lista.length, TAM_COMANDO)}`,
+        html: `<div class="pant-elegidos">${elegidos}</div><h3 class="pant-sec">${I.disponibles}</h3>${disponibles}
+          <p class="pant-nota">${I.composicionLuego}</p>`,
+        principal: `<button class="pant-jugar" id="pantlistoarmar"${lista.length ? "" : " disabled"}>${I.listoArmar(lista.length)}</button>` };
+    }
     case "comando1": return { titulo: eleccion.modo === "ia" ? I.rivalTituloIA : I.rivalTitulo,
       sub: eleccion.modo === "linea" ? I.rivalSubLinea : eleccion.modo === "ia" ? I.rivalSubIA : I.rivalSub, html: opcionesComando(1) };
     case "despliegue": return { titulo: I.despliegueTitulo, sub: I.despliegueSub, html:
@@ -94,8 +123,8 @@ function contenido() {
       `<dl class="pant-resumen">` +
       `<dt>${I.rModo}</dt><dd>${eleccion.modo === "linea" ? I.linea : eleccion.modo === "ia" ? I.contraIA : I.solo}</dd>` +
       `<dt>${I.rMapa}</dt><dd>${esc(nombreMapa(eleccion.mapa))}</dd>` +
-      `<dt>${I.rComando}</dt><dd>${esc(nombreComando(eleccion.comando[0]))}</dd>` +
-      `<dt>${I.rRival}</dt><dd>${esc(nombreComando(eleccion.comando[1]))}</dd>` +
+      `<dt>${I.rComando}</dt><dd>${esc(nombreComando(eleccion.comando[0]))}${eleccion.config[0] ? ` · ${esc(eleccion.config[0])}` : ""}</dd>` +
+      `<dt>${I.rRival}</dt><dd>${esc(nombreComando(eleccion.comando[1]))}${eleccion.config[1] ? ` · ${esc(eleccion.config[1])}` : ""}</dd>` +
       `<dt>${I.rDespliegue}</dt><dd>${eleccion.despliegue === "azar" ? I.azar : I.turnos}</dd></dl>`,
       principal: `<button class="pant-jugar" id="pantjugar">${I.jugar}</button>` };
     case "listo": return { titulo: I.listoTitulo, sub: I.listoSub, html:
@@ -166,7 +195,8 @@ function contenido() {
 function render() {
   const el = pantalla();
   if (!el) return;
-  const c = contenido(), i = ORDEN.indexOf(paso);
+  // armar el comando cuenta como el paso de su configuración, para los puntos de progreso
+  const c = contenido(), i = ORDEN.indexOf(paso.startsWith("elegir") ? "plantilla" + paso.slice(-1) : paso);
   const puntos = i < 0 ? "" : ORDEN.map((_, k) => `<i class="${k < i ? "hecho" : k === i ? "ahora" : ""}"></i>`).join("");
   el.innerHTML = `<div class="pant" data-paso="${paso}">
     <div class="pant-cab">
@@ -188,8 +218,32 @@ function elegir(v) {
   switch (paso) {
     case "modo": eleccion.modo = v; return ir("mapa");
     case "mapa": eleccion.mapa = v; return ir("comando0");
-    case "comando0": eleccion.comando[0] = v; return ir("comando1");
-    case "comando1": eleccion.comando[1] = v; return ir("despliegue");
+    case "comando0": case "comando1": {
+      const s = +paso.slice(-1), c = comandoPorId(v);
+      eleccion.comando[s] = v; eleccion.plantilla[s] = null; eleccion.config[s] = null;
+      const despues = s === 0 ? "comando1" : "despliegue";
+      if (!c) return ir(despues);                       // fichas simples: sin configuración
+      if (s === 1 && eleccion.modo === "ia") {          // la computadora elige una de las de ejemplo
+        const e = c.ejemplos[Math.floor(Math.random() * c.ejemplos.length)];
+        eleccion.plantilla[1] = [...e.agentes]; eleccion.config[1] = e.nombre;
+        return ir(despues);
+      }
+      return ir("plantilla" + s);
+    }
+    case "plantilla0": case "plantilla1": {
+      const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]);
+      if (v === "propia") { eleccion.plantilla[s] = eleccion.config[s] === T.inicio.propia ? eleccion.plantilla[s] : []; return ir("elegir" + s); }
+      const e = c.ejemplos[+v.slice(3)];
+      eleccion.plantilla[s] = [...e.agentes]; eleccion.config[s] = e.nombre;
+      return ir(s === 0 ? "comando1" : "despliegue");
+    }
+    case "elegir0": case "elegir1": {
+      const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = eleccion.plantilla[s] = eleccion.plantilla[s] || [];
+      if (v.startsWith("add:") && lista.length < TAM_COMANDO) lista.push(v.slice(4));
+      else if (v.startsWith("rm:")) lista.splice(+v.slice(3), 1);
+      else if (v.startsWith("ver:")) { abrirFicha(agenteDeMuestra(s, c.id, v.slice(4))); return; }
+      return render();
+    }
     case "despliegue": eleccion.despliegue = v; return ir("resumen");
     case "iniciativa":
       if (v === "tirar") {
@@ -276,7 +330,7 @@ function empezar() {
   setTeam(0, eleccion.comando[0] || null);
   setTeam(1, eleccion.comando[1] || null);
   // los agentes de cada bando: el comando de prueba con sus fichas reales (o fichas simples)
-  rosterInit([0, 1].flatMap(s => plantillaDefs(s, eleccion.comando[s])));
+  rosterInit([0, 1].flatMap(s => plantillaDefs(s, eleccion.comando[s], eleccion.plantilla[s])));
   loadMap(eleccion.mapa);
   // cada agente con el modelo 3D que le corresponde
   for (const s of [0, 1]) {
@@ -294,7 +348,7 @@ export function abrirInicio() {
   const el = pantalla();
   if (!el) return;
   finMostrado = false;
-  Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], despliegue: null });
+  Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], despliegue: null });
   paso = "modo"; pila.length = 0;
   el.hidden = false;
   render();
@@ -354,6 +408,11 @@ export function wireInicio() {
     if (b.id === "pantjugar") return empezar();
     if (b.id === "pantmesa") return cerrar();
     if (b.id === "pantnueva") return abrirInicio();
+    if (b.id === "pantlistoarmar") {               // comando armado a mano
+      const s = +paso.slice(-1);
+      eleccion.config[s] = T.inicio.propia;
+      return ir(s === 0 ? "comando1" : "despliegue");
+    }
     if (b.id === "pantotrobando") { ladoTiroteo = 1 - ladoTiroteo; return render(); }
     if (b.id === "pantempezar") {                  // confirmado: empieza el primer punto de inflexión
       logLine(T.despliegue.termina); abrirFaseEstrategia(); return;

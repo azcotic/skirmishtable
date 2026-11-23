@@ -152,7 +152,8 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
     hotV = hotDado ?? die();
     if (hotV < hit) { selfDmg = hotV * 2; notes.push("hot:" + selfDmg); }
   }
-  return { w, hit, atk, dfn, dmg: dev + rest.dmg, notes, selfDmg, pen, cover, hotDado: hotV };
+  // atkN/atkC: los éxitos del ataque que llegan a la defensa (para explicar decisiones)
+  return { w, hit, atk, dfn, dmg: dev + rest.dmg, notes, selfDmg, pen, cover, hotDado: hotV, atkN: aNorm, atkC: aCrit, dev };
 }
 
 /* ---------- Fight ---------- */

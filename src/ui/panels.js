@@ -3,7 +3,7 @@
  */
 import { state } from '../state.js';
 import { CTRL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
-import { aplicarCombate, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
+import { aplicarCombate, bloquear, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
   isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
 import { elegirCombate, elegirRepeticion } from './tirada.js';
 import { opGap, opR } from '../engine/geometry.js';
@@ -26,13 +26,15 @@ import { control, esDeLaIA } from './control.js';
 // Repetición de mando (ardid de tiroteo, 1 PM, sin límite de usos): repetir un dado fallado.
 // Pregunta al jugador (la IA decide sola: repite su peor fallo si le queda PM). Cambia `dados`
 // en el lugar y devuelve true si se usó.
-async function repeticionDeMando(team, dados, exito, die, titulo, quien) {
+async function repeticionDeMando(team, dados, exito, die, titulo, quien, contexto = [], inutil = false) {
   if (tray.cp[team] < 1) return false;
   const ok = dados.map(exito);
   if (ok.every(Boolean)) return false;
   let i;
-  if (esDeLaIA(team)) i = dados.map((v, k) => [v, k]).filter(([, k]) => !ok[k]).sort((x, y) => x[0] - y[0])[0][1];
-  else i = await elegirRepeticion({ titulo, quien, dados, exito: ok, pm: tray.cp[team] });
+  if (esDeLaIA(team)) {
+    if (inutil) return false;          // la IA no gasta PM si repetir no puede cambiar el resultado
+    i = dados.map((v, k) => [v, k]).filter(([, k]) => !ok[k]).sort((x, y) => x[0] - y[0])[0][1];
+  } else i = await elegirRepeticion({ titulo, quien, dados, exito: ok, pm: tray.cp[team], contexto });
   if (i === null || i === undefined) return false;
   const antes = dados[i];
   dados[i] = die();
@@ -123,11 +125,16 @@ export function doShoot() {
       // fuera de línea: se puede usar Repetición de mando en el ataque y en la defensa
       const w = WPN[what.w], hit = effHit(a, w), cd = critDesde(w.rules);
       const atk = rollAttack(Math.max(0, w.atk - certera(what, w)), hit, w.rules, die);
-      if (await repeticionDeMando(a.team, atk.dice, v => v !== 1 && (v >= cd || v >= hit), die, T.repeticion.ataque, a.name))
+      const ctxAtk = T.repeticion.ctxAtaque(atk.crit, w.dmgC, atk.norm, w.dmgN, b.name, b.save, !!what.cover);
+      if (await repeticionDeMando(a.team, atk.dice, v => v !== 1 && (v >= cd || v >= hit), die, T.repeticion.ataque, a.name, ctxAtk))
         Object.assign(atk, clasificarAtaque(atk.dice, hit, w.rules));
       r = resolverDisparo(what, w, hit, atk, b, die);
+      // lo que sacó el atacante y cuánto cambiaría el daño si la repetición sale bien
+      const siNormal = r.dev + bloquear(r.atkN, r.atkC, r.dfn.norm + 1, r.dfn.crit, w.dmgN, w.dmgC).dmg;
+      const siCritico = r.dev + bloquear(r.atkN, r.atkC, r.dfn.norm, r.dfn.crit + 1, w.dmgN, w.dmgC).dmg;
+      const ctxDfn = T.repeticion.ctxDefensa(a.name, r.atkC, w.dmgC, r.atkN, w.dmgN, r.dev, r.dmg, siNormal, siCritico);
       const dfn = [...r.dfn.dice];
-      if (dfn.length && await repeticionDeMando(b.team, dfn, v => v === 6 || (v !== 1 && v >= b.save), die, T.repeticion.defensa, b.name))
+      if (dfn.length && await repeticionDeMando(b.team, dfn, v => v === 6 || (v !== 1 && v >= b.save), die, T.repeticion.defensa, b.name, ctxDfn, siCritico === r.dmg))
         r = resolverDisparo(what, w, hit, atk, b, die, dfn, r.hotDado);
     }
     showRoll(r.atk.dice, r.hit, a.team, T.disparo.tiradaAtq(a.name));
@@ -180,7 +187,11 @@ export function doFight() {
       const est = iniciarCombate(what, a, b, die);
       for (const [k, op, roll, hit, w] of [[0, a, est.ra, est.hitA, est.wa], [1, b, est.rb, est.hitB, est.wb]]) {
         const cd = critDesde(w.rules);
-        if (await repeticionDeMando(op.team, roll.dice, v => v !== 1 && (v >= cd || v >= hit), die, T.repeticion.combate, op.name)) {
+        // los éxitos de los dos y sus heridas: el rival ya tiró
+        const p = est.pools[k], q = est.pools[1 - k], rival = k === 0 ? b : a;
+        const ctx = T.repeticion.ctxCombate(p.crit, p.w.dmgC, p.norm, p.w.dmgN, est.vida[k].wounds,
+          rival.name, q.crit, q.w.dmgC, q.norm, q.w.dmgN, est.vida[1 - k].wounds);
+        if (await repeticionDeMando(op.team, roll.dice, v => v !== 1 && (v >= cd || v >= hit), die, T.repeticion.combate, op.name, ctx)) {
           Object.assign(roll, clasificarAtaque(roll.dice, hit, w.rules));
           est.pools[k].crit = roll.crit; est.pools[k].norm = roll.norm;
         }

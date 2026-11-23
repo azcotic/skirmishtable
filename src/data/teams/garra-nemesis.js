@@ -50,4 +50,13 @@ export default {
   },
   // el comando de prueba: el Visionario y 5 agentes de la lista (cada uno una vez)
   plantilla: ["visionario", "siembramiedos", "tirador", "tiradorPesado", "aullador", "robapieles"],
+  // configuraciones de ejemplo (pantallas de inicio); la composición se comprobará más adelante
+  ejemplos: [
+    { nombre: "Equilibrada", desc: "Un poco de todo: disparo, combate y control.",
+      agentes: ["visionario", "siembramiedos", "tirador", "tiradorPesado", "aullador", "robapieles"] },
+    { nombre: "Asalto", desc: "Cargar y despedazar: agentes de combate cuerpo a cuerpo.",
+      agentes: ["visionario", "aullador", "robapieles", "ventrilokar", "combatiente", "combatiente"] },
+    { nombre: "Fuego de apoyo", desc: "Disparar desde lejos y cubrirse.",
+      agentes: ["visionario", "tirador", "tiradorPesado", "siembramiedos", "combatiente", "ventrilokar"] },
+  ],
 };
