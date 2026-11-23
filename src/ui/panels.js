@@ -17,6 +17,7 @@ import { fairNote, rollFor } from '../net/roll.js';
 import { renderMinis } from './minis.js';
 import { T, pulg } from '../i18n/es.js';
 import { renderAcciones } from './acciones.js';
+import { accionesLegales, puede } from '../game/acciones.js';
 
 /* ---------- state / undo / log ---------- */
 // ini: bando con la iniciativa (null antes de decidirla); ardides: los usados en este PI
@@ -207,8 +208,11 @@ export function renderCard() {
     c.querySelector("#mv-" + t).onclick = () => {
       state.moveType = t;
       const label = T.mover.nombre[t];
+      const r = state.sel ? puede(state.sel, t, OPS) : { ok: true };
       if (state.sel && state.sel.used.includes(t))
         hint(T.mover.yaUsado(label));
+      else if (!r.ok)                           // las reglas no lo permiten: se explica (la mesa no lo impide)
+        hint(T.reglas.noPuede(label, T.reglas.motivo[r.motivo] || r.motivo));
       else
         hint(T.mover.elegido(label, state.sel && state.sel.name, allowance()));
       renderCard();
@@ -225,6 +229,14 @@ export function renderCard() {
     }
     doFight();
   };
+  // lo que las reglas no permiten ahora (src/game/acciones.js): atenuado y con el motivo
+  const legal = Object.fromEntries(accionesLegales(state.sel, OPS).map(a => [a.accion, a]));
+  for (const [id, a] of [["mv-reposition", "reposition"], ["mv-dash", "dash"], ["mv-charge", "charge"], ["shootbtn", "shoot"], ["fightbtn", "fight"]]) {
+    const b = c.querySelector("#" + id), r = legal[a];
+    if (!b || !r || r.ok || r.motivo === "yaHecha") continue;   // lo ya hecho lleva su ✓
+    b.classList.add("restricted");
+    b.title = T.reglas.noPuede(T.reglas.accion[a], T.reglas.motivo[r.motivo] || r.motivo);
+  }
   renderAcciones();               // la barra de acciones refleja estos botones
 }
 export function renderVerdict() {

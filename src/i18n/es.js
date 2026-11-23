@@ -512,6 +512,31 @@ export const T = {
     irMesa: 'Ir a la mesa',
   },
 
+  // por qué una acción no está permitida (src/game/acciones.js)
+  reglas: {
+    accion: { reposition: G.reposicionarse.es, dash: G.correr.es, fallBack: G.retroceder.es, charge: G.cargar.es,
+      shoot: G.disparar.es, fight: G.combatir.es },
+    noPuede: (accion, motivo) => `Según las reglas no puede ${accion}: ${motivo}.`,
+    motivo: {
+      fuera: 'está fuera de la mesa',
+      usado: 'ya está usado en este punto de inflexión',
+      desconocida: 'acción desconocida',
+      sinPA: `no le quedan ${G.pa.abrev} suficientes`,
+      yaHecha: 'ya hizo esa acción en esta activación',
+      enZonaDeControl: `está en la ${G.zonaControl.es} de un enemigo`,
+      yaCargoORetrocedio: `ya usó ${G.cargar.es} o ${G.retroceder.es} en esta activación`,
+      yaCargo: `ya usó ${G.cargar.es} en esta activación`,
+      armaPesada: 'su arma Pesada no se lo permite',
+      sinEnemigoEnZona: `no hay ningún enemigo en su ${G.zonaControl.es}`,
+      yaSeMovio: 'ya se movió en esta activación',
+      ocultarse: 'tiene orden de ocultarse',
+      yaEnZona: `ya está en la ${G.zonaControl.es} de un enemigo`,
+      sinArmaDistancia: 'el arma elegida no es a distancia',
+      sinBlanco: `no hay ningún ${G.blancoValido.es}`,
+      sinArmaCombate: 'no tiene armas de combate',
+    },
+  },
+
   // tipos genéricos de agente (fichas simples, sin comando elegido; src/engine/world.js KINDS)
   tipos: { leader: 'Líder', marksman: 'Francotirador', brawler: 'Asaltante', trooper: 'Soldado' },
 
