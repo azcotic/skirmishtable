@@ -17,7 +17,7 @@ import { fairNote, rollFor } from '../net/roll.js';
 import { renderMinis } from './minis.js';
 import { T, pulg } from '../i18n/es.js';
 import { renderAcciones } from './acciones.js';
-import { accionesLegales, puede, puedeCambiarOrden } from '../game/acciones.js';
+import { accionesLegales, agotada, alcanceArma, blancoValidoCon, buscadoraAplica, puede, puedeCambiarOrden } from '../game/acciones.js';
 import { conectarTurno, pistaDeTurno, porQueNoActua, puedeActuar, todosUsados } from './turno.js';
 import { control } from './control.js';
 // el agente al que ya se le sugirió terminar su activación por quedarse sin PA
@@ -74,10 +74,14 @@ export function doShoot() {
   if (no) { logLine(T.disparo.noPuedeLog(state.sel.name, noShootWhy(no))); return; }
   refreshSight();                        // judge it as things stand now, not when targeted
   const shot = state.lastShot;
-  if (!shot || !SHOT_KINDS[shot.kind].valid) {
+  if (!shot || !(SHOT_KINDS[shot.kind].valid || buscadoraAplica(w, shot))) {
     logLine(T.disparo.noValido(state.target.name, shot ? shotWhy(shot) : T.disparo.sinBlanco));
     renderAll(); return;
   }
+  if (!blancoValidoCon(w, shot)) {        // Alcance x: más lejos que el alcance del arma
+    logLine(T.disparo.fueraDeAlcance(state.target.name, w.name, alcanceArma(w), shot.range)); return;
+  }
+  if (agotada(state.sel, state.sel.weapon)) { logLine(T.disparo.agotada(w.name)); return; }
   // what is rolled for: the shot as this table judges it, fixed before the dice are known
   const what = {k: "shoot", by: state.sel.id, at: state.target.id, w: state.sel.weapon,
                 acc: Math.min(shot.accurate, w.atk), obsc: !!shot.obscured, cover: !!shot.save};
@@ -95,9 +99,15 @@ export function doShoot() {
     showRoll(r.dfn.dice, b.save, b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
     b.wounds = Math.max(0, b.wounds - r.dmg);
     a.ap -= 1; a.used.push("shoot");
+    a.usos = { ...(a.usos || {}), [what.w]: ((a.usos || {})[what.w] || 0) + 1 };   // Limitada
     let line = T.disparo.log(a.name, b.name, r.w.name, fmtDice(r.atk.dice), fmtDice(r.dfn.dice), r.dfn.cover, r.dmg, r.notes);
     if (b.wounds === 0) { b.alive = false; line += T.heridas.incapacitado; }
     else if (isInjured(b)) line += T.heridas.lesionado;
+    if (r.selfDmg) {                     // Sobrecalentamiento: el tirador se daña
+      a.wounds = Math.max(0, a.wounds - r.selfDmg);
+      line += T.disparo.sobrecalentado(a.name, r.selfDmg);
+      if (a.wounds === 0) { a.alive = false; line += T.heridas.incapacitado; }
+    }
     logLine(line + fairNote(n), r.dmg > 0, true);   // también en un aviso en pantalla
     rolled(n, done);
   });
@@ -218,7 +228,7 @@ export function renderCard() {
     <div class="btnrow">${moveButtons(repoUsed, dashUsed, chargeUsed)}</div>
     <div class="btnrow">
       <button id="tgtbtn" class="${state.mode==='target'?'active':''}">${T.ficha.apuntarBoton}</button>
-      <button id="shootbtn" ${(!state.target || !state.lastShot || !SHOT_KINDS[state.lastShot.kind].valid || cannotShoot(selEye()) || WPN[state.sel.weapon].type!=="R") ? "disabled" : ""}>${T.ficha.disparar}</button>
+      <button id="shootbtn" ${(!state.target || !state.lastShot || !(SHOT_KINDS[state.lastShot.kind].valid || buscadoraAplica(WPN[state.sel.weapon], state.lastShot)) || cannotShoot(selEye()) || WPN[state.sel.weapon].type!=="R") ? "disabled" : ""}>${T.ficha.disparar}</button>
       <button id="fightbtn" ${meleeFoes.length ? "" : "disabled"}>${T.ficha.combatir}</button>
     </div>`;
   if (RULES.orders) c.querySelector("#ordbtn").onclick = () => toggleOrder(state.sel.id);
@@ -318,6 +328,12 @@ export function renderVerdict() {
     if (RULES.cover.voidWithin > 0 && s.gap <= RULES.cover.voidWithin) why.push(V.muyCerca(RULES.cover.voidWithin));
   }
   why.push(V.distancia(s.gap));
+  // reglas del arma elegida: Buscadora (vale contra un oculto a cubierto) y Alcance
+  const wsel = WPN[state.sel.weapon];
+  if (wsel && wsel.type === "R") {
+    if (buscadoraAplica(wsel, shot)) why.push(V.buscadora(wsel.name));
+    if (s.gap > alcanceArma(wsel) + 1e-9) why.push(V.fueraAlcance(wsel.name, alcanceArma(wsel)));
+  }
   const no = cannotShoot(selEye());
   const head = no ? `<div class="why">${V.noPuede(state.sel.name, noShootWhy(no))}</div>` : "";
   v.innerHTML = `${head}<div class="big ${cls}">${big}</div><div class="why">${state.sel.name} → ${state.target.name} · ${why.join(" · ")}</div>`;

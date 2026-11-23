@@ -102,6 +102,11 @@ export function applyRoll(what, s, st, die, touched, sides) {
       b.wounds = Math.max(0, b.wounds - r.dmg);
       if (b.wounds === 0) b.alive = false;
       touched.add(b.id);
+      if (r.selfDmg) {                   // Sobrecalentamiento: el tirador se daña
+        a.wounds = Math.max(0, a.wounds - r.selfDmg);
+        if (a.wounds === 0) a.alive = false;
+        touched.add(a.id);
+      }
     } else {
       const r = fightRoll(what, a, b, die);
       if (!r) return `a fight with a weapon ${a.name} or ${b.name} doesn't carry`;

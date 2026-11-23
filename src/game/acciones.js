@@ -17,6 +17,18 @@
 import { CTRL, WPN } from '../config.js';
 import { opGap } from '../engine/geometry.js';
 import { SHOT_KINDS, shotsFrom } from '../engine/shots.js';
+import { regla } from '../engine/dice.js';
+
+// Reglas de arma que deciden si se puede disparar a un blanco:
+// Alcance x (como mucho x″ entre peanas) y Buscadora (un blanco con orden de ocultarse no
+// puede usar el terreno para estar a cubierto: se le puede disparar, conserva su salvación;
+// Buscadora (Ligero), solo si su cobertura es ligera).
+export const alcanceArma = w => { const v = regla(w && w.rules, "Range"); return typeof v === "number" ? v : Infinity; };
+export const buscadoraAplica = (w, sh) => !!w && sh.kind === "concealed"
+  && (regla(w.rules, "Seek") === true || ((w.rules || []).includes("Seek Light") && !sh.sight.hardCover));
+export const blancoValidoCon = (w, sh) => (SHOT_KINDS[sh.kind].valid || buscadoraAplica(w, sh)) && sh.range <= alcanceArma(w) + 1e-9;
+// Limitada x: usos por batalla de cada arma (op.usos)
+export const agotada = (op, k) => { const v = regla(WPN[k] && WPN[k].rules, "Limited"); return typeof v === "number" && ((op.usos || {})[k] || 0) >= v; };
 
 export const COSTE = { reposition: 1, dash: 1, fallBack: 2, charge: 1, shoot: 1, fight: 1 };
 export const ACCIONES = Object.keys(COSTE);
@@ -73,8 +85,13 @@ export function puede(op, accion, ops) {
         const permitido = tieneRegla(w, "Heavy (Reposition only)") ? "reposition" : tieneRegla(w, "Heavy (Dash only)") ? "dash" : null;
         if (MOVIMIENTOS.some(m => usado(m) && m !== permitido)) return no("armaPesada");
       }
-      const blancos = shotsFrom({ x: op.x, y: op.y, z: op.z || 0, team: op.team, op }).filter(s => SHOT_KINDS[s.kind].valid);
-      if (!blancos.length) return no("sinBlanco");
+      if (agotada(op, op.weapon)) return no("armaAgotada");
+      const todos = shotsFrom({ x: op.x, y: op.y, z: op.z || 0, team: op.team, op });
+      if (!todos.some(s => blancoValidoCon(w, s))) {
+        // hay blancos válidos, pero ninguno al alcance del arma
+        if (todos.some(s => SHOT_KINDS[s.kind].valid || buscadoraAplica(w, s))) return no("fueraDeAlcance");
+        return no("sinBlanco");
+      }
       return { ok: true };
     }
     case "fight":

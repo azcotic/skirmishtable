@@ -371,10 +371,24 @@ export const T = {
     log: (a, b, arma, atq, def, cobertura, dano, notas) =>
       `<b>${a}</b> dispara a <b>${b}</b> con ${arma} — <span class="dice">atq [${atq}] def [${def}${cobertura ? ' +cobertura' : ''}]</span> → ` +
       `<b>${dano} de daño</b>${notas.length ? ` <span class='dice'>(${notas.map(T.disparo.nota).join('; ')})</span>` : ''}`,
-    // notas que devuelve el motor (src/engine/dice.js) en inglés
-    nota: s => /^Accurate (\d+)$/.test(s) ? s.replace(/^Accurate/, 'Certera')
-      : ({ 'obscured: crits downgraded, one success discarded': 'ofuscado: los críticos pasan a normales y se descarta un éxito',
-           'cover save banked': 'salvación por cobertura guardada' })[s] || s,
+    // notas que devuelve el motor (src/engine/dice.js): textos o códigos "regla:valor"
+    nota: s => {
+      if (/^Accurate (\d+)$/.test(s)) return s.replace(/^Accurate/, 'Certera');
+      const [k, v] = String(s).split(':');
+      return ({
+        'obscured: crits downgraded, one success discarded': 'ofuscado: los críticos pasan a normales y se descarta un éxito',
+        'cover save banked': 'salvación por cobertura guardada',
+        severe: 'Severa: un normal pasa a crítico', punishing: 'Castigadora: un fallo pasa a normal',
+        rending: 'Desgarradora: un normal pasa a crítico', relentless: 'Implacable: repite los fallos',
+        ceaseless: 'Incesante: repite un resultado fallado', balanced: 'Equilibrada: repite un fallo',
+        saturate: 'Saturación: sin salvación por cobertura',
+        devastating: `Devastadora: ${v} de daño inmediato`, piercing: `Penetración: ${v} ${v === '1' ? 'dado' : 'dados'} de defensa menos`,
+        hot: `Sobrecalentamiento: ${v} de daño al tirador`,
+      })[k] || s;
+    },
+    fueraDeAlcance: (n, arma, alc, dist) => `<b>${n}</b> está fuera del alcance de ${arma}: ${pulg(dist)} (Alcance ${pulg(alc)}).`,
+    agotada: arma => `${arma} ya no se puede usar: su regla Limitada no le deja más usos en esta batalla.`,
+    sobrecalentado: (n, d) => ` — <b>${n}</b> se sobrecalienta: ${d} de daño`,
   },
 
   combate: {
@@ -433,6 +447,8 @@ export const T = {
     ocultoSinCobertura: 'el blanco tiene orden de ocultarse 🕵️ pero no está a cubierto: sí es un blanco válido',
     muyCerca: rango => `a ${pulg(rango)} o menos: sin cobertura ni ofuscación`,
     distancia: d => `distancia ${num(Math.max(0, d))}″ entre peanas`,
+    buscadora: arma => `${arma} es Buscadora: el blanco oculto no puede usar el terreno para estar a cubierto, así que sí puedes dispararle (conserva su salvación por cobertura)`,
+    fueraAlcance: (arma, alc) => `⚠ fuera del alcance de ${arma} (Alcance ${pulg(alc)})`,
     noPuede: (n, motivo) => `<b>${n} no puede ${G.disparar.es}</b>: ${motivo}`,
   },
 
@@ -601,6 +617,8 @@ export const T = {
       sinBlanco: `no hay ningún ${G.blancoValido.es}`,
       sinArmaCombate: 'no tiene armas de combate',
       ordenFijada: 'la orden se elige al empezar la activación y ya hizo una acción',
+      fueraDeAlcance: 'ningún blanco válido está al alcance de su arma',
+      armaAgotada: 'su arma Limitada ya no tiene usos en esta batalla',
     },
   },
 

@@ -14,12 +14,8 @@
  * como normales y se descarta un éxito.
  */
 
-const regla = (rules, nombre) => {
-  const r = (rules || []).find(x => x === nombre || x.startsWith(nombre + " "));
-  if (!r) return null;
-  const v = parseInt(r.slice(nombre.length), 10);
-  return Number.isFinite(v) ? v : true;
-};
+// la misma lectura de reglas que el motor de dados ("Piercing" no confunde "Piercing Crits 1")
+import { regla } from '../engine/dice.js';
 
 // probabilidad de [fallo, normal, crítico] de un dado
 function dado(exito, critDesde = 6) {
