@@ -812,8 +812,8 @@ export const T = {
     primaria: 'Primaria',
     primariaTitulo: 'Los PV de la operación primaria cuentan otra vez al final (la mitad, redondeando hacia arriba)',
     eliminacion: 'Op. de eliminación',
-    subeGrado: (bando, g, d) => `<b>${bando}</b> sube a grado de bajas ${g} (+${d} PV)`,
-    bonoGrado: bando => `<b>${bando}</b> termina con el grado de bajas más alto (+1 PV)`,
+    puntosGrado: (bando, g, pv, bono) => `<b>${bando}</b> termina con grado de bajas ${g}` +
+      `${bono ? ', el más alto' : ''}: +${pv} PV`,
     gradoCorto: g => `Grado ${g}`,
     iniciativa: 'Cartas de iniciativa',
     equipo: 'Equipo',

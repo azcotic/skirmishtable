@@ -33,7 +33,7 @@ import { OPS, rosterInit } from '../engine/world.js';
 import { agenteDeMuestra, comandoPorId, modelosPara, pesoAgente, plantillaDefs, puedeAnadir, seleccionesMax,
   validarComando } from '../data/teams/index.js';
 import { abrirFicha } from './ficha.js';
-import { actualizarKillOp, bonoKillOp, gradoActual, reiniciarPuntos } from './ops.js';
+import { gradoActual, puntuarKillOp, reiniciarPuntos } from './ops.js';
 import { setPick } from '../view3d/units.js';
 import { bandoEnTurno } from './turno.js';
 import { mayControl } from '../net/sync.js';
@@ -388,9 +388,9 @@ export function abrirFin() {
 }
 function comprobarFin() {
   if (finMostrado || despliegueActivo() || !OPS.some(o => o.deployed !== false)) return;
-  actualizarKillOp();                // operación de bajas: ¿subió el grado de alguien?
+
   const r = resultadoFinal();
-  if (r.motivo === "aniquilado") { logLine(T.fin.logAniquilado); abrirFin(); }
+  if (r.motivo === "aniquilado") { logLine(T.fin.logAniquilado); puntuarKillOp(false); abrirFin(); }
 }
 
 export function abrirListo() {
@@ -441,8 +441,8 @@ export function wireInicio() {
     if (b.dataset.v !== undefined) elegir(b.dataset.v);
   });
   setAlTerminarDespliegue(abrirListo);
-  // tras el 4.º PI: el punto extra del grado de bajas más alto, y la pantalla final
-  control.alFinBatalla = motivo => { if (motivo === "pi") bonoKillOp(); abrirFin(); };
+  // fin de la batalla: los PV de la operación de bajas (con el punto extra tras el 4.º PI)
+  control.alFinBatalla = motivo => { puntuarKillOp(motivo === "pi"); abrirFin(); };
   control.alComprobarFin = comprobarFin;
   // en cada punto de inflexión, la fase de estrategia (los tests la omiten: PM automáticos)
   let omitir = false;

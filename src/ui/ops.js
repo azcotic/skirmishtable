@@ -197,45 +197,29 @@ export function setNoteEdit(v) {
   logLine(T.operaciones.quienEdita(opsState.noteEdit === "any"));
   changed(false);
 }
-/* ---------- operación de bajas: el grado de cada bando suma PV en la columna "Elim." ---------- */
-// grado: el grado de bajas ya apuntado de cada bando; bono: si ya se dio el punto del final
+/* ---------- operación de bajas: sus PV se apuntan solo al final de la batalla ---------- */
 const ELIM = 2;
-const grados = () => (opsState.grado = opsState.grado || [0, 0]);
 // agentes de cada bando al empezar la batalla, y los que ya cayeron
 const inicial = s => OPS.filter(o => o.team === s).length;
 const caidos = s => OPS.filter(o => o.team === s && !o.alive).length;
 export const gradoActual = s => gradoDeBajas(inicial(1 - s), caidos(1 - s));
 
-// Tras cada baja (o al deshacerla): sube o baja el grado y apunta la diferencia en este PI.
-export function actualizarKillOp() {
-  if (!OPS.length) return;
-  const g = grados(), fila = Math.min(3, Math.max(0, tray.tp - 1));
-  let cambio = false;
+// Fin de la batalla: 1 PV por grado de bajas alcanzado y, tras el 4.º PI, 1 PV más para el
+// bando con el grado más alto. Van en la columna "Elim." del último PI. Solo una vez.
+export function puntuarKillOp(conBono) {
+  if (opsState.killop || !OPS.length) return;
+  opsState.killop = true;
+  const g = [0, 1].map(gradoActual), b = conBono ? bonoFinal(g) : [0, 0];
   for (const s of [0, 1]) {
-    const nuevo = gradoActual(s), d = nuevo - g[s];
-    if (!d) continue;
-    const celda = opsState.score[s][fila];
-    celda[ELIM] = Math.max(0, celda[ELIM] + d);
-    g[s] = nuevo; cambio = true;
-    if (d > 0) logLine(T.operaciones.subeGrado(TEAMNAME[s], nuevo, d), true);
-  }
-  if (cambio) changed();
-}
-// Al final del 4.º PI: 1 PV para el bando con el grado de bajas más alto.
-export function bonoKillOp() {
-  if (opsState.bono) return;
-  actualizarKillOp();
-  const b = bonoFinal(grados());
-  opsState.bono = true;
-  for (const s of [0, 1]) if (b[s]) {
-    opsState.score[s][3][ELIM] += 1;
-    logLine(T.operaciones.bonoGrado(TEAMNAME[s]), true);
+    const pv = g[s] + b[s];
+    opsState.score[s][3][ELIM] += pv;
+    logLine(T.operaciones.puntosGrado(TEAMNAME[s], g[s], pv, !!b[s]), pv > 0);
   }
   changed();
 }
 // Partida nueva: hoja de puntos en blanco
 export function reiniciarPuntos() {
-  Object.assign(opsState, { score: blankScore(), grado: [0, 0], bono: false });
+  Object.assign(opsState, { score: blankScore(), killop: false });
   tray.vp = [0, 0];
   changed();
 }
