@@ -558,6 +558,31 @@ button.hsq.reserva { border-style: dashed; background: transparent; opacity: .75
 .pant-jugar:hover { background: #f08a4b; color: #14110e; }
 .pant-secundario { width: 100%; min-height: 48px; margin-top: 10px; border-radius: 12px; background: transparent;
   border: 1px solid #3a332a; color: #b8ad9e; font-size: 14px; }
+/* ficha de datos de un agente (src/ui/ficha.js) */
+dialog.ficha { width: min(440px, calc(100vw - 24px)); padding: 0; border: 1px solid var(--eq); border-radius: 14px;
+  background: #1d1914; color: #e8e2d8; overflow: hidden; }
+dialog.ficha::backdrop { background: rgba(10, 8, 6, .7); }
+.fcab { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--eq) 35%, #1d1914), #1d1914); border-bottom: 1px solid #3a332a; }
+.fid { font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 22px; color: #14110e; background: var(--eqlt);
+  border-radius: 8px; padding: 2px 8px; }
+.ftit { flex: 1; min-width: 0; }
+.ftit h2 { margin: 0; font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 22px; line-height: 1.05;
+  text-transform: uppercase; color: #f3ece2; }
+.ftit p { margin: 2px 0 0; font-size: 11px; color: #b8ad9e; }
+.fstats { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #3a332a; }
+.fstats div { display: flex; flex-direction: column; align-items: center; padding: 10px 4px; border-right: 1px solid #2e2921; }
+.fstats div:last-child { border-right: 0; }
+.fstats b { font-family: "Big Shoulders", sans-serif; font-size: 28px; line-height: 1; color: var(--eqlt); }
+.fstats span { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: #9a9184; margin-top: 4px; }
+.farmas { width: 100%; border-collapse: collapse; font-size: 12px; }
+.farmas th { font-size: 9px; text-transform: uppercase; letter-spacing: .06em; color: #9a9184; text-align: center; padding: 8px 4px 4px; }
+.farmas th:first-child, .farmas td.fnombre { text-align: left; padding-left: 14px; }
+.farmas td { text-align: center; padding: 8px 4px; border-top: 1px solid #2e2921; }
+.farmas td.fnombre small { display: block; font-size: 10px; color: #9a9184; }
+.farmas td.freglas { font-size: 11px; color: #b8ad9e; padding-right: 12px; }
+.fnota { margin: 0; padding: 10px 14px; font-size: 11px; color: #a89a80; border-top: 1px solid #2e2921; }
+.ffin { display: block; width: calc(100% - 24px); margin: 0 12px 12px; min-height: 44px; }
 .pant-dados { display: flex; justify-content: center; gap: 24px; padding: 14px; border-radius: 12px; background: #1d1914;
   border: 1px solid #3a332a; font-size: 14px; }
 .pant-dados b { font-family: "Big Shoulders", sans-serif; font-size: 34px; margin-left: 6px; vertical-align: middle; }

@@ -21,6 +21,7 @@ import { renderAll } from './board.js';
 import { options } from './options.js';
 import { setModoEspecial } from './acciones.js';
 import { modelIndex, teamOf } from '../view3d/units.js';
+import { abrirFicha } from './ficha.js';
 
 // qué es el agente: su modelo si el bando tiene comando (p. ej. "Hechicero del Destino"),
 // si no, su tipo genérico ("Líder", "Francotirador"…)
@@ -123,14 +124,23 @@ function accionesHTML() {
   const t = turno(), mio = mayControl({ team: t }), sig = siguiente();
   // cada botón en el color del bando que despliega: qué es el agente, y su nombre y heridas
   const lista = mio ? porDesplegar(OPS, t).map(o =>
-    `<button class="accion eq${t}${o === sig ? " active" : ""}" data-esp="${o.id}" title="${esc(T.despliegue.elegirTitulo(queEs(o)))}">` +
+    `<button class="accion eq${t}${o === sig ? " active" : ""}" data-esp="${o.id}" title="${esc(T.despliegue.elegirTitulo(queEs(o)) + " · " + T.despliegue.verFicha)}">` +
     `<b>${esc(o.id)} · ${esc(queEs(o))}</b><small>${esc(T.despliegue.detalle(o.name, o.maxW))}</small></button>`) : [];
   if (!online()) lista.push(`<button class="accion" data-esp="azar" title="${esc(T.despliegue.restoAzarTitulo)}">${T.despliegue.restoAzar}</button>`);
   return lista.join("");
 }
+// doble toque sobre un agente: su ficha completa (en el teléfono no hay dblclick fiable)
+let ultimoToque = { id: null, t: 0 };
 function accionClick(b) {
   if (b.dataset.esp === "azar") { restoAlAzar(); return; }
-  elegido = b.dataset.esp;
+  const id = b.dataset.esp, ahora = performance.now();
+  if (ultimoToque.id === id && ahora - ultimoToque.t < 400) {
+    ultimoToque = { id: null, t: 0 };
+    abrirFicha(OPS.find(o => o.id === id));
+    return;
+  }
+  ultimoToque = { id, t: ahora };
+  elegido = id;
   hint(pista());
   renderAll();
 }

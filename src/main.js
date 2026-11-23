@@ -29,6 +29,7 @@ import { wireAcciones } from './ui/acciones.js';
 import { despliegueActivo, wireDespliegue } from './ui/despliegue.js';
 import { wireVista2D } from './ui/vista2d.js';
 import { wireInicio } from './ui/inicio.js';
+import { wireFicha } from './ui/ficha.js';
 import { cancelMode } from './ui/panels.js';
 import * as table3d from './view3d/table3d.js';
 import * as rules from './rules/index.js';
@@ -50,6 +51,7 @@ wireVista2D();                    // mapa 2D: en vertical si la pantalla está d
 wireOptions();
 wireSidePanel();
 wireDespliegue();
+wireFicha();
 // ✕ en la barra de acciones: quitar la selección
 wireAcciones(() => { state.sel = null; state.target = null; state.lastShot = null; cancelMode(); renderAll(); });
 onMinisChange(bases => { if (bases) { renderAll(); renderMinis(); } });   // a model measured: rings, reach and fit follow its base

@@ -500,6 +500,16 @@ export const T = {
   // tipos genéricos de agente (fichas simples, sin comando elegido; src/engine/world.js KINDS)
   tipos: { leader: 'Líder', marksman: 'Francotirador', brawler: 'Asaltante', trooper: 'Soldado' },
 
+  // ficha de datos completa de un agente (src/ui/ficha.js)
+  fichaDatos: {
+    nombre: 'Nombre',
+    reglasArmas: 'Reglas',
+    distancia: 'a distancia',
+    combate: 'de combate',
+    cerrar: 'Cerrar',
+    provisional: 'Ficha provisional: atributos y armas de prueba. Con las fichas oficiales del comando se verán los reales.',
+  },
+
   // estado de un agente (marcador flotante y menú)
   estado: { ready: 'Apostado', active: 'Activándose', spent: 'Usado', dead: 'Incapacitado', ajeno: 'No es tuyo', reserva: 'Por desplegar' },
 
@@ -516,6 +526,7 @@ export const T = {
     termina: `<b>Despliegue terminado.</b> Comienza el ${G.puntoInflexion.es} 1.`,
     terminaPista: 'Despliegue terminado: ya puedes activar a tus agentes.',
     elegirTitulo: n => `Colocar a ${n} ahora`,
+    verFicha: 'toca dos veces para ver su ficha',
     restoAzar: 'Resto al azar',
     restoAzarTitulo: `Coloca al azar, dentro de su ${G.zonaDescenso.es}, a todos los agentes que faltan`,
     restoLog: n => `${n} ${n === 1 ? 'agente desplegado' : 'agentes desplegados'} al azar en su ${G.zonaDescenso.es}.`,
