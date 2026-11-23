@@ -15,7 +15,7 @@ Pasa a ser el equipo principal de la app. Modelos: los azules (Ultramarines, mod
 - [x] Reglas de ficha: Aura de hierro (se aplica sola con el primer dado normal), Guerra según las doctrinas, Capa de camuflaje.
 - [ ] Reglas de ficha sin efecto aún: Líder heroico (Capitán), Granadero (faltan las granadas del equipo universal) y la acción Óptica del Francotirador.
 - [ ] Móviles: la acción Cargar ya se permite en zona de control, pero la ruta no sale de esa zona (movimiento).
-- [ ] Sigilosos y Aura de hierro eligen solas la mejor opción / el primer dado: sin ventana de decisión.
+- [x] Sigilosos y Aura de hierro preguntan al jugador (fuera de línea y contra la computadora); en línea se aplican solas. Las habilidades con ventana se declaran en los datos del agente (`habilidades`, ver `habilidadesDe` en `src/ui/ardides.js`).
 - [ ] Ardides de tiroteo. Faltan las fotos.
 - [ ] Color del capítulo: que cada jugador elija el color, girando el tono azul de las texturas.
 - [ ] Validar en el teléfono que los modelos azules se vean bien.

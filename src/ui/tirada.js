@@ -37,6 +37,25 @@ export function elegirRepeticion({ titulo, quien, dados, exito, pm, contexto = [
     <button class="tno" data-v="null">${R.noUsar}</button>`, null);
 }
 
+// Habilidad con ventana de sí o no: un texto de pregunta y dos botones. Devuelve true (sí) o false (no / Esc).
+// textos: T.habilidades[id] = { titulo, pregunta(contexto), si, no }
+export function preguntarHabilidad(id, args, quien) {
+  const H = T.habilidades[id], general = T.habilidades.general;
+  return preguntar(`<h2>${esc(H.titulo)}</h2><p class="tquien">${esc(general.quien(quien))}</p>
+    <div class="tctx"><p>${esc(H.pregunta(...args))}</p></div>
+    <div class="topciones"><button class="topc" data-v="true">${esc(H.si)}</button><button class="topc" data-v="false">${esc(H.no)}</button></div>`, false);
+}
+
+// Sigilosos: elegir cómo guardar la salvación por cobertura. ids: 'extra' | 'critico' | 'ambas'.
+// ataque: {crit, norm} lo que sacó el atacante. Devuelve el id elegido.
+export function elegirSigilosos({ quien, atacante, ids, ataque }) {
+  const S = T.sigilosos;
+  const botones = ids.map(id => `<button class="topc" data-v='"${id}"'>${esc(S.opcion[id])}<small>${esc(S.desc[id])}</small></button>`).join("");
+  return preguntar(`<h2>${esc(S.titulo)}</h2><p class="tquien">${esc(S.quien(quien))}</p>
+    <div class="tctx"><p>${esc(S.ataque(atacante, ataque.crit, ataque.norm))}</p></div>
+    <div class="topciones">${botones}</div><p class="tnota">${esc(S.nota)}</p>`, ids[0]);
+}
+
 // El destino es mi arma: elegir uno de los dados guardados y el dado de ataque que reemplaza.
 // grupos: [{nombre, dados, exito: [bool]}]. Devuelve {g, grupo, i} o null (no usarlo ahora).
 export function elegirDestino({ quien, guardados, grupos }) {

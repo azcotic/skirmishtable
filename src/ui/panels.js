@@ -5,8 +5,8 @@ import { state } from '../state.js';
 import { CTRL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
 import { aplicarCombate, bloquear, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
   armaPara, distanciaRegla, isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
-import { elegirCombate, elegirDestino, elegirRepeticion } from './tirada.js';
-import { conectarArdides, dadosGuardados, gastarDestino } from './ardides.js';
+import { elegirCombate, elegirDestino, elegirRepeticion, elegirSigilosos, preguntarHabilidad } from './tirada.js';
+import { conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
 import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
 import { SHOT_KINDS, cannotShoot, judgeShot, shotsFrom } from '../engine/shots.js';
@@ -233,6 +233,11 @@ export function doShoot() {
       const ctxAtk = T.repeticion.ctxAtaque(atk.crit, w.dmgC, atk.norm, w.dmgN, b.name, b.save, !!what.cover);
       if (await repeticionDeMando(a.team, atk.dice, exitoAtk, die, T.repeticion.ataque, a.name, ctxAtk, false, fijos))
         Object.assign(atk, clasificarAtaque(atk.dice, hit, w.rules));
+      // Sigilosos: el defensor elige cómo guardar su cobertura (la computadora, sola)
+      const sig = opcionesSigilosos(b, w, what);
+      if (sig.length && !esDeLaIA(b.team))
+        what.sigilo = await elegirSigilosos({ quien: b.name, atacante: a.name, ids: sig, ataque: { crit: atk.crit, norm: atk.norm + certera(what, w) } });
+      if (habilidadDisponible(b, "danoNormal") && !esDeLaIA(b.team)) what.aura = false;   // la ventana decide
       r = resolverDisparo(what, w, hit, atk, b, die);
       // lo que sacó el atacante y cuánto cambiaría el daño si la repetición sale bien
       const siNormal = r.dev + bloquear(r.atkN, r.atkC, r.dfn.norm + 1, r.dfn.crit, w.dmgN, w.dmgC).dmg;
@@ -241,11 +246,16 @@ export function doShoot() {
       const dfn = [...r.dfn.dice];
       if (dfn.length && await repeticionDeMando(b.team, dfn, v => v === 6 || (v !== 1 && v >= b.save), die, T.repeticion.defensa, b.name, ctxDfn, siCritico === r.dmg))
         r = resolverDisparo(what, w, hit, atk, b, die, dfn, r.hotDado);
+      // Aura de hierro: un dado normal va a hacerle daño: ¿lo ignora?
+      if (r.auraPosible && what.aura === false && await preguntarHabilidad("aura", [a.name, w.dmgN], b.name)) {
+        what.aura = true;
+        r = resolverDisparo(what, w, hit, atk, b, die, [...r.dfn.dice], r.hotDado);
+      }
     }
     showRoll(r.atk.dice, r.hit, a.team, T.disparo.tiradaAtq(a.name));
     showRoll(r.dfn.dice, b.save, b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
     b.wounds = Math.max(0, b.wounds - r.dmg);
-    if (r.aura) b.auraUsada = true;       // Aura de hierro: ya la gastó
+    if (r.aura) gastarHabilidad(b, "aura");       // Aura de hierro: ya la gastó
     a.ap -= costeAccion(a, "shoot", what.w); a.used.push("shoot");
     a.disparadas = [...(a.disparadas || []), what.w.split("~")[0]];   // Astartes: armas psíquicas ya usadas
     a.usos = { ...(a.usos || {}), [what.w]: ((a.usos || {})[what.w] || 0) + 1 };   // Limitada
@@ -326,8 +336,13 @@ export function doFight() {
         const ops = opcionesCombate(est);
         if (!ops.length) { est.turno = 1 - est.turno; if (!opcionesCombate(est).length) break; continue; }
         const lado = est.turno === 0 ? a : b;
-        const op = esDeLaIA(lado.team) ? decisionCombate(est)
+        let op = esDeLaIA(lado.team) ? decisionCombate(est)
           : await elegirCombate(est, { nombres: [a.name, b.name], opciones: ops });
+        // Aura de hierro: si este golpe normal va a hacerle daño al otro, su jugador decide si lo ignora
+        const [riv, ri] = est.turno === 0 ? [b, 1] : [a, 0];
+        if (op.tipo === "golpe" && op.con === "norm" && est.pools[est.turno].w.dmgN > 0 && est.rasgos[ri].aura
+            && !est.usado["aura" + ri] && !esDeLaIA(riv.team))
+          op = { ...op, aura: await preguntarHabilidad("aura", [lado.name, est.pools[est.turno].w.dmgN], riv.name) };
         aplicarCombate(est, op);
       }
       r = { wa: est.wa, wb: est.wb, hitA: est.hitA, hitB: est.hitB, ra: est.ra, rb: est.rb, a: est.vida[0], b: est.vida[1], pasos: est.pasos };
@@ -335,7 +350,7 @@ export function doFight() {
     showRoll(r.ra.dice, r.hitA, a.team, T.combate.tiradaAtq(a.name));
     showRoll(r.rb.dice, r.hitB, b.team, T.combate.tiradaDef(b.name));
     Object.assign(a, r.a); Object.assign(b, r.b);
-    for (const p of r.pasos || []) if (p.aura) (p.quien === 0 ? b : a).auraUsada = true;   // Aura de hierro
+    for (const p of r.pasos || []) if (p.aura) gastarHabilidad(p.quien === 0 ? b : a, "aura");   // Aura de hierro
     a.ap -= 1; a.used.push("fight");
     const aturdidos = [aturdir(b, r.wa.rules, r.ra.crit) && b, aturdir(a, r.wb.rules, r.rb.crit) && a].filter(Boolean);
     const envenenados = [terrotoxinas(a, b, r.wa.rules, critDanoCombate(r.pasos, 0)) && b,

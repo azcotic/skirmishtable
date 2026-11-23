@@ -103,7 +103,7 @@ describe('tácticas de capítulo', () => {
     const r = resolverDisparo(what, w, 3, { crit: 0, norm: 1, notes: [] }, cap, undefined, [1, 1, 1]);
     expect(r.aura).toBe(true);
     expect(r.dmg).toBe(0);
-    cap.auraUsada = true;
+    cap.habUsadas = ['aura'];
     const r2 = resolverDisparo(what, w, 3, { crit: 0, norm: 1, notes: [] }, cap, undefined, [1, 1, 1]);
     expect(r2.aura).toBe(false);
     expect(r2.dmg).toBe(w.dmgN);
@@ -123,5 +123,38 @@ describe('tácticas de capítulo', () => {
     expect(guerraDoctrinas(0, 'asalto')).toBe(false);
     expect(guerraDoctrinas(0, 'tactica')).toBe(true);
     OPS.splice(0, OPS.length);
+  });
+});
+
+describe('Sigilosos: elige el jugador', () => {
+  it('la opción elegida se respeta aunque no sea la mejor; sin elección, la mejor', async () => {
+    const { opcionesSigilosos } = await import('../../src/ui/ardides.js');
+    const b = op('am.tiradorIntercesor', 1), w = WPN['gn.bolter'];
+    tray.tacticas = [null, ['sigilosos', 'agresivos']]; tray.flex = [null, null];
+    const what = { k: 'shoot', w: 'gn.bolter', acc: 0, obsc: false, cover: true };
+    expect(opcionesSigilosos(b, w, what)).toEqual(['extra', 'critico']);
+    expect(opcionesSigilosos(b, w, { ...what, cover: false })).toEqual([]);
+    expect(opcionesSigilosos(b, { ...w, rules: ['Saturate'] }, what)).toEqual([]);          // Saturación: sin cobertura
+    expect(opcionesSigilosos(op('am.francotirador', 1), { ...w, rules: ['Saturate'] }, what)).toEqual(['extra', 'critico', 'ambas']);   // la Capa la ignora
+    const atk = { crit: 0, norm: 3, notes: [] };
+    const dmg = sigilo => resolverDisparo({ ...what, sigilo }, w, 3, atk, b, undefined, [1, 1]).dmg;
+    expect(dmg('extra')).toBeLessThan(dmg('critico'));      // sin críticos del atacante, la extra es mejor
+    expect(dmg(undefined)).toBe(dmg('extra'));               // por defecto, la mejor
+  });
+});
+
+describe('Aura de hierro: ventana de sí o no', () => {
+  it('lee su configuración de los datos y respeta la respuesta del jugador', () => {
+    const cap = op('am.capitan', 1), w = WPN['gn.bolter'];
+    con();
+    const what = { k: 'shoot', w: 'gn.bolter', acc: 0, obsc: false, cover: false };
+    const atk = { crit: 0, norm: 1, notes: [] };
+    const sin = resolverDisparo({ ...what, aura: false }, w, 3, atk, cap, undefined, [1, 1, 1]);
+    expect(sin.auraPosible).toBe(true);                 // la ventana se ofrece…
+    expect(sin.aura).toBe(false);                       // …y con "no" el daño pasa
+    expect(sin.dmg).toBe(w.dmgN);
+    const si = resolverDisparo({ ...what, aura: true }, w, 3, atk, cap, undefined, [1, 1, 1]);
+    expect(si.dmg).toBe(0);
+    expect(op('am.sargentoAsalto', 1).kind).toBeTruthy();
   });
 });

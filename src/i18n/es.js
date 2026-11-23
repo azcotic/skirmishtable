@@ -691,6 +691,28 @@ export const T = {
     'Tácticas flexibles': 'Cambia tu táctica de capítulo secundaria hasta el final del punto de inflexión. (Aún no tiene efecto en la app: faltan las tácticas de capítulo.)',
     'Indomitus': 'Si disparan a uno de tus agentes y sacas dos fallos o más en defensa, uno cuenta como éxito normal.',
   },
+  // habilidades que preguntan al jugador (src/ui/ardides.js, habilidadesDe; ventana en tirada.js)
+  habilidades: {
+    general: { quien: n => `Habilidad de ${n}` },
+    aura: {
+      titulo: 'Aura de hierro',
+      pregunta: (atacante, dano) => `${atacante} te va a infligir ${dano} de daño con un dado de ataque normal. ¿Quieres ignorar ese daño? Solo puedes hacerlo una vez por batalla.`,
+      si: 'Sí, ignorar el daño',
+      no: 'No, guardarla para después',
+    },
+  },
+  sigilosos: {
+    titulo: 'Sigilosos: elige tu cobertura',
+    quien: n => `Defiende ${n}`,
+    ataque: (n, crit, norm) => `${n} sacó ${crit} ${crit === 1 ? 'crítico' : 'críticos'} y ${norm} ${norm === 1 ? 'normal' : 'normales'}.`,
+    opcion: { extra: 'Una cobertura más', critico: 'Cobertura como crítico', ambas: 'Las dos' },
+    desc: {
+      extra: 'Guardas una salvación por cobertura adicional (éxito normal).',
+      critico: 'Tu salvación por cobertura cuenta como éxito crítico.',
+      ambas: 'Una cobertura adicional y la guardada como crítico (Francotirador con la táctica Sigilosos).',
+    },
+    nota: 'Si no eliges, se toma la primera opción.',
+  },
   tacticas: {
     tituloPrimaria: 'Táctica de capítulo primaria',
     tituloSecundaria: 'Táctica de capítulo secundaria',
@@ -851,7 +873,7 @@ export const T = {
     reglasAgente: {
       '2272196183:capitan': [
         ['Líder heroico', `Una vez por punto de inflexión: usar un ardid de tiroteo gratis, o usar Doctrina de combate o Ajustar doctrina sin gastar PM, si está en la zona de aniquilación y fuera de la zona de control enemiga.`, 'pendiente'],
-        ['Aura de hierro', 'Una vez por batalla, cuando un dado de ataque le inflige daño normal, puede ignorarlo (se aplica solo con el primero).'],
+        ['Aura de hierro', 'Una vez por batalla, cuando un dado de ataque le inflige daño normal, puede ignorarlo: la app te pregunta en ese momento (en línea o contra la computadora se aplica sola con el primero).'],
       ],
       '2272196183:sargentoAsalto': [
         ['Guerra según las doctrinas', 'Una vez por batalla cada una: Doctrina de combate con Asalto o con Táctica le cuesta 0 PM.'],

@@ -103,7 +103,11 @@ export default {
   }],
   // apl, move (″), save (+), wounds; armas: claves de arriba (la primera es la que lleva en mano)
   agentes: {
-    capitan:               { nombre: "Capitán Marine Espacial", lider: true, astartes: true, apl: 3, move: 6, save: 3, wounds: 15, armas: ["pistolaPlasmaN", "pistolaPlasmaS", "punoEnergiaCapitan"] },
+    // habilidades: reglas que preguntan al jugador en una ventana (ver src/ui/ardides.js, habilidadesDe).
+    //   id: clave del texto en T.habilidades · cuando: momento en que se ofrece (danoNormal: un dado de
+    //   ataque normal va a hacerle daño) · ventana: tipo de pregunta (siNo) · usos: "batalla" = una vez
+    capitan:               { nombre: "Capitán Marine Espacial", lider: true, astartes: true, apl: 3, move: 6, save: 3, wounds: 15, armas: ["pistolaPlasmaN", "pistolaPlasmaS", "punoEnergiaCapitan"],
+      habilidades: [{ id: "aura", cuando: "danoNormal", ventana: "siNo", usos: "batalla" }] },
     sargentoAsalto:        { nombre: "Sargento Intercesor de Asalto", lider: true, astartes: true, apl: 3, move: 6, save: 3, wounds: 15, armas: ["pistolaBolterPesada", "espadaSierra"] },
     tiradorPesado:         { nombre: "Tirador Intercesor Pesado", astartes: true, apl: 3, move: 5, save: 3, wounds: 18, armas: ["bolterPesadoC", "bolterPesadoB", "pistolaBolter", "punos"] },
     tiradorIntercesor:     { nombre: "Tirador Intercesor", astartes: true, apl: 3, move: 6, save: 3, wounds: 14, armas: ["lanzagranadasFrag", "lanzagranadasPerf", "rifleBolter", "punos"] },

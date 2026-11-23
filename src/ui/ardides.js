@@ -118,12 +118,28 @@ export function tacticasDe(op) {
   return [...new Set([...tacticasDeBando(op.team), ...v, ...f])];
 }
 const tiene_ = (op, t) => tacticasDe(op).includes(t);
+// Sigilosos: ¿el defensor tiene que elegir al recibir este disparo? (hay cobertura que guardar)
+// Devuelve los ids de sus opciones ('extra', 'critico' y, si la tiene por dos vías, 'ambas') o [].
+export function opcionesSigilosos(b, w, what) {
+  if (!b || !angeles(b) || !w || w.type !== 'R' || !what || !what.cover || !tiene_(b, 'sigilosos')) return [];
+  if (w.rules.some(r => r === 'Saturate') && !ignoraSaturacion.some(f => f(b))) return [];
+  const doble = perfil(b).clave === 'francotirador' && tacticasDeBando(b.team).includes('sigilosos');
+  return doble ? ['extra', 'critico', 'ambas'] : ['extra', 'critico'];
+}
 export const elegirTacticas = (s, p, sec) => { tray.tacticas = tray.tacticas || [null, null]; tray.tacticas[s] = [p, sec]; };
 export function elegirFlexible(s, t) { tray.flex = tray.flex || [null, null]; tray.flex[s] = t; }
 
+// Habilidades con ventana (datos del agente: habilidades). Las de "usos: batalla" se gastan una vez
+// (op.habUsadas). habilidadDisponible: la de ese momento que aún puede usar, o null.
+export const habilidadesDe = op => (perfil(op).habilidades || []);
+export const habilidadDisponible = (op, cuando) =>
+  habilidadesDe(op).find(h => h.cuando === cuando && !(h.usos === 'batalla' && (op.habUsadas || []).includes(h.id))) || null;
+export function gastarHabilidad(op, id) {
+  if (!(op.habUsadas || []).includes(id)) op.habUsadas = [...(op.habUsadas || []), id];
+}
 reglasOp.push(op => {
   if (!angeles(op)) return null;
-  return { duelista: tiene_(op, 'duelistas'), robusto: tiene_(op, 'robustos'), aura: perfil(op).clave === 'capitan' && !op.auraUsada };
+  return { duelista: tiene_(op, 'duelistas'), robusto: tiene_(op, 'robustos'), aura: !!habilidadDisponible(op, 'danoNormal') };
 });
 ignoraAturdir.push(op => tiene_(op, 'resueltos'));
 ignoraSaturacion.push(op => angeles(op) && perfil(op).clave === 'francotirador');   // Capa de camuflaje
@@ -141,10 +157,12 @@ ajustesDefensa.push((dfn, b, w, ctx) => {
   if (dfn.cover && tiene_(b, 'sigilosos')) {   // Sigilosos: la mejor de sus opciones
     const ambas = perfil(b).clave === 'francotirador' && tacticasDeBando(b.team).includes('sigilosos');
     const dano = (n, c) => bloquear(ctx.aN, ctx.aC, n, c, w.dmgN, w.dmgC).dmg;
-    const opts = [[norm + 1, crit], [norm - 1, crit + 1]];
-    if (ambas) opts.push([norm, crit + 1]);
-    opts.sort((x, y) => dano(x[0], x[1]) - dano(y[0], y[1]));
-    [norm, crit] = opts[0]; notas.push('sigilosos');
+    const todas = { extra: [norm + 1, crit], critico: [norm - 1, crit + 1], ambas: [norm, crit + 1] };
+    const ids = ambas ? ['extra', 'critico', 'ambas'] : ['extra', 'critico'];
+    const elegida = ctx.what && ctx.what.sigilo;
+    // la que eligió el jugador (partida fuera de línea); si no, la que menos daño deja pasar
+    const id = ids.includes(elegida) ? elegida : ids.sort((x, y) => dano(...todas[x]) - dano(...todas[y]))[0];
+    [norm, crit] = todas[id]; notas.push('sigilosos');
   }
   return notas.length ? { norm, crit, nota: notas.join('+') } : null;
 });

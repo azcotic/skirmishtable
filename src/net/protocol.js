@@ -149,7 +149,7 @@ export function cleanOps(incoming, local) {
       reacciono: o.reacciono ? true : undefined, reaccion: o.reaccion ? true : undefined,
       // elecciones de facción (Ecos de la Disformidad: si ya lo usó / lo está usando)
       ecosUsado: o.ecosUsado ? true : undefined, ecosActivo: o.ecosActivo ? true : undefined,
-      volo: o.volo ? true : undefined, auraUsada: o.auraUsada ? true : undefined,
+      volo: o.volo ? true : undefined, habUsadas: Array.isArray(o.habUsadas) ? o.habUsadas.filter(x => typeof x === "string" && /^[a-z]{1,16}$/.test(x)).slice(0, 6) : undefined,
       // Aturdidora: 1 LPA menos hasta el final de su siguiente activación
       aturdido: o.aturdido ? true : undefined,
       terrotoxinas: o.terrotoxinas ? true : undefined, terroDe: o.terroDe === 0 || o.terroDe === 1 ? o.terroDe : undefined,

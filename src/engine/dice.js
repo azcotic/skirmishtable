@@ -182,10 +182,12 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
     ? { ...clasificarDefensa(dfnDados, b.save, cover), dice: dfnDados, cover }
     : rollDefence(b.save, cover, die, Math.max(0, 3 - pen));
   if (dfn.cover) notes.push("cover save banked");
-  for (const f of ajustesDefensa) { const d = f(dfn, b, w, { aN: aNorm, aC: aCrit }); if (d) { Object.assign(dfn, d); if (d.nota) notes.push(d.nota); } }
+  for (const f of ajustesDefensa) { const d = f(dfn, b, w, { aN: aNorm, aC: aCrit, what }); if (d) { Object.assign(dfn, d); if (d.nota) notes.push(d.nota); } }
   const rest = bloquear(aNorm, aCrit, dfn.norm, dfn.crit, w.dmgN, w.dmgC);
   // Aura de hierro (una vez por batalla): ignora el daño de un dado de ataque normal
-  const aura = rasgos(b).aura && rest.n > 0 ? w.dmgN : 0;
+  // (what.aura: la respuesta del jugador a la ventana; sin ella, se aplica sola, p. ej. en línea o la IA)
+  const auraPosible = !!rasgos(b).aura && rest.n > 0;
+  const aura = auraPosible && what.aura !== false ? w.dmgN : 0;
   if (aura) { rest.dmg -= aura; notes.push("aura"); }
   let selfDmg = 0, hotV = null;
   if (regla(R, "Hot") && hotDado !== false) {   // tras disparar: 1D6; si sale menos que Impactar, el tirador recibe el doble
@@ -194,7 +196,7 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
   }
   // atkN/atkC: los éxitos del ataque que llegan a la defensa (para explicar decisiones)
   // critDano: algún crítico hizo daño (Devastadora o sin bloquear): Quemar mente
-  return { w, hit, atk, dfn, dmg: dev + rest.dmg, notes, selfDmg, pen, cover, hotDado: hotV, atkN: aNorm, atkC: aCrit, dev, devArea, aura: !!aura,
+  return { w, hit, atk, dfn, dmg: dev + rest.dmg, notes, selfDmg, pen, cover, hotDado: hotV, atkN: aNorm, atkC: aCrit, dev, devArea, aura: !!aura, auraPosible,
     critDano: dev > 0 || rest.c > 0 };
 }
 
@@ -250,7 +252,7 @@ export function aplicarCombate(est, op) {
     // Robustos: al contraatacar (el defensor), el primer daño normal de 3 o más baja en 1
     if (rr.robusto && 1 - i === 1 && op.con === "norm" && dmg >= 3 && !u.robusto) { u.robusto = true; dmg -= 1; }
     // Aura de hierro: ignora el daño de un dado normal, una vez por batalla
-    if (rr.aura && op.con === "norm" && dmg > 0 && !u["aura" + (1 - i)]) { u["aura" + (1 - i)] = true; dmg = 0; aura = true; }
+    if (rr.aura && op.aura !== false && op.con === "norm" && dmg > 0 && !u["aura" + (1 - i)]) { u["aura" + (1 - i)] = true; dmg = 0; aura = true; }
     rival.wounds = Math.max(0, rival.wounds - dmg);
     if (rival.wounds === 0) rival.alive = false;
     let choque = false;
