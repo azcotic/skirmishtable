@@ -42,7 +42,7 @@ import { mayControl } from '../net/sync.js';
 
 const KEY = "skirmishtable.inicio";
 // los comandos de prueba (ids del catálogo de Steam): Garra Némesis y Aquelarre Disforme
-const COMANDOS_PRUEBA = ["3352828814", "3348897103", "2272196183"];   // Ángeles de la Muerte: modelos sin fichas aún
+const COMANDOS_PRUEBA = ["3352828814", "3348897103", "2272196183"];   // Garra Némesis, Aquelarre Disforme, Ángeles de la Muerte
 const ORDEN = ["modo", "mapa", "comando0", "plantilla0", "comando1", "plantilla1", "despliegue", "resumen"];
 
 // plantilla: los agentes elegidos de cada bando (claves); config: el nombre de la configuración
@@ -152,13 +152,13 @@ function contenido() {
         const medio = pesoAgente(c, k) < 1 ? ` <small class="medio" title="${I.medioTitulo}">½</small>` : "";
         return `<div class="pant-agente${veces ? " elegido" : ""}">
           <div class="pant-agente-info"><b>${esc(a.nombre)}${a.lider ? ` <small>${T.fichaDatos.lider}</small>` : ""}${medio}${veces ? ` <span class="pant-veces">×${veces}</span>` : ""}</b>
-            <span>${I.statsCortas(a.move, a.apl, a.save, a.wounds)}${p.motivo === "unico" ? ` · <em>${I.soloUno}</em>` : ""}</span></div>
+            <span>${I.statsCortas(a.move, a.apl, a.save, a.wounds)}${p.motivo === "unico" ? ` · <em>${I.soloUno}</em>` : p.motivo === "maximo" ? ` · <em>${I.yaHayLider}</em>` : ""}</span></div>
           <button class="pant-ver" data-v="ver:${k}" aria-label="${esc(I.verFicha(a.nombre))}">👁</button>
           <button class="pant-mas" data-v="add:${k}"${p.ok ? "" : " disabled"} aria-label="${esc(I.anadir(a.nombre))}">＋</button></div>`;
       }).join("");
-      const reglas = [I.reglas.selecciones(v.max), ...(comp.requiere || []).map(r => I.reglas.requiere(r.nombre)),
+      const reglas = [I.reglas.selecciones(v.max), ...(comp.requiere || []).map(r => r.max === 1 && r.min === 1 ? I.reglas.unoSolo(r.nombre) : I.reglas.requiere(r.nombre)),
         ...(comp.repetibles ? [I.reglas.unicos] : []), ...(comp.medio ? [I.reglas.medio] : [])];
-      const errores = lista.length ? v.errores.map(([t, x]) => I.error[t](t === "repetido" ? c.agentes[x].nombre : x)) : [];
+      const errores = lista.length ? v.errores.map(([t, x, y]) => I.error[t](t === "repetido" ? c.agentes[x].nombre : x, y)) : [];
       return { titulo: I.armarTitulo, sub: `${esc(c.nombre)} · ${I.cuenta(v.usadas, v.max)}`,
         html: `<div class="pant-elegidos">${elegidos}</div>
           ${errores.length ? `<ul class="pant-errores">${errores.map(e => `<li>${esc(e)}</li>`).join("")}</ul>` : ""}

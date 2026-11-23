@@ -46,7 +46,7 @@ export function abrirFicha(op) {
     <table class="farmas"><thead><tr><th>${F.nombre}</th><th>${G.ataques.abrev}</th><th>${G.impactar.abrev}</th><th>${G.dano.abrev}</th><th>${F.reglasArmas}</th></tr></thead>
       <tbody>${armas}</tbody></table>
     ${opcionesDe(op).map(d => `<p class="fregla"><b>${esc(d.nombre)}</b> · ${T.faccion.desc[d.id] || ""}${d.pendiente ? ` <em>${T.faccion.pendiente}</em>` : ""}</p>`).join("")}
-    ${perfil.astartes ? `<p class="fregla"><b>${F.astartes}</b> · ${F.astartesDesc}</p>` : ""}
+    ${perfil.astartes ? `<p class="fregla"><b>${F.astartes}</b> · ${perfil.astartesBolter ? F.astartesBolterDesc : F.astartesDesc}</p>` : ""}
     <p class="fnota">${perfil.comando ? F.oficial : F.provisional}</p>
     <button class="ffin" data-cerrar="1">${F.cerrar}</button>`;
   tocadaDesdeQueAbrio = false;

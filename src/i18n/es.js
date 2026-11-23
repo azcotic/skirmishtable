@@ -583,10 +583,12 @@ export const T = {
     quitar: n => `Quitar ${n}`,
     medioTitulo: 'Cuenta como media selección',
     soloUno: 'solo uno por comando',
+    yaHayLider: 'ya elegiste el líder',
     reglasTitulo: 'Reglas del comando',
     reglas: {
       selecciones: n => `${n} selecciones en total.`,
       requiere: nombre => `Al menos un ${nombre}.`,
+      unoSolo: nombre => `Exactamente un ${nombre.toLowerCase()} (elige uno de los marcados como ${nombre.toLowerCase()}).`,
       unicos: 'Cada agente solo una vez, salvo los combatientes.',
       medio: 'Los marcados con ½ cuentan como media selección: dos de ellos ocupan una.',
     },
@@ -595,6 +597,7 @@ export const T = {
       sobran: n => n === 0.5 ? 'Sobra media selección.' : `${n === 1 ? 'Sobra' : 'Sobran'} ${num(n)} ${n === 1 ? 'selección' : 'selecciones'}.`,
       requiere: nombre => `Necesitas al menos un ${nombre}.`,
       repetido: nombre => `${nombre} solo puede ir una vez.`,
+      maximo: (nombre, max) => `Solo puede haber ${max === 1 ? 'un' : max} ${nombre.toLowerCase()}${max === 1 ? '' : 'es'}.`,
     },
     listoArmar: (n, ok) => ok ? `Listo · ${n} ${n === 1 ? 'agente' : 'agentes'}` : 'Completa el comando',
     despliegueTitulo: '¿Cómo se despliega?',
@@ -696,7 +699,8 @@ export const T = {
   // Elecciones de facción (src/data/teams: `elecciones`): pantallas de inicio y ficha.
   // Las opciones se resumen con nuestras palabras, por su id.
   faccion: {
-    titulo: { dones: 'Elige un Don de Tzeentch', armasTirador: 'Elige su arma', armasCampeon: 'Elige su arma', armasTzaangor: 'Elige sus armas' },
+    titulo: { dones: 'Elige un Don de Tzeentch', armasTirador: 'Elige su arma', armasCampeon: 'Elige su arma', armasTzaangor: 'Elige sus armas',
+      armasSargentoAsalto: 'Elige sus armas', armasSargento: 'Elige sus armas', armasTiradorIntercesor: 'Elige su rifle bólter', armasCombatienteIntercesor: 'Elige su arma' },
     tituloGenerico: 'Regla de facción: elige',
     sub: (n, i, total, unica, cuantos = 1) => `Para ${cuantos > 1 ? `los ${cuantos} ${n}` : n}${total > 1 ? ` (${i} de ${total})` : ''}.${unica && total > 1 ? ' Cada opción solo puede elegirla un agente.' : ''}`,
     pendiente: '(aún no tiene efecto en la app)',
@@ -776,6 +780,7 @@ export const T = {
       sinArmaCombate: 'no tiene armas de combate',
       ordenFijada: 'la orden se elige al empezar la activación y ya hizo una acción',
       psiquicaRepetida: 'ya disparó con esa arma psíquica en esta activación (regla Astartes: elige otra)',
+      sinBolter: 'el primer disparo no fue con un arma bólter: el segundo tiene que serlo (regla Astartes)',
       fueraDeAlcance: 'ningún blanco válido está al alcance de su arma',
       armaAgotada: 'su arma Limitada ya no tiene usos en esta batalla',
     },
@@ -796,6 +801,7 @@ export const T = {
     lider: 'Líder',
     astartes: 'Astartes',
     astartesDesc: `En su activación puede Disparar dos veces o Combatir dos veces (el segundo disparo con un cañón cosechaalmas o un lanzallamas disforme cuesta 1 ${G.pa.abrev} más; no repite arma psíquica). Puede reaccionar con cualquier orden.`,
+    astartesBolterDesc: `En su activación puede Disparar dos veces o Combatir dos veces. Si dispara dos veces, al menos una con un arma bólter; si las dos son con el rifle bólter de francotirador o con el bólter pesado, la segunda cuesta 1 ${G.pa.abrev} más. Puede reaccionar con cualquier orden.`,
     ver: 'Ver ficha',
   },
 

@@ -18,6 +18,7 @@ import { CTRL, WPN } from '../config.js';
 import { opGap } from '../engine/geometry.js';
 import { SHOT_KINDS, shotsFrom } from '../engine/shots.js';
 import { regla } from '../engine/dice.js';
+import { esArmaBolter } from '../data/teams/index.js';
 import { KINDS } from '../engine/world.js';
 
 // Reglas de arma que deciden si se puede disparar a un blanco:
@@ -38,13 +39,20 @@ export const ACCIONES = Object.keys(COSTE);
 // en su activación (no las dos cosas dos veces). Si dispara dos veces con un arma pesada (cañón
 // cosechaalmas, lanzallamas disforme), el segundo disparo cuesta 1 PA más. No puede usar la misma
 // arma PSÍQUICA a distancia dos veces en una activación. Además puede reaccionar con cualquier orden.
+// Ángeles de la Muerte (astartesBolter): si dispara dos veces, al menos un disparo con un arma
+// bólter; y el segundo cuesta 1 PA más solo si los dos son con la misma arma pesada (rifle bólter
+// de francotirador, bólter pesado; sus modos cuentan como la misma arma).
 export const esAstartes = op => !!(op && KINDS[op.kind] && KINDS[op.kind].astartes);
+const conBolter = op => !!(op && KINDS[op.kind] && KINDS[op.kind].astartesBolter);
+const armaBase = w => w ? w.name.replace(/ (.*)$/, "") : "";
+const primerDisparo = op => WPN[(op.disparadas || [])[0]];
 const veces = (op, a) => (op.used || []).filter(x => x === a).length;
 const sinDon = k => (k || "").split("~")[0];
 // Lo que cuesta la acción ahora (con el arma en mano, o `wk`)
 export function costeAccion(op, accion, wk = op && op.weapon) {
   const w = WPN[wk];
-  if (accion === "shoot" && esAstartes(op) && veces(op, "shoot") >= 1 && w && w.recargaAstartes) return COSTE.shoot + 1;
+  if (accion === "shoot" && esAstartes(op) && veces(op, "shoot") >= 1 && w && w.recargaAstartes
+    && (!conBolter(op) || armaBase(primerDisparo(op)) === armaBase(w))) return COSTE.shoot + 1;
   return COSTE[accion];
 }
 // ¿Ya hizo esta acción todas las veces que puede en esta activación?
@@ -110,6 +118,8 @@ export function puede(op, accion, ops) {
       }
       if (agotada(op, op.weapon)) return no("armaAgotada");
       if (tieneRegla(w, "PSYCHIC") && (op.disparadas || []).includes(sinDon(op.weapon))) return no("psiquicaRepetida");
+      if (conBolter(op) && !op.reaccion && veces(op, "shoot") === 1 && primerDisparo(op)
+        && !esArmaBolter(primerDisparo(op)) && !esArmaBolter(w)) return no("sinBolter");
       const todos = shotsFrom({ x: op.x, y: op.y, z: op.z || 0, team: op.team, op });
       if (!todos.some(s => blancoValidoCon(w, s))) {
         // hay blancos válidos, pero ninguno al alcance del arma

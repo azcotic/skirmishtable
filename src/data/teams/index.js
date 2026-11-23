@@ -9,8 +9,11 @@ import { KINDS, DEFAULT_ROSTER, ajustesAgente } from '../../engine/world.js';
 import { WPN } from '../../config.js';
 import garraNemesis from './garra-nemesis.js';
 import aquelarreDisforme from './aquelarre-disforme.js';
+import angelesMuerte from './angeles-muerte.js';
 
-export const COMANDOS = [garraNemesis, aquelarreDisforme];
+export const COMANDOS = [garraNemesis, aquelarreDisforme, angelesMuerte];
+// "arma bólter" (la usan reglas de los Ángeles de la Muerte): arma a distancia con "bólter" en el nombre
+export const esArmaBolter = w => !!w && w.type === "R" && /bólter/i.test(w.name);
 export const comandoPorId = id => COMANDOS.find(c => c.id === id || (c.ids || []).includes(id)) || null;
 
 let registrado = false;
@@ -23,7 +26,7 @@ export function registrarComandos() {
     for (const [k, a] of Object.entries(c.agentes))
       KINDS[`${c.prefijo}.${k}`] = { apl: a.apl, move: a.move, save: a.save, wounds: a.wounds,
         weapons: a.armas.map(w => `${c.prefijo}.${w}`), nombre: a.nombre, lider: !!a.lider, comando: c.id,
-        astartes: !!a.astartes, clave: k, palabras: a.palabras || [] };   // palabras: HECHICERO, TZAANGOR…
+        astartes: !!a.astartes, astartesBolter: !!(a.astartes && c.astartesBolter), clave: k, palabras: a.palabras || [] };   // palabras: HECHICERO, TZAANGOR…
   }
   ajustesAgente.push(aplicarOpciones);
 }
@@ -120,17 +123,21 @@ const repetible = (c, k) => !comp(c).repetibles || comp(c).repetibles.includes(k
 // ¿Se puede añadir el agente `k` a `claves`? {ok, motivo: "lleno" | "unico" | null}
 export function puedeAnadir(c, claves, k) {
   if (selecciones(c, claves) + pesoAgente(c, k) > seleccionesMax(c) + 1e-9) return { ok: false, motivo: "lleno" };
+  // requiere con max (p. ej. un solo líder): no añadir otro del grupo si ya está lleno
+  for (const r of comp(c).requiere || [])
+    if (r.max && r.claves.includes(k) && claves.filter(x => r.claves.includes(x)).length >= r.max) return { ok: false, motivo: "maximo" };
   if (!repetible(c, k) && claves.includes(k)) return { ok: false, motivo: "unico" };
   return { ok: true, motivo: null };
 }
 // ¿Cumple el comando sus reglas? Los problemas van como códigos (los textos, en es.js):
-// ["faltan", n] · ["sobran", n] · ["requiere", nombre] · ["repetido", clave]
+// ["faltan", n] · ["sobran", n] · ["requiere", nombre] · ["maximo", nombre, max] · ["repetido", clave]
 export function validarComando(c, claves) {
   const errores = [], usadas = selecciones(c, claves), max = seleccionesMax(c);
   if (usadas < max - 1e-9) errores.push(["faltan", max - usadas]);
   if (usadas > max + 1e-9) errores.push(["sobran", usadas - max]);
   for (const r of comp(c).requiere || [])
     if (claves.filter(k => r.claves.includes(k)).length < r.min) errores.push(["requiere", r.nombre]);
+    else if (r.max && claves.filter(k => r.claves.includes(k)).length > r.max) errores.push(["maximo", r.nombre, r.max]);
   for (const k of new Set(claves))
     if (!repetible(c, k) && claves.filter(x => x === k).length > 1) errores.push(["repetido", k]);
   return { ok: !errores.length, errores, usadas, max };

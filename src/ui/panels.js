@@ -199,7 +199,7 @@ export function doShoot() {
   if (agotada(state.sel, state.sel.weapon)) { logLine(T.disparo.agotada(w.name)); return; }
   // ya disparó todas las veces que puede, sin PA, o repite arma psíquica (regla Astartes)
   const pr = puede(state.sel, "shoot", OPS);
-  if (!pr.ok && ["yaHecha", "sinPA", "psiquicaRepetida"].includes(pr.motivo)) {
+  if (!pr.ok && ["yaHecha", "sinPA", "psiquicaRepetida", "sinBolter"].includes(pr.motivo)) {
     logLine(T.reglas.noPuede(T.reglas.accion.shoot, T.reglas.motivo[pr.motivo])); return;
   }
   // what is rolled for: the shot as this table judges it, fixed before the dice are known
