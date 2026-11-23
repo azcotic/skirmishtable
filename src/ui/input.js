@@ -7,9 +7,9 @@ import { state } from '../state.js';
 import { CTRL, S } from '../config.js';
 import { dist, opGap, opR } from '../engine/geometry.js';
 import { chopIncrements, clampPath, nearestFree, opLayer, placeBlocked, planRoute, useBase } from '../engine/movement.js';
-import { LEVELS, layerZ, onLayer, ptFree } from '../engine/grid.js';
+import { C_WALL, G, GRES, LEVELS, layerZ, onLayer, ptFree } from '../engine/grid.js';
 import { foesNear } from '../engine/engage.js';
-import { BH, BW, OPS } from '../engine/world.js';
+import { BH, BW, MAP, OPS } from '../engine/world.js';
 import { RULES, fmtIn, moveSpec } from '../rules/index.js';
 import { renderAll, renderOverlay } from './board.js';
 import { hint, logLine, svg } from './dom.js';
@@ -21,6 +21,71 @@ import { cancelMode, defaultMoveType, refreshSight, registrarMovimiento, snapsho
 import { mayControl } from '../net/sync.js';
 import { cancelMarker, placeMarkerAt } from './ops.js';
 import { openOpMenu } from './opmenu.js';
+import { effMove } from '../engine/dice.js';
+import { tieneEfecto } from '../data/teams/index.js';
+import { puede } from '../game/acciones.js';
+import { accionesHooks } from './acciones.js';
+
+/* ---------- Vuelo inmaterial (don de Tzeentch) ----------
+ * Una vez por punto de inflexión, al Reposicionarse o Cargar, el agente puede volar: en vez de
+ * caminar, se levanta y se coloca en línea recta a no más de su Movimiento (también al Cargar:
+ * sin las 2″ extra), sin importar el terreno. Tiene que caber donde aterriza y, salvo que cargue,
+ * no puede terminar en la zona de control de un enemigo. En Gallowdark (combate en espacios
+ * cerrados) no puede volar a través de muros.
+ * state.volar = id del agente que va a volar en su próximo arrastre (botón 🪽).
+ */
+export const puedeVolar = op => !!op && op.alive && op.ready && !op.volo && tieneEfecto(op, "vuelo")
+  && mayControl(op) && !porQueNoActua(op) && (puede(op, "reposition", OPS).ok || puede(op, "charge", OPS).ok);
+accionesHooks.volar = () => puedeVolar(state.sel);
+accionesHooks.volando = () => !!state.sel && state.volar === state.sel.id;
+// ¿Cruza la línea recta algún muro? Solo en mapas de espacios cerrados (Gallowdark)
+function cruzaMuro(x1, y1, x2, y2) {
+  if (!G || !MAP || MAP.group !== "Gallowdark") return false;
+  const n = Math.ceil(dist(x1, y1, x2, y2) / (GRES / 2));
+  for (let s = 1; s < n; s++) {
+    const x = x1 + (x2 - x1) * s / n, y = y1 + (y2 - y1) * s / n;
+    const i = Math.floor(x / GRES), j = Math.floor(y / GRES);
+    if (i >= 0 && j >= 0 && i < G.nx && j < G.ny && G.cls[j * G.nx + i] === C_WALL) return true;
+  }
+  return false;
+}
+function planVuelo(d, gx, gy, gl, charging) {
+  const op = d.op, R = opR(op), max = op.reaccion ? Math.min(2, effMove(op)) : effMove(op);
+  const tipo = charging ? "charge" : "reposition";
+  let ex = gx, ey = gy;
+  const lejos = dist(op.x, op.y, ex, ey);
+  if (lejos > max) {                                // más lejos que su Movimiento: hasta donde llega
+    ex = op.x + (ex - op.x) * max / lejos; ey = op.y + (ey - op.y) * max / lejos;
+    const s = nearestFree(ex, ey, op.id, gl);
+    if (s) [ex, ey] = s;
+  }
+  const total = dist(op.x, op.y, ex, ey);
+  d.path = [[op.x, op.y, 0, 0, opLayer(op)], [ex, ey, 0, 0, gl]];
+  d.total = total; d.goal = [ex, ey]; d.clamped = lejos > max; d.partial = false;
+  d.goalLayer = gl; d.goalZ = layerZ(gl);
+  d.p1 = { type: tipo, allow: max, climb: false }; d.p2 = null;
+  d.primAllow = max; d.secondary = null; d.secAllow = 0; d.autoCharge = false; d.vuelo = true;
+  d.foes = foesNear(ex, ey, op.team, op.id, R, d.goalZ);
+  d.why = !puede(op, tipo, OPS).ok ? "vueloNoPuede"
+    : total > max + 1e-6 ? "vueloLejos"
+    : placeBlocked(ex, ey, op.id, gl) ? "occupied"
+    : cruzaMuro(op.x, op.y, ex, ey) ? "vueloMuro"
+    : charging && !d.foes.length ? "chargeNoFoe"
+    : !charging && d.foes.length ? "vueloEnZona"
+    : null;
+  d.valid = !d.why;
+  renderOverlay();
+}
+export function wireVuelo() {
+  const b = document.getElementById("volarsel");
+  if (!b) return;
+  b.onclick = () => {
+    if (!puedeVolar(state.sel)) return;
+    state.volar = state.volar === state.sel.id ? null : state.sel.id;
+    hint(state.volar ? T.mover.vueloPista(effMove(state.sel)) : T.mover.vueloCancelado);
+    renderAll();
+  };
+}
 
 function svgPoint(ev) {
   const pt = new DOMPoint(ev.clientX, ev.clientY);
@@ -107,6 +172,10 @@ function planDrag(x, y, hint, up) {
   const retroceso = state.moveType === "fallBack";
   const charging = !retroceso && (state.moveType === "charge" || (intoFoes && mayCharge(d.op)));
   d.autoCharge = charging && state.moveType !== "charge";
+  // Vuelo inmaterial: en línea recta, sin rodear el terreno (solo Reposicionarse o Cargar)
+  if (state.volar === d.op.id && puedeVolar(d.op) && !retroceso && (charging || state.moveType !== "dash")) {
+    return planVuelo(d, gx, gy, gl, charging);
+  }
   const plans = plansFor(d.op, charging ? "charge" : state.moveType);
   let bestPlan = null;
   if (free) for (const pl of plans) {
@@ -182,6 +251,7 @@ function landDrag(d) {
     logLine(T.orden.pasaATrabarse(d.op.name));
   }
   d.op.ap -= d.p1.type === "fallBack" || chained ? 2 : 1;   // Retroceder cuesta 2 PA
+  if (d.vuelo) { d.op.volo = true; state.volar = null; logLine(T.mover.vuela(d.op.name)); }
   d.op.used.push(d.p1.type);
   if (chained) d.op.used.push(d.p2.type);
   const TM = T.mover;

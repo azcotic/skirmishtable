@@ -285,6 +285,10 @@ export const T = {
   // movimiento: botones, etiqueta del arrastre, pistas y registro
   mover: {
     nombre: { reposition: G.reposicionarse.es, dash: G.correr.es, charge: G.cargar.es, fallBack: G.retroceder.es },
+    volarTitulo: `Volar (Vuelo inmaterial): el próximo ${G.reposicionarse.es.toLowerCase()} o ${G.cargar.es.toLowerCase()} va en línea recta, sin importar el terreno. Una vez por punto de inflexión.`,
+    vueloPista: m => `Vuelo inmaterial: arrastra al agente; vuela en línea recta hasta ${pulg(m)}, sin importar el terreno. Toca 🪽 otra vez para cancelar.`,
+    vueloCancelado: 'Vuelo cancelado: se mueve caminando.',
+    vuela: n => `<b>${n}</b> vuela (Vuelo inmaterial).`,
     verbo: { reposition: G.reposicionarse.verbo, dash: G.correr.verbo, charge: G.cargar.verbo, fallBack: G.retroceder.verbo },
     motivo: {
       occupied: 'ocupado',
@@ -292,6 +296,10 @@ export const T = {
       chargeNoFoe: `una carga debe terminar en la ${G.zonaControl.es} de un enemigo`,
       engagedAfterMove: `${G.zonaControl.es} enemiga: no puedes ${G.cargar.es} después de moverte`,
       fallBackEnZona: `al ${G.retroceder.es.toLowerCase()} no puede terminar en la ${G.zonaControl.es} de un enemigo`,
+      vueloNoPuede: `ahora no puede ${G.reposicionarse.es.toLowerCase()} ni ${G.cargar.es.toLowerCase()}`,
+      vueloLejos: 'volando no llega tan lejos (como mucho su Movimiento)',
+      vueloMuro: 'no puede volar a través de un muro',
+      vueloEnZona: `volando sin ${G.cargar.es.toLowerCase()} no puede terminar en la ${G.zonaControl.es} de un enemigo`,
     },
     bloqueado: 'bloqueado',
     // etiqueta junto al fantasma mientras arrastras

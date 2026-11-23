@@ -22,7 +22,7 @@ import { wireHud } from './ui/hud.js';
 import { wireStatusCards } from './ui/statuscards.js';
 import { wireShare } from './net/share.js';
 import { wireReplay } from './net/replayer.js';
-import { wireInput } from './ui/input.js';
+import { moverA, wireInput, wireVuelo } from './ui/input.js';
 import { wireOpMenu } from './ui/opmenu.js';
 import { wireThreatPicker } from './ui/threat.js';
 import { wireOptions } from './ui/options.js';
@@ -60,6 +60,7 @@ wireDespliegue();
 wireFicha();
 wireIA();
 wireReaccion();
+wireVuelo();
 // ✕ en la barra de acciones: quitar la selección
 wireAcciones(() => { state.sel = null; state.target = null; state.lastShot = null; cancelMode(); renderAll(); });
 onMinisChange(bases => { if (bases) { renderAll(); renderMinis(); } });   // a model measured: rings, reach and fit follow its base
@@ -84,4 +85,4 @@ if (window.THREE && THREE.OrbitControls) table3d.setView(!despliegueActivo());
 
 // Debug/test handle: live views of the engine modules and UI state, for the browser
 // console and the Playwright tests (e.g. skirmishtable.movement.findPath(...)).
-window.skirmishtable = { world, grid, movement, sight, rules, table3d, state, loadMap, useRuleset, renderAll, diceTrays, minis, teams: TTS_TEAMS, tray, control };
+window.skirmishtable = { world, grid, movement, sight, rules, table3d, state, loadMap, useRuleset, renderAll, diceTrays, minis, teams: TTS_TEAMS, tray, control, moverA };

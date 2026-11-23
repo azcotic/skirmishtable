@@ -445,7 +445,8 @@ body { overflow: hidden; overscroll-behavior: none; }
    la barra cambia de botones, y el tablero no debe moverse ni encogerse bajo el dedo */
 .filapista { display: flex; align-items: center; gap: 6px; min-height: 36px; }
 .filapista .hint { flex: 1 1 auto; min-width: 0; }
-#quitarsel, #fichasel { flex: none; width: 40px; min-height: 36px; font-size: 16px; }
+#quitarsel, #fichasel, #volarsel { flex: none; width: 40px; min-height: 36px; font-size: 16px; }
+#volarsel.activo { background: #6b5a8c; border-color: #b9a6e0; }
 .abajo .hint { height: calc(2 * 1.35em); line-height: 1.35; overflow: hidden;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 /* 4 columnas en teléfono; letra condensada para que "Reposicionarse 6″" quepa */

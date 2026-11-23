@@ -149,6 +149,7 @@ export function cleanOps(incoming, local) {
       reacciono: o.reacciono ? true : undefined, reaccion: o.reaccion ? true : undefined,
       // elecciones de facción (Ecos de la Disformidad: si ya lo usó / lo está usando)
       ecosUsado: o.ecosUsado ? true : undefined, ecosActivo: o.ecosActivo ? true : undefined,
+      volo: o.volo ? true : undefined,
       disparadas: Array.isArray(o.disparadas) ? o.disparadas.filter(k => typeof k === "string" && Object.hasOwn(WPN, k)).slice(0, 8) : [],
       base: BASE_SIZES.includes(o.base) ? o.base : undefined,
       weapon: l.weapons.includes(o.weapon) ? o.weapon : l.weapon,

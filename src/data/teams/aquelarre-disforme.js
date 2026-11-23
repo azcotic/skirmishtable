@@ -47,7 +47,7 @@ export default {
     { id: "ecos",      nombre: "Ecos de la Disformidad", ecos: true },
     { id: "hinchazon", nombre: "Hinchazón disforme",     armas: { combate: { dmgN: 1 } } },
     { id: "apendice",  nombre: "Apéndice mutante",       pendiente: true },
-    { id: "vuelo",     nombre: "Vuelo inmaterial",       pendiente: true },
+    { id: "vuelo",     nombre: "Vuelo inmaterial",       vuelo: true },
     { id: "giro",      nombre: "Giro del destino",       armas: { psiquicas: { anadir: ["Piercing Crits 1"] } } },
     { id: "bombardeo", nombre: "Bombardeo astral",       armas: { unaPsiquica: { anadir: ["Devastating 1"] } } },
     { id: "maestro",   nombre: "Maestro del Immaterium", pendiente: true },

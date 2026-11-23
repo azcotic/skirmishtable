@@ -15,6 +15,8 @@ const DEL_AGENTE = [["mv-reposition", "mov"], ["mv-dash", "mov"], ["mv-charge", 
 const DE_LA_PARTIDA = [["endtp", ""], ["undo", ""], ["rulerbtn", ""], ["ardidestiroteo", ""], ["iasugerir", "ia"]];
 
 let alQuitarSeleccion = () => {};
+// 🪽 volar (Vuelo inmaterial): input.js dice si el agente seleccionado puede y si ya lo eligió
+export const accionesHooks = { volar: () => false, volando: () => false };
 // un modo que pone sus propios botones (p. ej. el despliegue): { html() -> string|null, click(boton) }
 // modos que ponen sus propios botones (despliegue, reacción): el primero que devuelva html manda
 const especiales = [];
@@ -28,7 +30,7 @@ export function renderAcciones() {
   especial = null;
   for (const m of especiales) { const h = m.html(); if (h != null) { propio = h; especial = m; break; } }
   if (propio != null) {
-    for (const id of ["quitarsel", "fichasel"]) { const b = document.getElementById(id); if (b) b.hidden = true; }
+    for (const id of ["quitarsel", "fichasel", "volarsel"]) { const b = document.getElementById(id); if (b) b.hidden = true; }
     bar.classList.remove("con-agente");
     bar.classList.add("especial");
     if (bar._html !== propio) { bar.innerHTML = propio; bar._html = propio; }
@@ -47,6 +49,8 @@ export function renderAcciones() {
   });
   // ✕ quitar la selección y 📋 ver su ficha, en la línea de la pista (la barra no cambia de alto)
   for (const id of ["quitarsel", "fichasel"]) { const b = document.getElementById(id); if (b) b.hidden = !conAgente; }
+  const volar = document.getElementById("volarsel");
+  if (volar) { volar.hidden = !(conAgente && accionesHooks.volar()); volar.classList.toggle("activo", accionesHooks.volando()); }
   const html = botones.join("");
   bar.classList.toggle("con-agente", conAgente);
   if (bar._html !== html) { bar.innerHTML = html; bar._html = html; }
