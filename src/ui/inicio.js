@@ -35,6 +35,7 @@ import { agenteDeMuestra, comandoPorId, eleccionesDe, modelosPara, pesoAgente, p
 import { abrirFicha } from './ficha.js';
 import { ARDID, DOCTRINAS, dadosGuardados, doctrina, elegirDoctrina, elegirFlexible, guardarDestino, guerraDoctrinas, quitarDestino, tacticasDeBando } from './ardides.js';
 import { d6 } from '../engine/dice.js';
+import { showRoll } from './dicetray.js';
 import { gradoActual, puntuarKillOp, reiniciarPuntos } from './ops.js';
 import { setPick } from '../view3d/units.js';
 import { bandoEnTurno } from './turno.js';
@@ -244,6 +245,12 @@ function contenido() {
         const op = opcion("ardid:" + n, esc(n), desc,
           { activa: usado, deshabilitada: !mio || (!usado && !puedeUsarArdid(tray.cp, tray.ardides || [[], []], lado, n)) });
         // Doctrina de combate: una vez usado, se elige la doctrina
+        if (usado && n === ARDID.destino) {   // los dos dados: se lanzan con un botón y se ven en pantalla
+          const d = dadosGuardados(lado);
+          if (!d.length) return op + `<div class="pant-grupo">${opcion("destino:tirar", T.destino.lanzar, T.destino.lanzarDesc, { deshabilitada: !mio })}</div>`;
+          return op + `<div class="pant-dados"><span class="eq${lado}">${T.destino.titulo} <b>${d[0]}</b></span><span class="eq${lado}"><b>${d[1]}</b></span></div>` +
+            `<p class="pant-nota">${d[0] + d[1] < 9 ? T.destino.bajoNota : T.destino.altoNota}</p>`;
+        }
         if (usado && n === ARDID.flexibles) {
           const c = comandoPorId(teamOf(lado) && teamOf(lado).id), prim = (tray.tacticas && tray.tacticas[lado] || [])[0];
           const ahora = tacticasDeBando(lado)[1];
@@ -255,9 +262,11 @@ function contenido() {
           DOCTRINAS.map(d => opcion("doc:" + d, esc(T.doctrinas[d]), "", { activa: doctrina(lado) === d, deshabilitada: !mio })).join("") + "</div>";
       }).join("");
       const ultimo = paso === "ardidesB";
+      // El destino es mi arma ya elegido pero sin lanzar sus dos dados: no se sigue hasta lanzarlos
+      const faltaLanzar = usados.includes(ARDID.destino) && !dadosGuardados(lado).length;
       return { titulo: `${E.titulo(tray.tp)} · ${E.ardidesTitulo}`,
         sub: mio ? E.ardidesSub(esc(bando(lado)), tray.cp[lado]) : E.esperaArdides(esc(TEAMNAME[lado])), html,
-        principal: mio ? `<button class="pant-jugar" id="pantardidesok">${ultimo ? E.aTiroteo : E.siguiente(esc(TEAMNAME[ordenArdides[1]]))}</button>` : "" };
+        principal: mio ? `<button class="pant-jugar" id="pantardidesok"${faltaLanzar ? " disabled" : ""}>${faltaLanzar ? T.destino.lanzaPrimero : ultimo ? E.aTiroteo : E.siguiente(esc(TEAMNAME[ordenArdides[1]]))}</button>` : "" };
     }
     case "fin": {
       const F = T.fin, r = resultadoFinal();
@@ -356,6 +365,7 @@ function elegir(v) {
       return fijarIniciativa(+v.slice(3));
     case "ardidesA": case "ardidesB":
       if (v.startsWith("ardid:")) return alternarArdid(ordenArdides[paso === "ardidesA" ? 0 : 1], v.slice(6));
+      if (v === "destino:tirar") return lanzarDestino(ordenArdides[paso === "ardidesA" ? 0 : 1]);
       if (v.startsWith("flex:")) {          // Tácticas flexibles: la nueva secundaria
         const lado = ordenArdides[paso === "ardidesA" ? 0 : 1];
         if (!mayControl({ team: lado })) return;
@@ -422,11 +432,18 @@ function alternarArdid(lado, n, clave = "ardides") {
     usados.push(n); tray.cp[lado] -= COSTE_ARDID;
     if (n === ARDID.doctrina) { elegirDoctrina(lado, "devastadora"); if (guerraDoctrinas(lado, "devastadora")) logLine(T.doctrinas.guerra(TEAMNAME[lado])); }
     logLine(T.estrategia.logArdid(TEAMNAME[lado], n));
-    if (n === ARDID.destino) {          // tira 2D6 y los guarda para el tiroteo
-      const [x, y] = guardarDestino(lado, d6);
-      logLine(T.destino.guarda(TEAMNAME[lado], x, y, x + y < 9));
-    }
+    // El destino es mi arma: los dos dados se lanzan después, con su botón (destino:tirar)
   }
+  renderAll();
+  render();
+}
+// Lanza los 2D6 de El destino es mi arma y los guarda para el tiroteo (se ven en la pantalla y en la caja de dados)
+function lanzarDestino(lado) {
+  if (!mayControl({ team: lado }) || dadosGuardados(lado).length) return;
+  snapshot();
+  const [x, y] = guardarDestino(lado, d6);
+  showRoll([x, y], 0, lado, T.destino.titulo);
+  logLine(T.destino.guarda(TEAMNAME[lado], x, y, x + y < 9));
   renderAll();
   render();
 }
