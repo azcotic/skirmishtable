@@ -472,6 +472,16 @@ body { overflow: hidden; overscroll-behavior: none; }
 .acciones .accion:disabled { opacity: .35; }
 .acciones .accion.ia { border-color: #8d5fa8; color: #d9bff0; }
 .acciones .accion.ficha { border-style: dashed; }
+/* con un agente seleccionado: siempre 4 columnas × 2 filas, cada botón en su sitio
+   (arriba: Reposicionarse, Correr o Retroceder, Cargar y orden; abajo: Apuntar, Disparar,
+   Combatir y Terminar). Nada se parte ni se sale de su celda, ni en teléfono ni en tablet. */
+.acciones.con-agente { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: 44px 44px; grid-auto-rows: 44px; }
+.acciones.con-agente .accion { min-width: 0; overflow: hidden; padding: 2px 3px; font-size: 13px; line-height: 1.05;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow-wrap: anywhere; }
+.acciones.con-agente .accion.orden { flex-direction: column; flex-wrap: nowrap; gap: 0; }
+.acciones.con-agente .accion.orden .oico { font-size: 15px; line-height: 1; }
+.acciones.con-agente .accion.orden b { font-size: 12px; }
+.acciones.con-agente .accion.orden small { display: none; }   /* "orden fijada": ya lo dice el botón atenuado y su título */
 /* la orden: muestra la actual (💀 trabarse en rojo, 🕵️ ocultarse en azul grisáceo) y qué hará */
 #ordbtn.orden, .acciones .accion.orden { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.05; }
 #ordbtn.orden .oico, .acciones .accion.orden .oico { font-size: 16px; line-height: 1; }
@@ -577,6 +587,7 @@ dialog.tirada .tnota { font-size: 10px; color: #8b8072; }
   .hoja .panel[data-tab] { display: block; }
   .hojaasa, .hojatabs { display: none; }
   .acciones { grid-template-columns: repeat(auto-fit, minmax(96px, 150px)); justify-content: center; min-height: 44px; }
+  .acciones.con-agente { grid-template-columns: repeat(4, minmax(0, 150px)); }
 }
 
 /* despliegue: los agentes que aún no están en la mesa, en el marcador flotante */
