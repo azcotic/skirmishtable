@@ -177,15 +177,10 @@ function mostrarFrente() {
   $("encfrente").value = String(((Math.round(frente) % 360) + 360) % 360);
   $("encfrenteval").textContent = `${((Math.round(frente) % 360) + 360) % 360}°`;
 }
-// Gira el frente a g grados. La cámara gira con él, así lo que se ve (de frente, de espalda…) no cambia.
+// Gira el frente a g grados. Solo mueve la flecha: el encuadre (la cámara) no se toca.
 function ponerFrente(g) {
   if (!escena) return;
-  const nuevo = ((g % 360) + 360) % 360, d = (nuevo - frente) * Math.PI / 180;
-  const eje = new THREE.Vector3(0, 1, 0), o = escena.origen;
-  const c = cam.position.clone().sub(o).applyAxisAngle(eje, d).add(o);
-  const t = controles.target.clone().sub(o).applyAxisAngle(eje, d).add(o);
-  cam.position.copy(c); controles.target.copy(t); controles.update();
-  frente = nuevo;
+  frente = ((g % 360) + 360) % 360;
   if (flecha) flecha.rotation.y = frente * Math.PI / 180;
   mostrarFrente();
   estado(T.encuadres.frentePuesto);

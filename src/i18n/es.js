@@ -736,7 +736,7 @@ export const T = {
     frenteAuto: 'Detectar',
     frenteAutoTitulo: 'Probar con el frente que parece tener (por dónde pesan la mochila y la capa)',
     frenteAyuda: 'La flecha naranja sobre la peana marca hacia dónde mira la miniatura. Gírala hasta que apunte a su frente. Así, en la mesa 3D, la miniatura mira hacia donde apunta su línea de visión (su blanco, o el centro de la mesa), y el encuadre automático parte de ese lado.',
-    frentePuesto: 'Frente girado. Se guarda con el botón "Guardar encuadre".',
+    frentePuesto: 'Frente girado (el encuadre no se movió). Se guarda con el botón "Guardar encuadre".',
     guardar: 'Guardar encuadre',
     auto: 'Encuadre automático',
     borrar: 'Borrar el guardado',
