@@ -20,7 +20,7 @@ import { renderMinis } from './minis.js';
 import { T, pulg } from '../i18n/es.js';
 import { renderAcciones } from './acciones.js';
 import { accionesLegales, agotada, alcanceArma, blancoValidoCon, buscadoraAplica, puede, puedeCambiarOrden } from '../game/acciones.js';
-import { conectarTurno, pistaDeTurno, porQueNoActua, puedeActuar, todosUsados } from './turno.js';
+import { alternasObligatorias, conectarTurno, pistaDeTurno, porQueNoActua, puedeActuar, todosUsados } from './turno.js';
 import { control, esDeLaIA } from './control.js';
 
 // Repetición de mando (ardid de tiroteo, 1 PM, sin límite de usos): repetir un dado fallado.
@@ -480,6 +480,9 @@ export function endActivation(op) {
   const p = pistaDeTurno();          // activaciones alternas: a quién le toca ahora
   if (p) hint(p);
   control.alTerminarActivacion();    // contra la computadora: ¿le toca a la IA? (ia.js)
+  // ya activaron todos los agentes de ambos bandos: directo al siguiente punto de inflexión
+  if (alternasObligatorias() && todosUsados())
+    setTimeout(() => { if (todosUsados()) document.getElementById("endtp")?.click(); }, 500);
 }
 // Something to undo: the operative has acted, or is expended.
 export const canUndoActivation = op => !!op && op.alive && (!untouched(op) || orderChanged(op));

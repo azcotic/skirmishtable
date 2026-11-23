@@ -48,9 +48,15 @@ export default {
     ventrilokar:   { nombre: "Ventrilokar", apl: 3, move: 6, save: 3, wounds: 14, armas: ["pistolaBolter", "espadaSierra"] },
     combatiente:   { nombre: "Combatiente", apl: 3, move: 6, save: 3, wounds: 14, armas: ["pistolaBolter", "espadaSierra"] },
   },
+  // composición: 6 agentes, el Visionario y 5 más; cada uno una sola vez salvo el Combatiente
+  composicion: {
+    selecciones: 6,
+    requiere: [{ claves: ["visionario"], min: 1, nombre: "Visionario" }],
+    repetibles: ["combatiente"],
+  },
   // el comando de prueba: el Visionario y 5 agentes de la lista (cada uno una vez)
   plantilla: ["visionario", "siembramiedos", "tirador", "tiradorPesado", "aullador", "robapieles"],
-  // configuraciones de ejemplo (pantallas de inicio); la composición se comprobará más adelante
+  // configuraciones de ejemplo (pantallas de inicio); todas cumplen la composición
   ejemplos: [
     { nombre: "Equilibrada", desc: "Un poco de todo: disparo, combate y control.",
       agentes: ["visionario", "siembramiedos", "tirador", "tiradorPesado", "aullador", "robapieles"] },

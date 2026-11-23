@@ -503,6 +503,8 @@ dialog.tirada .tnota { font-size: 10px; color: #8b8072; }
   border: 1px solid #5a4a3a; box-shadow: 0 10px 30px rgba(0, 0, 0, .55); font-size: 14px; line-height: 1.4;
   animation: avisoEntra .2s ease-out; transition: opacity .25s, transform .25s; }
 .aviso.golpe { border-color: #e0672f; }
+.aviso { position: relative; padding-right: 48px; cursor: pointer; }
+.aviso-cerrar { position: absolute; top: 2px; right: 2px; width: 44px; height: 44px; padding: 0; border: 0; background: none; color: #b8ad9e; font-size: 16px; }
 .aviso .dice { color: #b8ad9e; } .aviso .crit { color: #ff9b6b; font-weight: 700; }
 .aviso.saliendo { opacity: 0; transform: scale(.96); }
 @keyframes avisoEntra { from { opacity: 0; transform: translateY(8px) scale(.97); } }
@@ -659,6 +661,10 @@ dialog.ficha::backdrop { background: rgba(10, 8, 6, .7); }
 .pant-agente-info small { font-family: "JetBrains Mono", monospace; font-size: 9px; padding: 0 5px; border-radius: 6px; background: #e0672f; color: #14110e; vertical-align: middle; }
 .pant-agente-info span { font-size: 11px; color: #9a9184; }
 .pant-veces { color: #f0a276; }
+.pant-agente-info small.medio { background: #6b5a8c; color: #f3ece2; }
+.pant-agente-info em { font-style: normal; color: #c9a070; }
+.pant-errores { margin: 4px 0 0; padding: 8px 10px 8px 26px; border-radius: 10px; background: #3a1d14; border: 1px solid #a8452a; color: #ffcdb8; font-size: 13px; }
+.pant-reglas { margin: 0; padding-left: 20px; font-size: 12px; color: #a89a80; line-height: 1.6; }
 .pant-ver, .pant-mas { flex: none; width: 44px; height: 44px; padding: 0; border-radius: 10px; font-size: 18px; }
 .pant-mas { border-color: #e0672f; color: #f0a276; }
 .pant-jugar:disabled { background: #4a3a2c; color: #9a9184; }

@@ -25,8 +25,35 @@ export function registrarComandos() {
   }
 }
 
-// Agentes por comando (por ahora; las reglas de composición de cada comando vendrán después)
+// Agentes por comando cuando el comando no dice nada
 export const TAM_COMANDO = 6;
+
+/* ---------- composición del comando ---------- */
+const comp = c => c.composicion || { selecciones: TAM_COMANDO };
+// cuánto cuenta un agente: 1 selección, o ½ (p. ej. los Tzaangor del Aquelarre Disforme)
+export const pesoAgente = (c, k) => (comp(c).medio || []).includes(k) ? 0.5 : 1;
+export const seleccionesMax = c => comp(c).selecciones;
+export const selecciones = (c, claves) => claves.reduce((a, k) => a + pesoAgente(c, k), 0);
+const repetible = (c, k) => !comp(c).repetibles || comp(c).repetibles.includes(k);
+
+// ¿Se puede añadir el agente `k` a `claves`? {ok, motivo: "lleno" | "unico" | null}
+export function puedeAnadir(c, claves, k) {
+  if (selecciones(c, claves) + pesoAgente(c, k) > seleccionesMax(c) + 1e-9) return { ok: false, motivo: "lleno" };
+  if (!repetible(c, k) && claves.includes(k)) return { ok: false, motivo: "unico" };
+  return { ok: true, motivo: null };
+}
+// ¿Cumple el comando sus reglas? Los problemas van como códigos (los textos, en es.js):
+// ["faltan", n] · ["sobran", n] · ["requiere", nombre] · ["repetido", clave]
+export function validarComando(c, claves) {
+  const errores = [], usadas = selecciones(c, claves), max = seleccionesMax(c);
+  if (usadas < max - 1e-9) errores.push(["faltan", max - usadas]);
+  if (usadas > max + 1e-9) errores.push(["sobran", usadas - max]);
+  for (const r of comp(c).requiere || [])
+    if (claves.filter(k => r.claves.includes(k)).length < r.min) errores.push(["requiere", r.nombre]);
+  for (const k of new Set(claves))
+    if (!repetible(c, k) && claves.filter(x => x === k).length > 1) errores.push(["repetido", k]);
+  return { ok: !errores.length, errores, usadas, max };
+}
 
 // Las definiciones [id, bando, nombre, tipo] de los agentes de un bando: los elegidos (claves de
 // agente) o la plantilla de prueba; sin comando (fichas simples), los genéricos de siempre.

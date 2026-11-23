@@ -18,6 +18,7 @@ import { fairNote, rollFor } from '../net/roll.js';
 import { TEAMNAME } from '../config.js';
 import { clearDice, diceTrays, mayRoll, onDiceRender, rerollDice, setHit, setRoll, tally, wasRerolled } from './dicetray.js';
 import { undoStack } from './panels.js';
+import { avisoHooks } from './dom.js';
 import { atRest, handOffsets, shaker, slotSpots, speed, stepDice } from './dicephys.js';
 
 const S = 22, R = S / 2;           // die size and collision radius, px
@@ -446,6 +447,8 @@ export function wireDiceBox() {
     const dock = document.getElementById("dicedock" + side);
     if (dock) boxes.push(makeBox(side, dock));
   }
+  // cerrar el aviso de los dados cierra también las cajas
+  avisoHooks.alCerrar = () => { for (const b of boxes) if (b.isOpen()) b.show(false); };
   onDiceRender(() => { for (const b of boxes) b.sync(); });
   for (const b of boxes) b.sync();
 }

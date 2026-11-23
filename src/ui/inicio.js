@@ -30,8 +30,10 @@ import { teamOf } from '../view3d/units.js';
 import { ARDIDES } from '../i18n/nombres.js';
 import { pmDelPI, puedeUsarArdid, quienDecide, tirarD6, COSTE_ARDID } from '../game/fases.js';
 import { OPS, rosterInit } from '../engine/world.js';
-import { TAM_COMANDO, agenteDeMuestra, comandoPorId, modelosPara, plantillaDefs } from '../data/teams/index.js';
+import { agenteDeMuestra, comandoPorId, modelosPara, pesoAgente, plantillaDefs, puedeAnadir, seleccionesMax,
+  validarComando } from '../data/teams/index.js';
 import { abrirFicha } from './ficha.js';
+import { actualizarKillOp, bonoKillOp, gradoActual, reiniciarPuntos } from './ops.js';
 import { setPick } from '../view3d/units.js';
 import { bandoEnTurno } from './turno.js';
 import { mayControl } from '../net/sync.js';
@@ -92,27 +94,33 @@ function contenido() {
       const html = c.ejemplos.map((e, k) => opcion("ej:" + k, esc(e.nombre),
         `${esc(e.desc)}<br><span class="pant-agentes">${e.agentes.map(a => esc(c.agentes[a].nombre)).join(" · ")}</span>`,
         { activa: eleccion.config[s] === e.nombre })).join("") +
-        opcion("propia", I.propia, I.propiaDesc(TAM_COMANDO), { activa: eleccion.config[s] === I.propia });
+        opcion("propia", I.propia, I.propiaDesc(seleccionesMax(c)), { activa: eleccion.config[s] === I.propia });
       return { titulo: s === 0 ? I.configTitulo : I.configTituloRival, sub: esc(c.nombre), html };
     }
     case "elegir0": case "elegir1": {          // armar el comando agente por agente
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = eleccion.plantilla[s] || [];
-      const lleno = lista.length >= TAM_COMANDO;
+      const v = validarComando(c, lista), comp = c.composicion || {};
       const elegidos = lista.length
         ? lista.map((k, i) => `<button class="pant-chip" data-v="rm:${i}" aria-label="${esc(I.quitar(c.agentes[k].nombre))}">${esc(c.agentes[k].nombre)} ✕</button>`).join("")
         : `<p class="pant-nota">${I.ningunoAun}</p>`;
       const disponibles = Object.entries(c.agentes).map(([k, a]) => {
-        const veces = lista.filter(x => x === k).length;
+        const veces = lista.filter(x => x === k).length, p = puedeAnadir(c, lista, k);
+        const medio = pesoAgente(c, k) < 1 ? ` <small class="medio" title="${I.medioTitulo}">½</small>` : "";
         return `<div class="pant-agente${veces ? " elegido" : ""}">
-          <div class="pant-agente-info"><b>${esc(a.nombre)}${a.lider ? ` <small>${T.fichaDatos.lider}</small>` : ""}${veces ? ` <span class="pant-veces">×${veces}</span>` : ""}</b>
-            <span>${I.statsCortas(a.move, a.apl, a.save, a.wounds)}</span></div>
+          <div class="pant-agente-info"><b>${esc(a.nombre)}${a.lider ? ` <small>${T.fichaDatos.lider}</small>` : ""}${medio}${veces ? ` <span class="pant-veces">×${veces}</span>` : ""}</b>
+            <span>${I.statsCortas(a.move, a.apl, a.save, a.wounds)}${p.motivo === "unico" ? ` · <em>${I.soloUno}</em>` : ""}</span></div>
           <button class="pant-ver" data-v="ver:${k}" aria-label="${esc(I.verFicha(a.nombre))}">👁</button>
-          <button class="pant-mas" data-v="add:${k}"${lleno ? " disabled" : ""} aria-label="${esc(I.anadir(a.nombre))}">＋</button></div>`;
+          <button class="pant-mas" data-v="add:${k}"${p.ok ? "" : " disabled"} aria-label="${esc(I.anadir(a.nombre))}">＋</button></div>`;
       }).join("");
-      return { titulo: I.armarTitulo, sub: `${esc(c.nombre)} · ${I.cuenta(lista.length, TAM_COMANDO)}`,
-        html: `<div class="pant-elegidos">${elegidos}</div><h3 class="pant-sec">${I.disponibles}</h3>${disponibles}
-          <p class="pant-nota">${I.composicionLuego}</p>`,
-        principal: `<button class="pant-jugar" id="pantlistoarmar"${lista.length ? "" : " disabled"}>${I.listoArmar(lista.length)}</button>` };
+      const reglas = [I.reglas.selecciones(v.max), ...(comp.requiere || []).map(r => I.reglas.requiere(r.nombre)),
+        ...(comp.repetibles ? [I.reglas.unicos] : []), ...(comp.medio ? [I.reglas.medio] : [])];
+      const errores = lista.length ? v.errores.map(([t, x]) => I.error[t](t === "repetido" ? c.agentes[x].nombre : x)) : [];
+      return { titulo: I.armarTitulo, sub: `${esc(c.nombre)} · ${I.cuenta(v.usadas, v.max)}`,
+        html: `<div class="pant-elegidos">${elegidos}</div>
+          ${errores.length ? `<ul class="pant-errores">${errores.map(e => `<li>${esc(e)}</li>`).join("")}</ul>` : ""}
+          <h3 class="pant-sec">${I.disponibles}</h3>${disponibles}
+          <h3 class="pant-sec">${I.reglasTitulo}</h3><ul class="pant-reglas">${reglas.map(r => `<li>${esc(r)}</li>`).join("")}</ul>`,
+        principal: `<button class="pant-jugar" id="pantlistoarmar"${v.ok ? "" : " disabled"}>${I.listoArmar(lista.length, v.ok)}</button>` };
     }
     case "comando1": return { titulo: eleccion.modo === "ia" ? I.rivalTituloIA : I.rivalTitulo,
       sub: eleccion.modo === "linea" ? I.rivalSubLinea : eleccion.modo === "ia" ? I.rivalSubIA : I.rivalSub, html: opcionesComando(1) };
@@ -175,7 +183,7 @@ function contenido() {
       const F = T.fin, r = resultadoFinal();
       const fila = s => `<div class="pant-fin-bando eq${s}${r.ganador === s ? " gana" : ""}">` +
         `<span class="pant-fin-nombre">${esc(bando(s))}${esDeLaIA(s) ? ` <small>${F.computadora}</small>` : ""}</span>` +
-        `<b>${tray.vp[s]} ${G.pv.abrev}</b><span>${F.enPie(r.enPie[s], r.total[s])} · ${F.bajas(r.bajas[s])}</span></div>`;
+        `<b>${tray.vp[s]} ${G.pv.abrev}</b><span>${F.enPie(r.enPie[s], r.total[s])} · ${F.bajas(r.bajas[s])} · ${T.operaciones.gradoCorto(gradoActual(s))}</span></div>`;
       return { titulo: F.titulo, sub: r.motivo === "aniquilado" ? F.aniquilado(TEAMNAME[r.ganador]) : F.trasPI(tray.tp),
         html: `<div class="pant-fin-ganador">${r.ganador === null ? F.empate : F.gana(esc(bando(r.ganador)), esDeLaIA(r.ganador))}</div>` +
           fila(0) + fila(1) + `<p class="pant-nota">${F.notaPV}</p>`,
@@ -239,7 +247,7 @@ function elegir(v) {
     }
     case "elegir0": case "elegir1": {
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = eleccion.plantilla[s] = eleccion.plantilla[s] || [];
-      if (v.startsWith("add:") && lista.length < TAM_COMANDO) lista.push(v.slice(4));
+      if (v.startsWith("add:") && puedeAnadir(c, lista, v.slice(4)).ok) lista.push(v.slice(4));
       else if (v.startsWith("rm:")) lista.splice(+v.slice(3), 1);
       else if (v.startsWith("ver:")) { abrirFicha(agenteDeMuestra(s, c.id, v.slice(4))); return; }
       return render();
@@ -332,6 +340,7 @@ function empezar() {
   // los agentes de cada bando: el comando de prueba con sus fichas reales (o fichas simples)
   rosterInit([0, 1].flatMap(s => plantillaDefs(s, eleccion.comando[s], eleccion.plantilla[s])));
   loadMap(eleccion.mapa);
+  reiniciarPuntos();                 // hoja de PV en blanco (grado de bajas incluido)
   // cada agente con el modelo 3D que le corresponde
   for (const s of [0, 1]) {
     const picks = modelosPara(OPS.filter(o => o.team === s), teamOf(s));
@@ -379,6 +388,7 @@ export function abrirFin() {
 }
 function comprobarFin() {
   if (finMostrado || despliegueActivo() || !OPS.some(o => o.deployed !== false)) return;
+  actualizarKillOp();                // operación de bajas: ¿subió el grado de alguien?
   const r = resultadoFinal();
   if (r.motivo === "aniquilado") { logLine(T.fin.logAniquilado); abrirFin(); }
 }
@@ -431,7 +441,8 @@ export function wireInicio() {
     if (b.dataset.v !== undefined) elegir(b.dataset.v);
   });
   setAlTerminarDespliegue(abrirListo);
-  control.alFinBatalla = () => abrirFin();
+  // tras el 4.º PI: el punto extra del grado de bajas más alto, y la pantalla final
+  control.alFinBatalla = motivo => { if (motivo === "pi") bonoKillOp(); abrirFin(); };
   control.alComprobarFin = comprobarFin;
   // en cada punto de inflexión, la fase de estrategia (los tests la omiten: PM automáticos)
   let omitir = false;

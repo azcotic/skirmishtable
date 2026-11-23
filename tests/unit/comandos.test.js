@@ -1,7 +1,7 @@
 // Comandos con fichas reales (src/data/teams/): datos completos y coherentes, registro en las
 // tablas del motor, modelo 3D de cada agente y reglas de arma en español.
 import { describe, expect, it } from 'vitest';
-import { COMANDOS, modelosPara, plantillaDefs, registrarComandos } from '../../src/data/teams/index.js';
+import { COMANDOS, modelosPara, plantillaDefs, puedeAnadir, registrarComandos, validarComando } from '../../src/data/teams/index.js';
 import { KINDS, mkOp } from '../../src/engine/world.js';
 import { WPN } from '../../src/config.js';
 import { TTS_TEAMS } from '../../src/data/tts-teams.js';
@@ -13,7 +13,6 @@ registrarComandos();
 describe('fichas de los comandos', () => {
   for (const c of COMANDOS) {
     it(`${c.nombre}: agentes y armas completos`, () => {
-      expect(c.plantilla.length).toBe(6);
       for (const [k, a] of Object.entries(c.agentes)) {
         expect([2, 3], k).toContain(a.apl);
         expect(a.move, k).toBeGreaterThanOrEqual(5);
@@ -27,7 +26,8 @@ describe('fichas de los comandos', () => {
         expect(w.atk, k).toBeGreaterThan(0);
         expect(w.hit, k).toBeGreaterThanOrEqual(2);
       }
-      expect(c.plantilla.filter(k => c.agentes[k].lider).length).toBeGreaterThanOrEqual(1);
+      expect(validarComando(c, c.plantilla).ok, "plantilla").toBe(true);
+      for (const e of c.ejemplos) expect(validarComando(c, e.agentes).errores, e.nombre).toEqual([]);
     });
   }
 
@@ -40,6 +40,7 @@ describe('fichas de los comandos', () => {
 
   it('la plantilla de cada bando: ids A1…/B1…, y fichas simples sin comando', () => {
     expect(plantillaDefs(0, '3352828814').map(d => d[0])).toEqual(['A1', 'A2', 'A3', 'A4', 'A5', 'A6']);
+    expect(plantillaDefs(1, '3348897103').length).toBe(5);
     expect(plantillaDefs(1, '3348897103')[0]).toEqual(['B1', 1, 'Hechicero del Destino', 'ad.hechiceroDestino']);
     expect(plantillaDefs(1, null).every(d => d[1] === 1)).toBe(true);
   });
@@ -50,9 +51,25 @@ describe('fichas de los comandos', () => {
       const team = equipos.find(t => t.id === id);
       const ops = plantillaDefs(side, id).map(([oid, s, n, k]) => ({ id: oid, team: s, name: n, kind: k }));
       const picks = modelosPara(ops, team);
-      expect(Object.keys(picks).length, id).toBe(6);
+      expect(Object.keys(picks).length, id).toBe(ops.length);
       for (const op of ops) expect(team.models[picks[op.id]].name.startsWith(KINDS[op.kind].nombre), op.id).toBe(true);
     }
+  });
+});
+
+describe('composición del comando', () => {
+  const ad = COMANDOS.find(c => c.prefijo === 'ad'), gn = COMANDOS.find(c => c.prefijo === 'gn');
+  it('Aquelarre Disforme: 5 selecciones, Tzaangor a media, al menos un hechicero', () => {
+    expect(validarComando(ad, ['hechiceroDestino', 'tiradorRubrica', 'portaiconoRubrica', 'combatienteRubrica']).errores).toEqual([['faltan', 1]]);
+    expect(validarComando(ad, ['hechiceroDestino', 'tiradorRubrica', 'portaiconoRubrica', 'combatienteRubrica', 'combatienteTzaangor']).errores).toEqual([['faltan', 0.5]]);
+    expect(validarComando(ad, ['tiradorRubrica', 'portaiconoRubrica', 'combatienteRubrica', 'combatienteRubrica', 'combatienteRubrica']).errores).toEqual([['requiere', 'Hechicero']]);
+    expect(puedeAnadir(ad, ['hechiceroDestino'], 'hechiceroDestino').motivo).toBe('unico');
+    expect(puedeAnadir(ad, ['hechiceroDestino', 'tiradorRubrica', 'portaiconoRubrica', 'combatienteRubrica', 'combatienteTzaangor'], 'combatienteTzaangor').ok).toBe(true);
+    expect(puedeAnadir(ad, ['hechiceroDestino', 'tiradorRubrica', 'portaiconoRubrica', 'combatienteRubrica', 'combatienteTzaangor'], 'combatienteRubrica').motivo).toBe('lleno');
+  });
+  it('Garra Némesis: 6, con el Visionario, combatientes repetibles', () => {
+    expect(validarComando(gn, ['visionario', 'combatiente', 'combatiente', 'combatiente', 'aullador', 'tirador']).ok).toBe(true);
+    expect(puedeAnadir(gn, ['aullador'], 'aullador').motivo).toBe('unico');
   });
 });
 

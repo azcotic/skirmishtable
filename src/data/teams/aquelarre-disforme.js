@@ -45,15 +45,24 @@ export default {
     portaiconoTzaangor: { nombre: "Portaicono Tzaangor", apl: 2, move: 6, save: 5, wounds: 9, armas: ["daga"] },
     combatienteTzaangor: { nombre: "Combatiente Tzaangor", apl: 2, move: 6, save: 5, wounds: 9, armas: ["armasTzaangor"] },
   },
-  // comando de prueba: dos hechiceros, tres Marines Rúbrica y un campeón Tzaangor
-  plantilla: ["hechiceroDestino", "hechiceroFuego", "tiradorRubrica", "portaiconoRubrica", "combatienteRubrica", "campeonTzaangor"],
-  // configuraciones de ejemplo (pantallas de inicio); la composición se comprobará más adelante
+  // composición (hoja de equipo, revisión más reciente): 5 selecciones; cada Tzaangor cuenta como
+  // media selección; al menos un hechicero; cada agente una sola vez salvo los combatientes
+  composicion: {
+    selecciones: 5,
+    medio: ["campeonTzaangor", "portacuernoTzaangor", "portaiconoTzaangor", "combatienteTzaangor"],
+    requiere: [{ claves: ["hechiceroDestino", "hechiceroTempireo", "hechiceroFuego"], min: 1, nombre: "Hechicero" }],
+    repetibles: ["combatienteRubrica", "combatienteTzaangor"],
+  },
+  // comando de prueba: dos hechiceros y tres Marines Rúbrica
+  plantilla: ["hechiceroDestino", "hechiceroFuego", "tiradorRubrica", "portaiconoRubrica", "combatienteRubrica"],
+  // configuraciones de ejemplo (pantallas de inicio); todas cumplen la composición
   ejemplos: [
-    { nombre: "Aquelarre", desc: "Hechiceros con escolta de Marines Rúbrica y un campeón.",
-      agentes: ["hechiceroDestino", "hechiceroFuego", "tiradorRubrica", "portaiconoRubrica", "combatienteRubrica", "campeonTzaangor"] },
+    { nombre: "Aquelarre", desc: "Dos hechiceros con escolta de Marines Rúbrica y un par de Tzaangor.",
+      agentes: ["hechiceroDestino", "hechiceroFuego", "tiradorRubrica", "portaiconoRubrica", "campeonTzaangor", "combatienteTzaangor"] },
     { nombre: "Muro Rúbrica", desc: "Lentos pero muy resistentes (2+): avanzar y aguantar.",
-      agentes: ["hechiceroTempireo", "tiradorRubrica", "portaiconoRubrica", "combatienteRubrica", "combatienteRubrica", "combatienteRubrica"] },
-    { nombre: "Horda Tzaangor", desc: "Rápidos y numerosos: llegar al combate cuanto antes.",
-      agentes: ["hechiceroDestino", "campeonTzaangor", "portacuernoTzaangor", "portaiconoTzaangor", "combatienteTzaangor", "combatienteTzaangor"] },
+      agentes: ["hechiceroTempireo", "tiradorRubrica", "portaiconoRubrica", "combatienteRubrica", "combatienteRubrica"] },
+    { nombre: "Horda Tzaangor", desc: "Ocho Tzaangor rápidos (cada uno cuenta como media selección) y un hechicero.",
+      agentes: ["hechiceroDestino", "campeonTzaangor", "portacuernoTzaangor", "portaiconoTzaangor",
+        "combatienteTzaangor", "combatienteTzaangor", "combatienteTzaangor", "combatienteTzaangor", "combatienteTzaangor"] },
   ],
 };

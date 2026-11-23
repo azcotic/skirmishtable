@@ -39,9 +39,11 @@ export function logRemote(html, hit) {
 }
 export function hint(t) { document.getElementById("hint").textContent = t; }
 
-// Un aviso en el centro de la pantalla que se quita a los 5 s (o al tocarlo): el resultado de
-// los dados, que en el teléfono no se ve porque el registro está en su pestaña. En escritorio,
-// con el panel lateral a la vista, solo si el panel está plegado.
+// Un aviso en el centro de la pantalla que se queda hasta que lo cierras (tocándolo o con ✕):
+// el resultado de los dados, que en el teléfono no se ve porque el registro está en su pestaña.
+// En escritorio, con el panel lateral a la vista, solo si el panel está plegado.
+// alCerrar: al cerrarlo, las cajas de dados se cierran también (dicebox.js lo pone).
+export const avisoHooks = { alCerrar: () => {} };
 const ANCHO = typeof matchMedia === "function" ? matchMedia("(min-width: 1024px)") : { matches: false };
 export function aviso(html, golpe = false) {
   const caja = document.getElementById("avisos");
@@ -50,12 +52,10 @@ export function aviso(html, golpe = false) {
   if (ANCHO.matches && main && !main.classList.contains("folded")) return;
   const a = document.createElement("div");
   a.className = "aviso" + (golpe ? " golpe" : "");
-  a.innerHTML = html;
-  const quitar = () => { a.classList.add("saliendo"); setTimeout(() => a.remove(), 250); };
-  a.onclick = quitar;
+  a.innerHTML = `<button class="aviso-cerrar" aria-label="${T.dados.cerrarAviso}">✕</button>${html}`;
+  a.onclick = () => { a.classList.add("saliendo"); setTimeout(() => a.remove(), 250); avisoHooks.alCerrar(); };
   caja.prepend(a);
   while (caja.children.length > 3) caja.lastElementChild.remove();
-  setTimeout(quitar, 5000);
 }
 
 /* ---------- board rendering ---------- */
