@@ -34,17 +34,19 @@ export const critDesde = rules => { const l = regla(rules, "Lethal"); return typ
 
 // Éxitos de unos dados de ataque ya tirados: críticos (≥ Letal o 6) y normales (≥ Impactar);
 // el 1 siempre falla. Después, las reglas que cambian resultados (siempre convienen):
-// Severa (sin críticos, un normal pasa a crítico), Castigadora (con algún crítico, un fallo pasa
-// a normal) y Desgarradora (con algún crítico, un normal pasa a crítico).
+// Castigadora (con algún crítico, un fallo pasa a normal), Desgarradora (con algún crítico, un
+// normal pasa a crítico) y Severa (sin críticos, un normal pasa a crítico).
 export function clasificarAtaque(dice, hit, rules) {
   const cd = critDesde(rules);
   let crit = dice.filter(v => v !== 1 && v >= cd).length;
   let norm = dice.filter(v => v !== 1 && v < cd && v >= hit).length;
   let fail = dice.length - crit - norm;
   const notes = [];
-  if (regla(rules, "Severe") && crit === 0 && norm > 0) { norm--; crit++; notes.push("severe"); }
+  // Castigadora y Desgarradora piden haber guardado un crítico de la tirada; Severa, ninguno (y el
+  // crítico que crea Severa no activa las otras dos)
   if (regla(rules, "Punishing") && crit > 0 && fail > 0) { fail--; norm++; notes.push("punishing"); }
   if (regla(rules, "Rending") && crit > 0 && norm > 0) { norm--; crit++; notes.push("rending"); }
+  if (regla(rules, "Severe") && crit === 0 && norm > 0) { norm--; crit++; notes.push("severe"); }
   return { crit, norm, notes };
 }
 
