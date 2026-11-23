@@ -45,13 +45,18 @@ export function hint(t) { document.getElementById("hint").textContent = t; }
 // alCerrar: al cerrarlo, las cajas de dados se cierran también (dicebox.js lo pone).
 export const avisoHooks = { alCerrar: () => {} };
 const ANCHO = typeof matchMedia === "function" ? matchMedia("(min-width: 1024px)") : { matches: false };
-export function aviso(html, golpe = false) {
+// opt.siempre: también en escritorio con el panel a la vista (las explicaciones de por qué no se puede algo);
+// opt.ms: se cierra solo a los ms; opt.clave: reemplaza al aviso anterior con esa clave (no se apilan)
+export function aviso(html, golpe = false, opt = {}) {
   const caja = document.getElementById("avisos");
   if (!caja) return;
   const main = document.querySelector(".main");
-  if (ANCHO.matches && main && !main.classList.contains("folded")) return;
+  if (!opt.siempre && ANCHO.matches && main && !main.classList.contains("folded")) return;
+  if (opt.clave) for (const v of caja.querySelectorAll(`.aviso[data-clave="${opt.clave}"]`)) v.remove();
   const a = document.createElement("div");
-  a.className = "aviso" + (golpe ? " golpe" : "");
+  a.className = "aviso" + (golpe ? " golpe" : "") + (opt.siempre ? " explica" : "");
+  if (opt.clave) a.dataset.clave = opt.clave;
+  if (opt.ms) setTimeout(() => { if (a.isConnected) { a.classList.add("saliendo"); setTimeout(() => a.remove(), 250); } }, opt.ms);
   a.innerHTML = `<button class="aviso-cerrar" aria-label="${T.dados.cerrarAviso}">✕</button>${html}`;
   a.onclick = () => { a.classList.add("saliendo"); setTimeout(() => a.remove(), 250); avisoHooks.alCerrar(); };
   caja.prepend(a);

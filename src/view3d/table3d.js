@@ -17,7 +17,7 @@ import { opsState, placeMarkerAt } from '../ui/ops.js';
 import { TTS_OPS } from '../data/tts-ops.js';
 import { hint } from '../ui/dom.js';
 import { T } from '../i18n/es.js';
-import { armDrag, opMenuAt, setBoardPicker } from '../ui/input.js';
+import { armDrag, clickOp, opMenuAt, setBoardPicker } from '../ui/input.js';
 import { closeOpMenu } from '../ui/opmenu.js';
 import { SHOT_KINDS, shotsFrom } from '../engine/shots.js';
 import { coneShadows, sightCone, visibilityPolygon } from '../engine/sight.js';
@@ -588,8 +588,20 @@ function init3D() {
   box.addEventListener("pointerdown", ev => {
     if (!ev.isPrimary || ev.button !== 0) return;
     const op = tokenAt(ev);
-    if (op && armDrag(op, ev, true)) { controls.enabled = false; ev.preventDefault(); }
+    if (op && armDrag(op, ev, true)) { controls.enabled = false; ev.preventDefault(); return; }
+    // en modo Apuntar no se arrastra: un toque sobre un agente lo marca como blanco (en el mapa 2D
+    // lo hace el clic; aquí no hay clic sobre las fichas, así que se detecta el toque)
+    tapFicha = op && state.mode === "target" ? { id: op.id, x: ev.clientX, y: ev.clientY, pid: ev.pointerId, t: performance.now() } : null;
   }, true);
+  let tapFicha = null;
+  window.addEventListener("pointerup", ev => {
+    const t = tapFicha;
+    tapFicha = null;
+    if (!t || ev.pointerId !== t.pid || state.mode !== "target") return;
+    if (Math.hypot(ev.clientX - t.x, ev.clientY - t.y) > 10 || performance.now() - t.t > 700) return;   // fue un giro de cámara, no un toque
+    clickOp(t.id, true);
+  });
+  window.addEventListener("pointercancel", () => { tapFicha = null; });
   // On touch, OrbitControls (r128) works from touch events, not pointer events. While a token
   // is being dragged, keep those touches from it, and from the page (no scroll or zoom).
   for (const type of ["touchstart", "touchmove"]) box.addEventListener(type, ev => {

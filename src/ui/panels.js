@@ -15,14 +15,14 @@ import { KINDS, OPS } from '../engine/world.js';
 import { aturdir, critDanoCombate, danoDevastadoraArea, quemarMente, quitarAturdido, quitarQuemarMente, terrotoxinas,
   veneno } from '../engine/efectos.js';
 import { SHOT_COL, renderAll } from './board.js';
-import { HINT0, fmtDice, hint, logLine } from './dom.js';
+import { HINT0, aviso, fmtDice, hint, logLine } from './dom.js';
 import { RULES, fmtIn, moveSpec } from '../rules/index.js';
 import { mayControl, online } from '../net/sync.js';
 import { showRoll } from './dicetray.js';
 import { fairNote, rollFor } from '../net/roll.js';
 import { renderMinis } from './minis.js';
 import { T, pulg } from '../i18n/es.js';
-import { renderAcciones } from './acciones.js';
+import { accionesHooks, renderAcciones } from './acciones.js';
 import { accionesLegales, agotada, alcanceArma, blancoValidoCon, buscadoraAplica, costeAccion, puede, puedeCambiarOrden } from '../game/acciones.js';
 import { alternasObligatorias, conectarTurno, pistaDeTurno, porQueNoActua, puedeActuar, todosUsados } from './turno.js';
 import { control, esDeLaIA } from './control.js';
@@ -182,26 +182,70 @@ async function disparosSecundarios(a, what, lista) {
     });
   }
 }
+// Por qué algo no se puede hacer: queda en el registro y sale un aviso en el centro (en el teléfono
+// no hay tooltips ni se ve el registro). Se cierra solo.
+function explicar(texto) {
+  logLine(texto);
+  aviso(texto, false, { siempre: true, ms: 7000, clave: "explica" });
+}
+// Por qué no se puede disparar ahora (o null): lo que doShoot comprobaría, sin hacer nada
+function razonNoDisparar() {
+  const a = state.sel;
+  if (!a) return null;
+  const w = WPN[a.weapon];
+  if (w.type !== "R") return T.disparo.armaDeCombate;
+  if (!state.target) return T.disparo.eligeBlanco;
+  const no = cannotShoot(selEye());
+  if (no) return T.disparo.noPuedeLog(a.name, noShootWhy(no));
+  const shot = state.lastShot;
+  if (!shot || !(SHOT_KINDS[shot.kind].valid || buscadoraAplica(w, shot))) return T.disparo.noValido(state.target.name, shot ? shotWhy(shot) : T.disparo.sinBlanco);
+  if (!blancoValidoCon(w, shot)) return T.disparo.fueraDeAlcance(state.target.name, w.name, alcanceArma(w), shot.range);
+  if (agotada(a, a.weapon)) return T.disparo.agotada(w.name);
+  const pr = puede(a, "shoot", OPS);
+  if (!pr.ok) return T.reglas.noPuede(T.reglas.accion.shoot, T.reglas.motivo[pr.motivo] || pr.motivo);
+  return null;
+}
+function razonNoCombatir() {
+  const a = state.sel;
+  if (!a) return null;
+  if (!state.target) return T.combate.eligeBlanco;
+  if (opGap(a, state.target) > CTRL) return T.combate.fueraDeZona(CTRL);
+  const pr = puede(a, "fight", OPS);
+  if (!pr.ok) return T.reglas.noPuede(T.reglas.accion.fight, T.reglas.motivo[pr.motivo] || pr.motivo);
+  return null;
+}
+const ACCION_DE = { "mv-reposition": "reposition", "mv-dash": "dash", "mv-charge": "charge", "mv-fallBack": "fallBack" };
+// El motivo por el que el botón de la barra de acciones no se puede usar ahora (o null)
+accionesHooks.porQue = id => {
+  if (!state.sel) return null;
+  if (id === "shootbtn") return razonNoDisparar();
+  if (id === "fightbtn") return razonNoCombatir();
+  if (id === "ordbtn") return T.orden.fijada;
+  const a = ACCION_DE[id];
+  if (!a) return null;
+  const r = accionesLegales(state.sel, OPS).find(x => x.accion === a);
+  return r && !r.ok && r.motivo !== "yaHecha" ? T.reglas.noPuede(T.reglas.accion[a], T.reglas.motivo[r.motivo] || r.motivo) : null;
+};
 export function doShoot() {
   if (!state.sel || !state.target) return;
   const w = WPN[state.sel.weapon];
-  if (w.type !== "R") { logLine(T.disparo.armaDeCombate); return; }
+  if (w.type !== "R") { explicar(T.disparo.armaDeCombate); return; }
   const no = cannotShoot(selEye());
-  if (no) { logLine(T.disparo.noPuedeLog(state.sel.name, noShootWhy(no))); return; }
+  if (no) { explicar(T.disparo.noPuedeLog(state.sel.name, noShootWhy(no))); return; }
   refreshSight();                        // judge it as things stand now, not when targeted
   const shot = state.lastShot;
   if (!shot || !(SHOT_KINDS[shot.kind].valid || buscadoraAplica(w, shot))) {
-    logLine(T.disparo.noValido(state.target.name, shot ? shotWhy(shot) : T.disparo.sinBlanco));
+    explicar(T.disparo.noValido(state.target.name, shot ? shotWhy(shot) : T.disparo.sinBlanco));
     renderAll(); return;
   }
   if (!blancoValidoCon(w, shot)) {        // Alcance x: más lejos que el alcance del arma
-    logLine(T.disparo.fueraDeAlcance(state.target.name, w.name, alcanceArma(w), shot.range)); return;
+    explicar(T.disparo.fueraDeAlcance(state.target.name, w.name, alcanceArma(w), shot.range)); return;
   }
-  if (agotada(state.sel, state.sel.weapon)) { logLine(T.disparo.agotada(w.name)); return; }
+  if (agotada(state.sel, state.sel.weapon)) { explicar(T.disparo.agotada(w.name)); return; }
   // ya disparó todas las veces que puede, sin PA, o repite arma psíquica (regla Astartes)
   const pr = puede(state.sel, "shoot", OPS);
   if (!pr.ok && ["yaHecha", "sinPA", "psiquicaRepetida", "sinBolter"].includes(pr.motivo)) {
-    logLine(T.reglas.noPuede(T.reglas.accion.shoot, T.reglas.motivo[pr.motivo])); return;
+    explicar(T.reglas.noPuede(T.reglas.accion.shoot, T.reglas.motivo[pr.motivo])); return;
   }
   // what is rolled for: the shot as this table judges it, fixed before the dice are known
   const what = {k: "shoot", by: state.sel.id, at: state.target.id, w: state.sel.weapon,
@@ -287,11 +331,11 @@ function rolled(n, done) {
 export function doFight() {
   if (!state.sel || !state.target) return;
   const gap = opGap(state.sel, state.target);
-  if (gap > CTRL) { logLine(T.combate.fueraDeZona(CTRL)); return; }
+  if (gap > CTRL) { explicar(T.combate.fueraDeZona(CTRL)); return; }
   // ya combatió todas las veces que puede (dos, si es Astartes) o no le quedan PA
   const pr = puede(state.sel, "fight", OPS);
   if (!pr.ok && ["yaHecha", "sinPA"].includes(pr.motivo)) {
-    logLine(T.reglas.noPuede(T.reglas.accion.fight, T.reglas.motivo[pr.motivo])); return;
+    explicar(T.reglas.noPuede(T.reglas.accion.fight, T.reglas.motivo[pr.motivo])); return;
   }
   const what = {k: "fight", by: state.sel.id, at: state.target.id, wa: meleeKey(state.sel),
                 wb: state.target.weapons.find(k => WPN[k].type === "M") || "knife"};

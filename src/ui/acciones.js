@@ -11,6 +11,7 @@ import { state } from '../state.js';
 import { T, pulg } from '../i18n/es.js';
 import { TEAMCOL } from '../config.js';
 import { retrato } from '../view3d/units.js';
+import { aviso } from './dom.js';
 
 // [id del botón original, clase extra]
 const DEL_AGENTE = [["mv-reposition", "mov"], ["mv-dash", "mov"], ["mv-charge", "mov"], ["ordbtn", ""],
@@ -20,7 +21,7 @@ const DE_LA_PARTIDA = [["endtp", ""], ["undo", ""], ["rulerbtn", ""], ["ardidest
 
 let alQuitarSeleccion = () => {};
 // 🪽 volar (Vuelo inmaterial): input.js dice si el agente seleccionado puede y si ya lo eligió
-export const accionesHooks = { volar: () => false, volando: () => false };
+export const accionesHooks = { volar: () => false, volando: () => false, porQue: () => null };
 // un modo que pone sus propios botones (p. ej. el despliegue): { html() -> string|null, click(boton) }
 // modos que ponen sus propios botones (despliegue, reacción): el primero que devuelva html manda
 const especiales = [];
@@ -49,7 +50,7 @@ export function renderAcciones() {
     if (!src) return "";
     const cls = ["accion", extra, ...[...src.classList].filter(c => c !== "mini")].filter(Boolean).join(" ");
     return `<button class="${cls}" data-press="${id}"${src.title ? ` title="${src.title.replace(/"/g, "&quot;")}"` : ""}` +
-      `${src.disabled ? " disabled" : ""}>${src.innerHTML}</button>`;
+      `${src.disabled ? ' aria-disabled="true"' : ""}>${src.innerHTML}</button>`;
   });
   // ✕ quitar la selección y 📋 ver su ficha, en la línea de la pista (la barra no cambia de alto)
   for (const id of ["quitarsel", "fichasel"]) { const b = document.getElementById(id); if (b) b.hidden = !conAgente; }
@@ -96,6 +97,13 @@ export function wireAcciones(onQuitar) {
     const b = ev.target.closest("button");
     if (!b || b.disabled) return;
     if (b.dataset.esp && especial) { especial.click(b); return; }
+    const noDisponible = b.getAttribute("aria-disabled") === "true";
+    // un botón que no se puede usar (o que las reglas restringen) explica por qué, en un aviso
+    if (noDisponible || b.classList.contains("restricted")) {
+      const razon = accionesHooks.porQue && accionesHooks.porQue(b.dataset.press);
+      if (razon) aviso(razon, false, { siempre: true, ms: 7000, clave: "explica" });
+    }
+    if (noDisponible) return;
     const src = b.dataset.press && document.getElementById(b.dataset.press);
     if (src) src.click();
   });

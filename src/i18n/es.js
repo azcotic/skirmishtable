@@ -366,6 +366,7 @@ export const T = {
       hidden: 'No visible',
     },
     etiqueta: { clear: 'LIMPIO', cover: 'CUBIERTO', obscured: 'OFUSCADO', concealed: 'OCULTO', engaged: 'EN COMBATE', hidden: 'SIN LDV' },
+    eligeBlanco: 'Primero toca Apuntar y luego al enemigo al que quieres disparar.',
     // por qué EL TIRADOR no puede disparar (no el blanco)
     noPuede: { conceal: 'el tirador tiene orden de ocultarse 🕵️ (para disparar necesita orden de trabarse 💀, que se elige al empezar su activación)',
       engaged: n => `el tirador está en la ${G.zonaControl.es} de ${n}` },
@@ -421,6 +422,7 @@ export const T = {
   },
 
   combate: {
+    eligeBlanco: 'Primero toca Apuntar y luego al enemigo con el que quieres combatir.',
     fueraDeZona: rango => `El blanco no está en la ${G.zonaControl.es} (${pulg(rango)}).`,
     yaNo: n => `El combate de <b>${n}</b> ya no es posible: no se tira.`,
     aunNo: motivo => `Aún no puedes combatir: ${motivo}.`,
