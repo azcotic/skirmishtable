@@ -8,6 +8,7 @@
  * el original. Así las reglas de qué se puede hacer siguen en un solo lugar.
  */
 import { state } from '../state.js';
+import { T } from '../i18n/es.js';
 
 // [id del botón original, clase extra]
 const DEL_AGENTE = [["mv-reposition", "mov"], ["mv-dash", "mov"], ["mv-charge", "mov"], ["ordbtn", ""],
@@ -50,6 +51,21 @@ export function renderAcciones() {
   });
   // ✕ quitar la selección y 📋 ver su ficha, en la línea de la pista (la barra no cambia de alto)
   for (const id of ["quitarsel", "fichasel"]) { const b = document.getElementById(id); if (b) b.hidden = !conAgente; }
+  // PA que le quedan al agente seleccionado: círculos llenos = libres, vacíos = gastados
+  const pa = document.getElementById("pasel");
+  if (pa) {
+    pa.hidden = !conAgente;
+    if (conAgente) {
+      const s = state.sel, total = Math.max(s.apl, s.ap), libres = Math.max(0, s.ap);
+      const html = `<span class="pasel-t">${T.acciones.paEtiqueta}</span>` +
+        Array.from({ length: total }, (_, i) => `<i class="${i < libres ? "on" : "off"}"></i>`).join("") +
+        `<b>${libres}/${s.apl}</b>`;
+      pa.className = "pasel" + (!s.ready ? " usado" : libres === 0 ? " cero" : "");
+      pa.title = T.acciones.paTitulo(libres, s.apl);
+      pa.setAttribute("aria-label", pa.title);
+      if (pa._html !== html) { pa.innerHTML = html; pa._html = html; }
+    }
+  }
   const volar = document.getElementById("volarsel");
   if (volar) { volar.hidden = !(conAgente && accionesHooks.volar()); volar.classList.toggle("activo", accionesHooks.volando()); }
   const html = botones.join("");

@@ -445,6 +445,16 @@ body { overflow: hidden; overscroll-behavior: none; }
    la barra cambia de botones, y el tablero no debe moverse ni encogerse bajo el dedo */
 .filapista { display: flex; align-items: center; gap: 6px; min-height: 36px; }
 .filapista .hint { flex: 1 1 auto; min-width: 0; }
+/* PA libres del agente seleccionado: círculos llenos = libres */
+.pasel { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; min-height: 36px;
+  border: 1px solid #5a4a36; border-radius: 6px; background: #1b1610; font-family: "JetBrains Mono", monospace; font-size: 12px; }
+.pasel[hidden] { display: none; }
+.pasel .pasel-t { color: #a97844; font-weight: 700; margin-right: 2px; }
+.pasel i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #e8722e; box-sizing: border-box; }
+.pasel i.on { background: #e8722e; }
+.pasel b { margin-left: 3px; color: #f5e9d8; }
+.pasel.cero { border-color: #c0392b; } .pasel.cero i { border-color: #c0392b; } .pasel.cero b { color: #ff9a8a; }
+.pasel.usado { opacity: .5; }
 #quitarsel, #fichasel, #volarsel { flex: none; width: 40px; min-height: 36px; font-size: 16px; }
 #volarsel.activo { background: #6b5a8c; border-color: #b9a6e0; }
 .abajo .hint { height: calc(2 * 1.35em); line-height: 1.35; overflow: hidden;

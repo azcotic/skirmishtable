@@ -155,6 +155,8 @@ export const T = {
   acciones: {
     titulo: 'Acciones',
     deseleccionarTitulo: 'Quitar la selección',
+    paEtiqueta: 'PA',
+    paTitulo: (libres, lpa) => `Puntos de acción libres en esta activación: ${libres} de ${lpa}. Cada acción gasta 1 (algunas, más).`,
   },
 
   ayuda: {
