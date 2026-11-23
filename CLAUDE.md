@@ -1,64 +1,66 @@
 # CLAUDE.md
 
-## This is a prototype
+## Qué es este proyecto
 
-SkirmishTable is a prototype. Favor speed and getting things working over polish,
-long-term architecture, or backwards compatibility.
+Fork de [jfreal/skirmishtable](https://github.com/jfreal/skirmishtable) convertido en una app para
+**aprender a jugar Kill Team (2024)** y, más adelante, jugar contra la computadora y contra un amigo.
 
-## Open source: the Unlicense, and no third-party content
+El plan completo está en `docs/PLAN.md`. Léelo antes de empezar una tarea.
 
-This project is open source and released into the public domain under the **Unlicense**
-(`UNLICENSE`). Everything in this repository must be ours to give away.
+**Etapa actual:** interfaz cómoda en teléfono y tablet, simplificada y 100% en español.
+No tocamos `src/engine/` salvo que la interfaz lo exija.
 
-**Never commit licensed or third-party content.** Not in `src/`, `public/`, `tests/`, `docs/`,
-or anywhere else, and not in a commit that is later deleted (git history is public too).
-That includes:
+## Reglas de la interfaz
 
-- 3D models, meshes, textures, scans, asset bundles (Tabletop Simulator or otherwise)
-- card images, card sheets, token art, map cards, PDFs, rules text, datacards
-- TTS saves or pieces cut out of them (test fixtures too)
-- screenshots or renders that show any of the above
-- fonts, icons or code from projects whose license needs a notice we don't carry
+- **Todo texto visible en español.** Nada de cadenas sueltas en el código: van en `src/i18n/es.js`.
+  Los nombres de equipos y operativos se quedan como en el juego; las acciones y conceptos se traducen
+  según el glosario de ese archivo.
+- **Mobile-first.** Diseñar primero para teléfono vertical (~390 px), después tablet (~768–1024 px),
+  después escritorio. Botones de al menos 44×44 px. Respetar `env(safe-area-inset-*)` y usar `100dvh`.
+- **El tablero ocupa la pantalla.** Lo demás va en barra superior, barra de acciones contextual,
+  hoja inferior o menú ☰ (ver §3 del plan).
+- **Solo Kill Team.** Los rulesets Infinity y Ashfall no se muestran.
+- **Dos vistas:** 3D con modelos de Steam y 2D con fichas circulares con la imagen de cada miniatura
+  (estilo VTT). Las imágenes se generan en el navegador desde el modelo 3D (ver §3b del plan).
+- **Equipos:** Angels of Death y Warpcoven.
 
-**Never share it either:** the deployed site and anything we publish (artifacts, uploads)
-must not host or relay third-party files. Third-party assets reach a player only one way:
-that player's own browser downloads them from their original source (the Steam CDN,
-imgur) using the link catalogs in `src/data/tts-*.js`, which hold **links only**.
+## Licencia y contenido de terceros (heredado del original, obligatorio)
 
-Local copies are fine for working on the tools, but only in git-ignored folders
-(`cache/`, `public/models/`, `public/meshpack.json`). Check `git status` before committing.
-If something might be third-party, leave it out and ask.
+El código es dominio público (Unlicense). **Nunca subir contenido de terceros** al repo, a su
+historial ni al sitio publicado: modelos, texturas, escaneos, imágenes de cartas o fichas, mapas,
+PDFs, **texto de reglas**, partidas guardadas de TTS, capturas que los muestren, fuentes o iconos con
+licencia que exija aviso.
 
-Game rules are facts and numbers we write ourselves (`src/rules/`); don't paste rules text.
-"Kill Team", "Volkus", "Gallowdark" and similar names are Games Workshop trademarks: use them
-only to say what the app works with.
+- Los recursos de terceros llegan al jugador de una sola forma: su navegador los descarga del origen
+  (CDN de Steam, imgur) a partir de los catálogos de enlaces en `src/data/tts-*.js`.
+- Las fichas 2D generadas desde los modelos se guardan **solo en la caché del navegador**.
+- Las reglas y perfiles de operativos se escriben como números y explicaciones con nuestras palabras.
+- Copias locales solo en carpetas ignoradas por git (`cache/`, `public/models/`,
+  `public/meshpack.json`). Revisar `git status` antes de cada commit.
+- "Kill Team", "Warpcoven", "Angels of Death", "Volkus" y similares son marcas de Games Workshop;
+  usarlas solo para decir con qué funciona la app. Proyecto de fans no oficial.
 
-## Git workflow
+## Flujo de git
 
-Many sessions work on this repo at the same time, so changes go through pull requests.
+- Trabajamos en **nuestro fork**. `upstream` apunta al repo original, solo para traer mejoras.
+- Una rama y un worktree por tarea (`git worktree add ../kt-<tarea> -b <tipo>/<tarea>`).
+- Nunca commit directo a `main`; PR desde la rama a `main` del fork.
+- Commits pequeños y descriptivos. Antes del PR: `git fetch origin`, merge de `origin/main`,
+  `npm test` en verde y, si tocaste la interfaz, `npm run test:e2e`.
 
-- **Never commit or push straight to `main`.** Start a branch from the latest `origin/main`
-  (a worktree session already has one).
-- Keep commits small and descriptive.
-- Before opening the PR, run `git fetch origin`, merge `origin/main` into the branch (a local
-  `main` may be stale) and run `npm test`.
-- Open the PR into `main` with `gh pr create`. Keep one PR to one change.
-- Don't merge the PR yourself unless John asks. Merging it deploys.
-
-## Repo notes
-
-- Every push to `main` (each merged PR) deploys to a **public** GitHub Pages site; the deploy
-  workflow can also be run by hand (`workflow_dispatch`). The deploy also deletes
-  `dist/models/` and `dist/meshpack.json` in case a local pack is present; keep that step.
-- See `README.md` for setup and `docs/ARCHITECTURE.md` for how the code fits together.
-
-## Commands
+## Comandos
 
 ```sh
-npm ci            # install locked dependencies (use ci, not install)
-npm run dev       # dev server at http://localhost:5173
-npm test          # unit tests (Vitest)
-npm run build     # production build -> dist/
-npm run test:e2e  # Playwright tests against the production build
-npm run fetch:saves  # download the Workshop saves the import tests read (into cache/)
+npm ci                  # instalar dependencias bloqueadas (usar ci, no install)
+npm run dev -- --host   # servidor de desarrollo, accesible desde el teléfono en la misma red
+npm test                # tests del motor (Vitest)
+npm run build           # build de producción -> dist/
+npm run test:e2e        # Playwright contra el build (incluye perfiles de móvil)
+npm run tts:teams       # regenerar el catálogo de equipos de Steam
 ```
+
+## Notas del repo
+
+- `README.md` y `docs/ARCHITECTURE.md` explican el motor en detalle.
+- El motor (`src/engine/`) no importa nada de la interfaz y corre en Node.
+- Es un prototipo: priorizar que funcione sobre el pulido.
