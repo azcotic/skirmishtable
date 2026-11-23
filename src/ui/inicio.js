@@ -40,7 +40,7 @@ import { mayControl } from '../net/sync.js';
 
 const KEY = "skirmishtable.inicio";
 // los comandos de prueba (ids del catálogo de Steam): Garra Némesis y Aquelarre Disforme
-const COMANDOS_PRUEBA = ["3352828814", "3348897103"];
+const COMANDOS_PRUEBA = ["3352828814", "3348897103", "2272196183"];   // Ángeles de la Muerte: modelos sin fichas aún
 const ORDEN = ["modo", "mapa", "comando0", "plantilla0", "comando1", "plantilla1", "despliegue", "resumen"];
 
 // plantilla: los agentes elegidos de cada bando (claves); config: el nombre de la configuración

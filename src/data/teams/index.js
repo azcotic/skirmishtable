@@ -156,14 +156,17 @@ export function agenteDeMuestra(side, teamId, clave) {
 }
 
 // El índice del modelo 3D de cada agente: el primer modelo libre del mod cuyo nombre empieza
-// por el del agente ("Tirador Marine Rúbrica (Cañón cosechaalmas)" para el Tirador Marine Rúbrica).
+// por el del agente ("Tirador Marine Rúbrica (Cañón cosechaalmas)" para el Tirador Marine Rúbrica);
+// si ya se usaron todos los de ese agente (dos combatientes y un solo modelo), se repite uno.
 export function modelosPara(ops, team) {
   const usados = new Set(), picks = {};
   if (!team || !team.models) return picks;
   for (const op of ops) {
     const nombre = KINDS[op.kind] && KINDS[op.kind].nombre;
     if (!nombre) continue;
-    const i = team.models.findIndex((m, j) => !usados.has(j) && (m.name === nombre || m.name.startsWith(nombre + " (")));
+    const suyo = m => m.name === nombre || m.name.startsWith(nombre + " (");
+    let i = team.models.findIndex((m, j) => !usados.has(j) && suyo(m));
+    if (i < 0) i = team.models.findIndex(suyo);
     if (i >= 0) { usados.add(i); picks[op.id] = i; }
   }
   return picks;
