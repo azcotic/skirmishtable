@@ -18,6 +18,7 @@ import { renderMinis } from './minis.js';
 import { setOption } from './options.js';
 import { hostGame, net, online } from '../net/sync.js';
 import { cerrarHoja } from './sidepanel.js';
+import { control, esDeLaIA } from './control.js';
 import { despliegueActivo, pista, setAlTerminarDespliegue } from './despliegue.js';
 import { doUndo, snapshot, tray } from './panels.js';
 import { hint, logLine } from './dom.js';
@@ -78,17 +79,18 @@ function contenido() {
   const I = T.inicio;
   switch (paso) {
     case "modo": return { titulo: I.modoTitulo, sub: I.modoSub, html:
-      opcion("solo", I.solo, I.soloDesc) + opcion("linea", I.linea, I.lineaDesc) +
+      opcion("ia", I.contraIA, I.contraIADesc) + opcion("solo", I.solo, I.soloDesc) + opcion("linea", I.linea, I.lineaDesc) +
       opcion("aprender", I.aprender, I.aprenderDesc, { deshabilitada: true, extra: `<span class="pant-pronto">${I.pronto}</span>` }) };
     case "mapa": return { titulo: I.mapaTitulo, sub: I.mapaSub, html: opcionesMapa() };
     case "comando0": return { titulo: I.comandoTitulo, sub: I.comandoSub, html: opcionesComando(0) };
-    case "comando1": return { titulo: I.rivalTitulo, sub: eleccion.modo === "linea" ? I.rivalSubLinea : I.rivalSub, html: opcionesComando(1) };
+    case "comando1": return { titulo: eleccion.modo === "ia" ? I.rivalTituloIA : I.rivalTitulo,
+      sub: eleccion.modo === "linea" ? I.rivalSubLinea : eleccion.modo === "ia" ? I.rivalSubIA : I.rivalSub, html: opcionesComando(1) };
     case "despliegue": return { titulo: I.despliegueTitulo, sub: I.despliegueSub, html:
       opcion("turnos", I.turnos, I.turnosDesc, { activa: eleccion.despliegue === "turnos" }) +
       opcion("azar", I.azar, I.azarDesc, { activa: eleccion.despliegue === "azar" }) };
     case "resumen": return { titulo: I.resumenTitulo, sub: "", html:
       `<dl class="pant-resumen">` +
-      `<dt>${I.rModo}</dt><dd>${eleccion.modo === "linea" ? I.linea : I.solo}</dd>` +
+      `<dt>${I.rModo}</dt><dd>${eleccion.modo === "linea" ? I.linea : eleccion.modo === "ia" ? I.contraIA : I.solo}</dd>` +
       `<dt>${I.rMapa}</dt><dd>${esc(nombreMapa(eleccion.mapa))}</dd>` +
       `<dt>${I.rComando}</dt><dd>${esc(nombreComando(eleccion.comando[0]))}</dd>` +
       `<dt>${I.rRival}</dt><dd>${esc(nombreComando(eleccion.comando[1]))}</dd>` +
@@ -196,7 +198,13 @@ function fijarIniciativa(s) {
   logLine(T.estrategia.logIni(TEAMNAME[s], g[0], g[1], TEAMNAME[0], TEAMNAME[1]));
   ordenArdides = [s, 1 - s];
   renderAll();
-  ir("ardidesA");
+  irArdides("ardidesA");
+}
+// la pantalla de ardides de un bando; la IA no usa ardides todavía: se salta la suya
+function irArdides(p) {
+  const lado = ordenArdides[p === "ardidesA" ? 0 : 1];
+  if (esDeLaIA(lado)) return p === "ardidesA" ? irArdides("ardidesB") : aTiroteo();
+  ir(p);
 }
 // Usar un ardid (−1 PM) o devolverlo si fue sin querer (+1 PM).
 function alternarArdid(lado, n) {
@@ -218,10 +226,12 @@ function aTiroteo() {
   cerrar();
   logLine(T.estrategia.logTiroteo(TEAMNAME[tray.ini]));
   hint(T.estrategia.tiroteo(TEAMNAME[tray.ini]));
+  control.alEmpezarTiroteo();        // si la IA tiene la iniciativa, empieza ella (ia.js)
 }
 
 // Arma la partida con lo elegido y cierra las pantallas (en línea: antes, la de invitar).
 function empezar() {
+  control.ia = eleccion.modo === "ia" ? 1 : null;   // contra la computadora: la IA lleva el comando rival
   setOption("despliegue", eleccion.despliegue);
   setTeam(0, eleccion.comando[0] || null);
   setTeam(1, eleccion.comando[1] || null);
@@ -279,7 +289,7 @@ export function wireInicio() {
     if (b.id === "pantempezar") {                  // confirmado: empieza el primer punto de inflexión
       logLine(T.despliegue.termina); abrirFaseEstrategia(); return;
     }
-    if (b.id === "pantardidesok") { if (paso === "ardidesA") ir("ardidesB"); else aTiroteo(); return; }
+    if (b.id === "pantardidesok") { if (paso === "ardidesA") irArdides("ardidesB"); else aTiroteo(); return; }
     if (b.id === "pantdeshacer") {                 // vuelve al despliegue: se retira el último agente
       cerrar(); doUndo(); if (despliegueActivo()) hint(pista()); return;
     }

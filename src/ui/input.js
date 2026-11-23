@@ -17,7 +17,7 @@ import { T } from '../i18n/es.js';
 import { lienzo } from './dom.js';
 import { colocarEn, despliegueActivo } from './despliegue.js';
 import { porQueNoActua } from './turno.js';
-import { cancelMode, defaultMoveType, refreshSight, snapshot, toggleOrder } from './panels.js';
+import { cancelMode, defaultMoveType, refreshSight, registrarMovimiento, snapshot, toggleOrder } from './panels.js';
 import { mayControl } from '../net/sync.js';
 import { cancelMarker, placeMarkerAt } from './ops.js';
 import { openOpMenu } from './opmenu.js';
@@ -138,6 +138,20 @@ function planDrag(x, y, hint, up) {
   renderOverlay();
 }
 
+// Mover un agente sin arrastrarlo (la IA): planifica la ruta a (x, y) como un arrastre y la
+// aplica igual (PA, registro, deshacer). tipo: reposition, dash o charge. true si se movió.
+export function moverA(op, x, y, tipo) {
+  state.sel = op; state.moveType = tipo;
+  state.drag = { op, sx: op.x, sy: op.y, cx0: 0, cy0: 0, pid: -1, from3d: false,
+                 goal: null, path: null, total: 0, valid: false, active: true };
+  planDrag(x, y, 0, false);
+  const d = state.drag;
+  state.drag = null;
+  if (!d || !d.valid || !d.path) { renderAll(); return false; }
+  landDrag(d);
+  return true;
+}
+
 // pointerup after an active drag: land the operative and log the move
 function landDrag(d) {
   if (!d.valid || !d.path || !d.goal) {
@@ -150,6 +164,7 @@ function landDrag(d) {
   const repeat = d.op.used.includes(d.p1.type) || (chained && d.op.used.includes(d.p2.type));
   const vert = chopIncrements(d.path).filter(st => st.climb);
   snapshot();
+  registrarMovimiento(d.op, chained ? [d.p1.type, d.p2.type] : [d.p1.type]);
   d.op.x = d.goal[0]; d.op.y = d.goal[1]; d.op.z = d.goalZ || 0;
   const charged = d.p1.type === "charge";
   if (charged && RULES.orders && d.op.order === "conceal") {   // only an operative on Engage may charge

@@ -19,6 +19,7 @@ import { T, pulg } from '../i18n/es.js';
 import { renderAcciones } from './acciones.js';
 import { accionesLegales, puede } from '../game/acciones.js';
 import { conectarTurno, pistaDeTurno, porQueNoActua, puedeActuar, todosUsados } from './turno.js';
+import { control } from './control.js';
 // el agente al que ya se le sugirió terminar su activación por quedarse sin PA
 let avisadoSinPA = null;
 
@@ -39,12 +40,19 @@ const orderChanged = o => {
   const st = actStart.get(o.id);
   return !!st && !!RULES.orders && st.tp === tray.tp && st.order !== o.order && st.x === o.x && st.y === o.y && st.z === (o.z || 0);
 };
+// cada estado guardado lleva un número: así se sabe si hubo otra acción después de un movimiento
+let guardados = 0;
+// el último movimiento (para deshacerlo con doble toque, solo si no hizo nada después)
+let ultimoMov = null;
+export function registrarMovimiento(op, tipos) { ultimoMov = { id: op.id, tipos, guardado: guardados }; }
 export function snapshot() {
+  guardados++;
   for (const o of OPS) if (o.alive && untouched(o) && !orderChanged(o)) actStart.set(o.id, {tp: tray.tp, x: o.x, y: o.y, z: o.z || 0, order: o.order});
   undoStack.push(JSON.stringify({ops:OPS, tray, extras: undoExtras.map(x => x.get())}));
   if (undoStack.length > 40) undoStack.shift();
 }
 export function doUndo() {
+  ultimoMov = null;
   const s = undoStack.pop();
   if (!s) { hint(online() ? T.deshacer.nadaEnLinea : T.deshacer.nada); return false; }
   const o = JSON.parse(s); OPS.splice(0, OPS.length, ...o.ops); Object.assign(tray, o.tray);
@@ -57,7 +65,7 @@ export function doUndo() {
 }
 
 /* ---------- combat ---------- */
-function doShoot() {
+export function doShoot() {
   if (!state.sel || !state.target) return;
   const w = WPN[state.sel.weapon];
   if (w.type !== "R") { logLine(T.disparo.armaDeCombate); return; }
@@ -100,7 +108,7 @@ function rolled(n, done) {
   if (n != null) undoStack.length = 0;
   cancelMode(); renderAll();
 }
-function doFight() {
+export function doFight() {
   if (!state.sel || !state.target) return;
   const gap = opGap(state.sel, state.target);
   if (gap > CTRL) { logLine(T.combate.fueraDeZona(CTRL)); return; }
@@ -191,6 +199,7 @@ export function renderCard() {
     <div class="btnrow">
       ${RULES.orders ? `<button id="ordbtn">${T.orden.boton(state.sel.order)}</button>` : ""}
       <button id="endact"${state.sel.ready && state.sel.ap <= 0 ? ' class="sugerido"' : ""}>${T.ficha.terminar}</button>
+      <button id="verficha">${T.fichaDatos.ver}</button>
     </div>
     <div class="weapons">${state.sel.weapons.map(k => {
       const w = WPN[k];
@@ -212,6 +221,14 @@ export function renderCard() {
   for (const t of ["reposition", "dash", "charge"]) {
     if (!moveSpec(t)) continue;
     c.querySelector("#mv-" + t).onclick = () => {
+      // doble toque sobre Reposicionarse o Correr: deshace ese movimiento si fue lo último que hizo
+      const ahora = performance.now();
+      if ((t === "reposition" || t === "dash") && toqueMov.t === t && ahora - toqueMov.en < 400) {
+        toqueMov = { t: null, en: 0 };
+        deshacerMovimiento(t);
+        return;
+      }
+      toqueMov = { t, en: ahora };
       state.moveType = t;
       const label = T.mover.nombre[t];
       const r = state.sel ? puede(state.sel, t, OPS) : { ok: true };
@@ -231,7 +248,7 @@ export function renderCard() {
   // los que no tienen el turno (turno.js), con el motivo arriba de la ficha
   const noActua = porQueNoActua(state.sel);
   if (!mayControl(state.sel) || noActua)
-    c.querySelectorAll("button:not(#tgtbtn), input").forEach(b => { b.disabled = true; });
+    c.querySelectorAll("button:not(#tgtbtn):not(#verficha), input").forEach(b => { b.disabled = true; });
   if (noActua) c.insertAdjacentHTML("afterbegin", `<div class="turnoaviso">${noActua}</div>`);
   // sin PA: sugerir "Terminar activación" (una vez por agente)
   if (state.sel.ready && state.sel.ap <= 0 && mayControl(state.sel)) {
@@ -252,6 +269,14 @@ export function renderCard() {
     b.title = T.reglas.noPuede(T.reglas.accion[a], T.reglas.motivo[r.motivo] || r.motivo);
   }
   renderAcciones();               // la barra de acciones refleja estos botones
+}
+let toqueMov = { t: null, en: 0 };
+function deshacerMovimiento(t) {
+  const label = T.mover.nombre[t];
+  if (ultimoMov && state.sel && ultimoMov.id === state.sel.id && ultimoMov.tipos.includes(t) && ultimoMov.guardado === guardados) {
+    doUndo();
+    hint(T.mover.deshecho(label));
+  } else hint(T.mover.noDeshacer(label));
 }
 export function renderVerdict() {
   const v = document.getElementById("verdict");
@@ -339,6 +364,7 @@ export function endActivation(op) {
   logLine(T.activacion.termina(op.name)); cancelMode(); renderAll();
   const p = pistaDeTurno();          // activaciones alternas: a quién le toca ahora
   if (p) hint(p);
+  control.alTerminarActivacion();    // contra la computadora: ¿le toca a la IA? (ia.js)
 }
 // Something to undo: the operative has acted, or is expended.
 export const canUndoActivation = op => !!op && op.alive && (!untouched(op) || orderChanged(op));

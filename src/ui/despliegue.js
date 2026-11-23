@@ -23,6 +23,7 @@ import { setModoEspecial } from './acciones.js';
 import { modelIndex, teamOf } from '../view3d/units.js';
 import { KINDS } from '../engine/world.js';
 import { abrirFicha } from './ficha.js';
+import { control, esDeLaIA } from './control.js';
 
 // qué es el agente: su perfil de la ficha del comando (p. ej. "Hechicero del Destino"); si no
 // tiene, el modelo del mod de su bando; si no, su tipo genérico ("Líder", "Francotirador"…)
@@ -67,12 +68,34 @@ export function prepararDespliegue() { retirarParaDesplegar(OPS); elegido = null
 export function anunciarDespliegue() {
   logLine(T.despliegue.empieza(nombreEquipo(turno())));
   hint(pista());
+  siLeTocaALaIA();
+}
+
+// Contra la computadora: cuando le toca a la IA, coloca a su siguiente agente al azar dentro de
+// su zona de descenso, tras una pausa.
+function siLeTocaALaIA() {
+  const t = turno();
+  if (t === null || !esDeLaIA(t)) return;
+  setTimeout(() => {
+    if (turno() !== t) return;
+    const op = siguiente(), dz = DROPZONES.find(d => d.team === t), R = opR(op);
+    useBase(R);
+    for (let i = 0; i < 400; i++) {
+      const x = dz.x + R + Math.random() * Math.max(0, dz.w - 2 * R), y = dz.y + R + Math.random() * Math.max(0, dz.h - 2 * R);
+      const spot = nearestFree(x, y, op.id, 0, 0.5);
+      if (spot && dentroDeZona(op, spot[0], spot[1], dz) && !chocaConAgente(op, spot[0], spot[1], OPS)) {
+        snapshot(); desplegar(op, spot[0], spot[1]); logLine(T.despliegue.log(op.name, op.id)); break;
+      }
+    }
+    renderAll(); hint(pista());
+    if (!despliegueActivo()) alTerminar(); else siLeTocaALaIA();
+  }, Math.max(300, control.pausa / 2));
 }
 
 export function pista() {
   const t = turno();
   if (t === null) return T.despliegue.terminaPista;
-  if (!mayControl({ team: t })) return T.despliegue.esperando(nombreEquipo(t));
+  if (!mayControl({ team: t }) || esDeLaIA(t)) return T.despliegue.esperando(nombreEquipo(t));
   const op = siguiente();
   return T.despliegue.toca(nombreEquipo(t), queEs(op), op.id);
 }
@@ -82,7 +105,7 @@ export function pista() {
 export function colocarEn(x, y) {
   const t = turno();
   if (t === null) return false;
-  if (!mayControl({ team: t })) { hint(T.despliegue.esperando(nombreEquipo(t))); return true; }
+  if (!mayControl({ team: t }) || esDeLaIA(t)) { hint(T.despliegue.esperando(nombreEquipo(t))); return true; }
   const op = siguiente(), dz = DROPZONES.find(d => d.team === t);
   useBase(opR(op));
   const spot = nearestFree(x, y, op.id, 0, 1);
@@ -95,7 +118,7 @@ export function colocarEn(x, y) {
   logLine(T.despliegue.log(op.name, op.id));
   renderAll();
   hint(pista());
-  if (!despliegueActivo()) alTerminar();
+  if (!despliegueActivo()) alTerminar(); else siLeTocaALaIA();
   return true;
 }
 
@@ -124,12 +147,12 @@ function restoAlAzar() {
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 function accionesHTML() {
   if (!despliegueActivo()) return null;
-  const t = turno(), mio = mayControl({ team: t }), sig = siguiente();
+  const t = turno(), mio = mayControl({ team: t }) && !esDeLaIA(t), sig = siguiente();
   // cada botón en el color del bando que despliega: qué es el agente, y su nombre y heridas
   const lista = mio ? porDesplegar(OPS, t).map(o =>
     `<button class="accion eq${t}${o === sig ? " active" : ""}" data-esp="${o.id}" title="${esc(T.despliegue.elegirTitulo(queEs(o)) + " · " + T.despliegue.verFicha)}">` +
     `<b>${esc(o.id)} · ${esc(queEs(o))}</b><small>${esc(T.despliegue.detalle(o.move, o.save, o.maxW))}</small></button>`) : [];
-  if (!online()) lista.push(`<button class="accion" data-esp="azar" title="${esc(T.despliegue.restoAzarTitulo)}">${T.despliegue.restoAzar}</button>`);
+  if (!online() && control.ia === null) lista.push(`<button class="accion" data-esp="azar" title="${esc(T.despliegue.restoAzarTitulo)}">${T.despliegue.restoAzar}</button>`);
   return lista.join("");
 }
 // Ver la ficha de un agente: en el teléfono, pulsación larga; con ratón, doble clic.

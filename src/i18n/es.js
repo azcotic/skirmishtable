@@ -317,6 +317,8 @@ export const T = {
       (shift ? ' Mantén Mayús para trepar a un piso superior.' : ''),
     deOtro: n => `${n} es del otro jugador.`,
     cancelado: 'Movimiento cancelado.',
+    deshecho: accion => `${accion} deshecho: el agente vuelve a donde estaba y recupera el PA.`,
+    noDeshacer: accion => `Solo se puede deshacer ${accion} si fue lo último que hizo el agente (sin otra acción después).`,
     yaUsado: accion => `Ya usaste ${accion} en esta activación: arrastrar de nuevo lo repetiría (lo deciden los jugadores).`,
     elegido: (accion, n, pulgadas) => `${accion} elegido: arrastra a ${n || 'un agente'} para moverlo (hasta ${pulg(pulgadas)}).`,
   },
@@ -470,6 +472,10 @@ export const T = {
     atras: 'Volver',
     modoTitulo: '¿Cómo quieres jugar?',
     modoSub: 'Kill Team (2024) · Reglas breves',
+    contraIA: 'Contra la computadora',
+    contraIADesc: 'Tú llevas un comando y la IA (fácil) el rival. Explica cada jugada que hace.',
+    rivalTituloIA: 'Elige el comando de la computadora',
+    rivalSubIA: 'La IA lo despliega y lo activa por su cuenta.',
     solo: 'En solitario',
     soloDesc: 'Mueves los dos comandos en este dispositivo. Ideal para aprender las reglas.',
     linea: 'Con un amigo',
@@ -523,6 +529,10 @@ export const T = {
 
   // la IA (src/ai/facil.js, src/ui/ia.js)
   ia: {
+    esDeLaIA: 'Este agente lo lleva la computadora: espera a que juegue su activación.',
+    pensando: 'Turno de la computadora: está pensando su jugada…',
+    activa: (n, texto) => `Turno de la computadora · ${n}: ${texto}`,
+    tuTurno: 'Te toca: elige uno de tus agentes y actívalo.',
     boton: '¿Qué haría la IA?',
     botonTitulo: 'La IA fácil propone una activación para el bando al que le toca (no la ejecuta)',
     sinPlan: 'La IA no encuentra ningún agente apostado que activar.',
@@ -578,6 +588,7 @@ export const T = {
     provisional: 'Ficha provisional: atributos y armas de prueba (fichas simples, sin comando).',
     oficial: 'Atributos y armas de la ficha oficial del comando. Las reglas con * y las habilidades del agente están en su ficha.',
     lider: 'Líder',
+    ver: 'Ver ficha',
   },
 
   // estado de un agente (marcador flotante y menú)

@@ -460,6 +460,7 @@ body { overflow: hidden; overscroll-behavior: none; }
 .acciones .accion.restricted { opacity: .45; }
 .acciones .accion:disabled { opacity: .35; }
 .acciones .accion.ia { border-color: #8d5fa8; color: #d9bff0; }
+.acciones .accion.ficha { border-style: dashed; }
 /* sin PA: "Terminar activación" sugerido */
 .acciones .accion.sugerido, #endact.sugerido, #endtp.sugerido { border-color: #6faf82; background: #24402c; color: #d8f0dc; animation: sugerido 1.2s ease-in-out infinite; }
 @keyframes sugerido { 50% { box-shadow: 0 0 0 3px rgba(111, 175, 130, .45); } }

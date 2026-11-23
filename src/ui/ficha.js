@@ -14,6 +14,7 @@ import { RULES } from '../rules/index.js';
 import { teamOf } from '../view3d/units.js';
 import { queEs } from './despliegue.js';
 import { KINDS } from '../engine/world.js';
+import { state } from '../state.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
@@ -55,6 +56,11 @@ let tocadaDesdeQueAbrio = false;
 export function wireFicha() {
   const dlg = document.getElementById("ficha");
   if (!dlg) return;
+  // "Ver ficha" en las acciones del agente seleccionado (panels.js lo pinta; aquí se atiende para
+  // no importar ficha.js desde panels.js, que crearía un ciclo de módulos)
+  document.addEventListener("click", ev => {
+    if (ev.target.closest && ev.target.closest("#verficha") && state.sel) abrirFicha(state.sel);
+  });
   dlg.addEventListener("pointerdown", () => { tocadaDesdeQueAbrio = true; });
   dlg.addEventListener("click", ev => {
     if (!tocadaDesdeQueAbrio) return;

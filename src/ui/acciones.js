@@ -11,7 +11,7 @@ import { state } from '../state.js';
 
 // [id del botón original, clase extra]
 const DEL_AGENTE = [["mv-reposition", "mov"], ["mv-dash", "mov"], ["mv-charge", "mov"], ["ordbtn", ""],
-  ["tgtbtn", ""], ["shootbtn", "fuerte"], ["fightbtn", "fuerte"], ["endact", ""]];
+  ["tgtbtn", ""], ["shootbtn", "fuerte"], ["fightbtn", "fuerte"], ["endact", ""], ["verficha", "ficha"]];
 const DE_LA_PARTIDA = [["endtp", ""], ["undo", ""], ["rulerbtn", ""], ["iasugerir", "ia"]];
 
 let alQuitarSeleccion = () => {};

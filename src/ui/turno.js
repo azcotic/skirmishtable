@@ -13,6 +13,7 @@ import { KINDS, OPS } from '../engine/world.js';
 import { enDespliegue } from '../engine/deploy.js';
 import { turnoDeActivacion } from '../game/acciones.js';
 import { options } from './options.js';
+import { control, esDeLaIA } from './control.js';
 // Sin importar panels.js ni despliegue.js: crearían un ciclo de módulos (board → hud → turno →
 // panels → … → ops, que usa panels a medio cargar). panels.js nos presta el marcador y el
 // último bando que activó con conectarTurno().
@@ -34,7 +35,9 @@ export const bandoEnTurno = () => {
 
 // Por qué `op` no puede actuar ahora (texto para la pista), o null si puede.
 export function porQueNoActua(op) {
-  if (!alternasObligatorias() || despliegueActivo() || !op || !op.alive || !op.ready) return null;
+  if (!op || !op.alive) return null;
+  if (esDeLaIA(op.team) && !control.jugando) return T.ia.esDeLaIA;      // contra la computadora
+  if (!alternasObligatorias() || despliegueActivo() || !op.ready) return null;
   const a = enActivacion();
   if (a && a !== op) return T.turno.terminaPrimero(`${a.id} ${queEs(a)}`);
   if (a) return null;
@@ -51,5 +54,6 @@ export const todosUsados = () => !despliegueActivo() && OPS.some(o => o.alive) &
 export function pistaDeTurno() {
   if (!alternasObligatorias()) return null;
   const t = bandoEnTurno();
+  if (t !== null && esDeLaIA(t)) return T.ia.pensando;
   return t === null ? T.turno.finPI : T.turno.siguiente(TEAMNAME[t]);
 }
