@@ -6,11 +6,6 @@ body {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 13px; line-height: 1.5;
 }
-.app { display: flex; flex-direction: column; min-height: 100vh; }
-header {
-  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
-  padding: 10px 16px; border-bottom: 1px solid #2e2921; background: #191510;
-}
 header h1 {
   font-family: "Big Shoulders", "Arial Narrow", sans-serif;
   font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
@@ -18,14 +13,7 @@ header h1 {
 }
 header h1 span { color: #e0672f; }
 .hint { color: #9a9184; font-size: 12px; }
-/* The hint changes as you drag. Give it a fixed height so the table below never shifts
-   under a finger mid-drag (on a phone the hint wraps to several lines). */
-header .hint {
-  flex: 1 1 260px; line-height: 1.35; height: calc(2 * 1.35em); overflow: hidden;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-}
-@media (max-width: 760px) { header .hint { height: calc(3 * 1.35em); -webkit-line-clamp: 3; } }
-header #optionsbtn { align-self: center; }
+
 dialog#options {
   background: #1d1914; color: #e8e2d8; border: 1px solid #3a332a; border-radius: 8px;
   padding: 14px 16px; width: min(380px, calc(100vw - 32px));
@@ -39,8 +27,7 @@ dialog#options h2 {
 .optlabel { display: flex; justify-content: space-between; }
 .optrow input[type=range] { width: 100%; accent-color: #e0672f; }
 .optrow select { background: #262019; color: #e8e2d8; border: 1px solid #3a332a; border-radius: 4px; padding: 3px 6px; font-family: inherit; }
-.main { display: flex; gap: 12px; padding: 12px 16px; flex: 1; align-items: flex-start; flex-wrap: wrap; }
-.boardwrap { flex: 1 1 560px; min-width: min(320px, 100%); }
+
 /* wraps: on a phone the buttons and ring pickers fill the width, and the note and Load from
    Steam would otherwise sit off the right edge of the screen */
 .viewbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
@@ -54,15 +41,11 @@ dialog#options h2 {
 .threatkey i.cl { margin-left: 4px; border: 2px solid #e0a21e;
   background: repeating-linear-gradient(45deg, rgba(224,162,30,.7) 0 2px, transparent 2px 5px); }
 @media (max-width: 760px) { .threatkey { display: none; } }
-/* fixed height too: the note shows model-loading progress, and must not move the table */
-.viewbar .hint { flex: 1 1 240px; min-width: 0; line-height: 1.35; height: calc(2 * 1.35em); overflow: hidden;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-@media (max-width: 760px) { .viewbar .hint { flex-basis: 100%; height: calc(3 * 1.35em); -webkit-line-clamp: 3; font-size: 11px; } }
-#board3d { width: 100%; display: none; border-radius: 6px; overflow: hidden; background: #4a443c; }
+#board3d { display: none; overflow: hidden; background: #4a443c; }
 #board3d canvas { display: block; touch-action: none; } /* touches on the table drag or orbit, never scroll the page */
-svg#board { width: 100%; height: auto; display: block; border-radius: 6px; }
+svg#board { display: block; }
 svg#board g[data-oid] { touch-action: none; } /* token touches drag, never scroll */
-aside { flex: 0 1 340px; min-width: 300px; display: flex; flex-direction: column; gap: 10px; }
+
 
 .panel { background: #1d1914; border: 1px solid #2e2921; border-radius: 8px; padding: 10px 12px; }
 .panel h2 {
@@ -139,7 +122,7 @@ button.restricted { opacity: .5; }
   .engpulse { animation: engpulse 0.9s ease-in-out infinite; }
   @keyframes engpulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
 }
-@media (max-width: 760px) { aside { flex-basis: 100%; } }
+
 /* Miniatures panel: team per side, then each operative's model, and models to add */
 .minirow { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
 .minirow select { flex: 1; min-width: 0; }
@@ -264,15 +247,7 @@ button.restricted { opacity: .5; }
 .opside select { width: 100%; max-width: none; min-width: 0; }
 .opside .cardthumb { width: 100%; max-width: 120px; }
 .oprow { flex-wrap: wrap; }
-/* Wide screens: the table stays in view while the (long) side panel scrolls past it */
-@media (min-width: 900px) { .boardwrap { position: sticky; top: 8px; } }
-/* Side panel folded away (src/ui/sidepanel.js): the table takes the whole width, as wide as
-   still fits the window's height, and End TP / Undo / Ruler move up into the view bar */
-header #panelbtn { align-self: center; margin-left: auto; }
-.foldonly { display: none; gap: 6px; }
-.main.folded .foldonly { display: inline-flex; }
-.main.folded aside { display: none; }
-.main.folded .boardwrap { flex-basis: 100%; max-width: max(320px, var(--fitw, 100%)); margin: 0 auto; }
+
 
 /* ---------- board overlay (src/ui/hud.js): operative ribbon on top, score bug below ---------- */
 .stage { position: relative; }
@@ -411,3 +386,109 @@ table.hscore tfoot td { font-size: 14px; padding-top: 3px; }
 .panel.avanzado .avbloque { margin-top: 12px; padding-top: 10px; border-top: 1px solid #2e2921; }
 .panel.avanzado .avbloque h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #a89a80; }
 .panel.avanzado .ringpick { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+
+/* ======================================================================================
+   Fase 2: layout a pantalla completa, mobile-first (index.html, src/ui/sidepanel.js).
+   Filas: barra superior · nota 3D · barra de grabación · tablero (todo lo que sobra) · zona
+   del pulgar (pista, acciones, pestañas). La página nunca se desplaza: solo la hoja.
+   ====================================================================================== */
+html, body { height: 100%; }
+body { overflow: hidden; overscroll-behavior: none; }
+.app {
+  /* áreas con nombre: la nota 3D y la barra de grabación se ocultan a veces, y sin nombres el
+     tablero caería en una fila de alto automático (0 px) */
+  display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "top" "nota" "rep" "mesa" "abajo";
+  height: 100vh; height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+.hint { color: #9a9184; font-size: 12px; }
+
+/* barra superior compacta */
+.topbar { grid-area: top; }
+.viewbar { grid-area: nota; }
+#replaybar { grid-area: rep; }
+.main { grid-area: mesa; }
+.abajo { grid-area: abajo; }
+.topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 52px;
+  padding: 4px 10px; background: #191510; border-bottom: 1px solid #2e2921;
+}
+.topbar h1 { font-size: 18px; white-space: nowrap; margin: 0 auto 0 0; }
+.topbar .vistas { display: flex; gap: 4px; }
+.topbar button { min-height: 44px; white-space: nowrap; }
+.topbar .icono { width: 44px; padding: 0; font-size: 18px; line-height: 1; }
+#panelbtn { display: none; }                 /* solo en escritorio */
+@media (max-width: 420px) { .topbar h1 { display: none; } .topbar .vistas { margin-right: auto; } }
+
+/* nota de la vista 3D: dos líneas como mucho; desaparece cuando está vacía */
+.viewbar { padding: 2px 10px; margin: 0; }
+.viewbar .hint { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  font-size: 11px; line-height: 1.35; }
+.viewbar:has(#v3dnote:empty) { display: none; }
+
+/* el tablero llena su caja; el SVG se centra manteniendo la proporción de la mesa */
+.main { position: relative; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.boardwrap { position: relative; min-height: 0; min-width: 0; }
+.stage { position: absolute; inset: 0; }
+.stage svg#board, .stage #board3d { width: 100%; height: 100%; }
+
+/* zona del pulgar: pista, acciones y pestañas */
+.abajo {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+  background: #191510; border-top: 1px solid #2e2921;
+}
+/* alto fijo: la pista cambia mientras arrastras y el tablero no debe moverse bajo el dedo */
+/* altos fijos en la zona del pulgar: al seleccionar un agente (también al empezar a arrastrarlo)
+   la barra cambia de botones, y el tablero no debe moverse ni encogerse bajo el dedo */
+.filapista { display: flex; align-items: center; gap: 6px; min-height: 36px; }
+.filapista .hint { flex: 1 1 auto; min-width: 0; }
+#quitarsel { flex: none; width: 40px; min-height: 36px; font-size: 16px; }
+.abajo .hint { height: calc(2 * 1.35em); line-height: 1.35; overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+/* 4 columnas en teléfono; letra condensada para que "Reposicionarse 6″" quepa */
+.acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 4px;
+  grid-auto-rows: 44px; align-content: start; min-height: calc(2 * 44px + 4px); }
+.acciones .accion { min-height: 44px; padding: 2px 4px; line-height: 1.1; white-space: normal;
+  font-family: "Big Shoulders", "Arial Narrow", sans-serif; font-weight: 700; font-size: 14px; }
+.acciones .accion.fuerte { border-color: #e0672f; }
+.acciones .accion.active { background: #e0672f; border-color: #e0672f; color: #14110e; }
+.acciones .accion.used { opacity: .6; }
+.acciones .accion.restricted { opacity: .45; }
+.acciones .accion:disabled { opacity: .35; }
+
+.hojatabs { display: flex; gap: 2px; }
+.hojatabs button { flex: 1; min-height: 40px; padding: 0 2px; font-size: 12px; background: transparent; border-color: transparent; }
+.hojatabs button[aria-selected=true] { background: #2a241d; border-color: #e0672f; color: #f0a276; }
+
+/* hoja inferior (teléfono/tablet): sobre el tablero, con los paneles de la pestaña abierta */
+.hoja {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 20; max-height: 62%;
+  display: flex; flex-direction: column; background: #14110e;
+  border-top: 1px solid #3a332a; border-radius: 12px 12px 0 0; box-shadow: 0 -8px 24px rgba(0, 0, 0, .5);
+}
+.main:not(.hoja-abierta) .hoja { display: none; }
+.hojaasa { display: flex; justify-content: flex-end; padding: 4px 6px 0; }
+.hojacuerpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 10px; padding: 4px 10px 12px; }
+.hoja .panel[data-tab] { display: none; }
+.hoja[data-tab=agente] .panel[data-tab=agente], .hoja[data-tab=partida] .panel[data-tab=partida],
+.hoja[data-tab=mision] .panel[data-tab=mision], .hoja[data-tab=registro] .panel[data-tab=registro],
+.hoja[data-tab=mas] .panel[data-tab=mas] { display: block; }
+.hoja .panel[hidden] { display: none !important; }
+
+/* escritorio (≥ 1024 px): la hoja es un panel lateral con todo a la vista; sin pestañas */
+@media (min-width: 1024px) {
+  .topbar h1 { font-size: 22px; }
+  #panelbtn { display: inline-block; }
+  .main { grid-template-columns: minmax(0, 1fr) 360px; }
+  .main.folded { grid-template-columns: minmax(0, 1fr); }
+  .hoja { position: static; max-height: none; min-height: 0; z-index: auto; border-radius: 0;
+    border-top: 0; border-left: 1px solid #2e2921; box-shadow: none; }
+  .main:not(.hoja-abierta) .hoja { display: flex; }
+  .main.folded .hoja { display: none !important; }
+  .hoja .panel[data-tab] { display: block; }
+  .hojaasa, .hojatabs { display: none; }
+  .acciones { grid-template-columns: repeat(auto-fit, minmax(96px, 150px)); justify-content: center; min-height: 44px; }
+}

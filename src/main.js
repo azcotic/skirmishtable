@@ -25,6 +25,8 @@ import { wireOpMenu } from './ui/opmenu.js';
 import { wireThreatPicker } from './ui/threat.js';
 import { wireOptions } from './ui/options.js';
 import { wireSidePanel } from './ui/sidepanel.js';
+import { wireAcciones } from './ui/acciones.js';
+import { cancelMode } from './ui/panels.js';
 import * as table3d from './view3d/table3d.js';
 import * as rules from './rules/index.js';
 import { minis, onMinisChange } from './view3d/units.js';
@@ -43,6 +45,8 @@ table3d.wireViewToggle();
 wireThreatPicker(() => renderAll());
 wireOptions();
 wireSidePanel();
+// ✕ en la barra de acciones: quitar la selección
+wireAcciones(() => { state.sel = null; state.target = null; state.lastShot = null; cancelMode(); renderAll(); });
 onMinisChange(bases => { if (bases) { renderAll(); renderMinis(); } });   // a model measured: rings, reach and fit follow its base
 
 /* ---------- go ---------- */

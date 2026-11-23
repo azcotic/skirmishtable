@@ -91,13 +91,13 @@ test('climbs onto an upper floor (Shift on the 2D map), then drops off it in a D
   const up = await drag(page, [10.5, 17.55], [11.15, 17.55], false, { shift: true });
   expect(up.goalZ).toBe(3);
   expect(up.total).toBe(4);                      // 1" across + 3" up
-  expect(up.label.some(t => t.includes('▲3″ up onto the floor'))).toBe(true);
+  expect(up.label.some(t => t.includes(T.mover.tramoSube(3)))).toBe(true);
   expect(await kz(page, () => skirmishtable.world.OPS.find(o => o.id === 'A2').z)).toBe(3);
   await expect(page.locator('#log p').first()).toContainText('al piso superior de Large ruin 1');
   const down = await drag(page, [11.15, 17.55], [10.3, 17.55]);   // the Dash: 1" across + 1" of the 3" drop
   expect(down.total).toBe(2);
   expect(down.goalZ).toBe(0);
-  expect(down.label.some(t => t.includes('▼ drop 3″ (1″ counted)'))).toBe(true);
+  expect(down.label.some(t => t.includes(T.mover.tramoBaja(3, 1)))).toBe(true);
   expect(await kz(page, () => skirmishtable.world.OPS.find(o => o.id === 'A2').z)).toBe(0);
   await expect(page.locator('#log p').first()).toContainText(T.mover.verbo.dash);
 });

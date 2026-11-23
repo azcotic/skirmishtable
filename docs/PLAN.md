@@ -146,6 +146,14 @@ Sobre la ficha: anillo de estado (apostado / usado), contador de heridas, marcad
 - Crear componentes reutilizables: barra superior, barra de acciones, hoja inferior (bottom sheet), menú ☰.
 - Reconectar los módulos de `src/ui/` a los nuevos contenedores (la lógica se mantiene, cambia dónde se pintan).
 
+**Hecho (rama `ui/esqueleto`):** pantalla fija de `100dvh` sin desplazamiento de página; barra superior
+compacta (vistas, ⚙, panel); tablero a pantalla completa (la mesa 3D toma el alto de su caja); zona del
+pulgar con la pista, la barra de acciones contextual (`src/ui/acciones.js`, refleja y pulsa los botones
+de la ficha) y las pestañas Agente · Partida · Misión · Registro · Más, que abren una hoja inferior en
+teléfono/tablet; desde 1024 px la hoja es un panel lateral. La zona del pulgar tiene alto fijo para que
+el tablero no se mueva bajo el dedo al seleccionar. Quedan para la Fase 4: girar el mapa 2D en vertical
+(hoy se ve pequeño en un teléfono de pie), arrastrar la hoja con el dedo y el zoom del 2D.
+
 ### Fase 3 — Flujo de partida guiado (2 días)
 - Pantalla de inicio: **Aprender / Jugar vs IA (después) / Jugar con amigo (después)**.
 - Configuración de partida en pasos: mapa → equipos → despliegue.

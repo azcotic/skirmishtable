@@ -16,6 +16,7 @@ import { showRoll } from './dicetray.js';
 import { fairNote, rollFor } from '../net/roll.js';
 import { renderMinis } from './minis.js';
 import { T, pulg } from '../i18n/es.js';
+import { renderAcciones } from './acciones.js';
 
 /* ---------- state / undo / log ---------- */
 export let tray = {tp:1, cp:[3,3], vp:[0,0]};
@@ -158,7 +159,7 @@ export function defaultMoveType(op) {
 }
 export function renderCard() {
   const c = document.getElementById("opcard");
-  if (!state.sel || !state.sel.alive) { c.innerHTML = `<span class="hint">${T.ficha.vacia}</span>`; return; }
+  if (!state.sel || !state.sel.alive) { c.innerHTML = `<span class="hint">${T.ficha.vacia}</span>`; renderAcciones(); return; }
   const inj = isInjured(state.sel);
   const meleeFoes = OPS.filter(o => o.alive && o.team !== state.sel.team && opGap(state.sel, o) <= CTRL);
   const repoUsed = state.sel.used.includes("reposition"), dashUsed = state.sel.used.includes("dash"), chargeUsed = state.sel.used.includes("charge");
@@ -223,6 +224,7 @@ export function renderCard() {
     }
     doFight();
   };
+  renderAcciones();               // la barra de acciones refleja estos botones
 }
 export function renderVerdict() {
   const v = document.getElementById("verdict");

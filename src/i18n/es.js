@@ -125,6 +125,21 @@ export const T = {
     hecho: 'Hecho',
   },
 
+  // pestañas de la hoja inferior (teléfono/tablet) y barra de acciones
+  hoja: {
+    titulo: 'Secciones',
+    agente: 'Agente',
+    partida: 'Partida',
+    mision: 'Misión',
+    registro: 'Registro',
+    mas: 'Más',
+    cerrar: 'Cerrar',
+  },
+  acciones: {
+    titulo: 'Acciones',
+    deseleccionarTitulo: 'Quitar la selección',
+  },
+
   ayuda: {
     inicio: 'Arrastra un agente para moverlo: la app busca la ruta rodeando o trepando el terreno y calcula su costo según las reglas. Toca un agente para seleccionarlo.',
   },

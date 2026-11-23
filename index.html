@@ -2,21 +2,31 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- viewport-fit=cover: la app usa toda la pantalla y respeta el notch con env(safe-area-inset-*) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14110e">
   <title>SkirmishTable</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders:opsz,wght@10..72,500;10..72,700;10..72,800&family=JetBrains+Mono:wght@400;600&display=swap">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-<!-- Los textos visibles salen de src/i18n/es.js (data-t, data-t-title, data-t-aria; ver src/i18n/aplicar.js) -->
+<!-- Los textos visibles salen de src/i18n/es.js (data-t, data-t-title, data-t-aria; ver src/i18n/aplicar.js).
+     Layout (src/styles.css, src/ui/sidepanel.js): barra superior · tablero a pantalla completa · zona inferior
+     con la pista, la barra de acciones (src/ui/acciones.js) y las pestañas. En teléfono y tablet cada pestaña
+     abre una hoja inferior sobre el tablero; desde 1024 px de ancho la hoja es un panel lateral. -->
 
 <div class="app">
-<header>
+<header class="topbar">
   <h1>Skirmish<span>Table</span></h1>
-  <span class="hint" id="hint" data-t="ayuda.inicio"></span>
+  <div class="vistas">
+    <button id="view3d" class="mini active" data-t="vista.mesa3d" data-t-title="vista.mesa3dTitulo"></button>
+    <button id="view2d" class="mini" data-t="vista.mapa2d" data-t-title="vista.mapa2dTitulo"></button>
+    <button id="view3dtop" class="mini" style="display:none" data-t="vista.cenital" data-t-title="vista.cenitalTitulo"></button>
+  </div>
+  <button id="loadtts" class="mini" style="display:none" data-t="vista.descargarSteam" data-t-title="vista.descargarSteamTitulo"></button>
+  <button id="optionsbtn" class="mini icono" data-t-title="app.opcionesTitulo" data-t-aria="app.opciones">⚙</button>
   <button id="panelbtn" class="mini" aria-controls="sidepanel" aria-expanded="false" data-t="app.mostrarPanel" data-t-title="app.panelTitulo"></button>
-  <button id="optionsbtn" class="mini" data-t="app.opciones" data-t-title="app.opcionesTitulo"></button>
 </header>
 
 <dialog id="options" aria-labelledby="optionstitle">
@@ -25,21 +35,12 @@
   <div class="btnrow"><button id="optionsclose" class="mini" data-t="app.hecho"></button></div>
 </dialog>
 
+<!-- nota de la vista 3D (progreso de descarga de modelos, ayuda) -->
+<div class="viewbar"><span class="hint" id="v3dnote"></span></div>
+<div id="replaybar" class="replaybar" hidden></div>
+
 <div class="main">
   <div class="boardwrap">
-    <div class="viewbar">
-      <button id="view3d" class="mini active" data-t="vista.mesa3d" data-t-title="vista.mesa3dTitulo"></button>
-      <button id="view2d" class="mini" data-t="vista.mapa2d" data-t-title="vista.mapa2dTitulo"></button>
-      <button id="view3dtop" class="mini" style="display:none" data-t="vista.cenital" data-t-title="vista.cenitalTitulo"></button>
-      <span class="foldonly">
-        <button class="mini" data-press="endtp" data-t="bandeja.finPI" data-t-title="bandeja.finPITitulo"></button>
-        <button class="mini" data-press="undo" data-t="bandeja.deshacer" data-t-title="bandeja.deshacerTitulo"></button>
-        <button class="mini" data-press="rulerbtn" data-t="bandeja.regla" data-t-title="bandeja.reglaTitulo"></button>
-      </span>
-      <span class="hint" id="v3dnote"></span>
-      <button id="loadtts" class="mini" style="display:none" data-t="vista.descargarSteam" data-t-title="vista.descargarSteamTitulo"></button>
-    </div>
-    <div id="replaybar" class="replaybar" hidden></div>
     <div class="stage">
       <svg id="board" viewBox="0 0 960 704" data-t-aria="mesa.tablero"></svg>
       <div id="board3d"></div>
@@ -60,100 +61,120 @@
     </div>
   </div>
 
-  <aside id="sidepanel">
-    <div class="panel">
-      <h2 data-t="bandeja.titulo"></h2>
-      <div class="tray">
-        <div class="cell"><div class="v" id="tpv">1</div><div class="k" data-t="bandeja.puntoInflexion"></div></div>
-        <div class="cell"><div class="v teamA" id="cpa">3</div><div class="k" data-t-equipo="0" data-t="bandeja.pm"></div></div>
-        <div class="cell"><div class="v teamB" id="cpb">3</div><div class="k" data-t-equipo="1" data-t="bandeja.pm"></div></div>
-        <div class="cell"><div class="v teamA" id="vpa">0</div><div class="k" data-t-equipo="0" data-t="bandeja.pv"></div></div>
-        <div class="cell"><div class="v teamB" id="vpb">0</div><div class="k" data-t-equipo="1" data-t="bandeja.pv"></div></div>
-        <button class="mini" id="endtp" data-t="bandeja.finPI" data-t-title="bandeja.finPITitulo"></button>
-        <button class="mini" id="undo" data-t="bandeja.deshacer" data-t-title="bandeja.deshacerTitulo"></button>
-        <button class="mini" id="reset" data-t="bandeja.reiniciar"></button>
-        <button class="mini" id="rulerbtn" data-t="bandeja.regla" data-t-title="bandeja.reglaTitulo"></button>
+  <!-- hoja inferior (teléfono/tablet) o panel lateral (≥1024 px); data-tab = pestaña de cada panel -->
+  <aside id="sidepanel" class="hoja">
+    <div class="hojaasa"><button class="mini icono" id="hojacerrar" data-t-aria="hoja.cerrar" data-t-title="hoja.cerrar">✕</button></div>
+    <div class="hojacuerpo">
+      <div class="panel" id="oppanel" data-tab="agente">
+        <h2 data-t="paneles.agente"></h2>
+        <div id="opcard"><span class="hint" data-t="ficha.vacia"></span></div>
       </div>
-    </div>
 
-    <div class="panel">
-      <h2 data-t="paneles.operaciones"></h2>
-      <div id="opsbox"></div>
-    </div>
-
-    <div class="panel">
-      <h2><span data-t="paneles.zona"></span> <span class="tag" id="buildtag" style="margin-left:6px;letter-spacing:.06em" data-t="zona.version" data-t-title="zona.versionTitulo"></span></h2>
-      <div id="mapbtns"></div>
-      <div class="hint" id="mapnote"></div>
-    </div>
-
-    <!-- Kill Team es el único reglamento: el selector queda oculto (src/rules/ conserva los demás) -->
-    <div class="panel" hidden>
-      <h2 data-t="paneles.reglas"></h2>
-      <div class="btnrow" id="rulebtns"></div>
-      <div class="hint" id="rulenote"></div>
-    </div>
-
-    <div class="panel">
-      <h2 data-t="paneles.miniaturas"></h2>
-      <div id="minis"></div>
-    </div>
-
-    <div class="panel" id="oppanel">
-      <h2 data-t="paneles.agente"></h2>
-      <div id="opcard"><span class="hint" data-t="ficha.vacia"></span></div>
-    </div>
-
-    <div class="panel">
-      <h2 data-t="paneles.blancos"></h2>
-      <div id="shots"><span class="hint" data-t="blancos.ayuda"></span></div>
-    </div>
-
-    <div class="panel">
-      <h2 data-t="paneles.veredicto"></h2>
-      <div id="verdict"><span class="hint" data-t="veredicto.ayuda"></span></div>
-    </div>
-
-    <div class="panel">
-      <h2 data-t="paneles.registro"></h2>
-      <div id="log"></div>
-    </div>
-
-    <!-- Lo que no hace falta para aprender: plegado; se recuerda abierto o cerrado (src/ui/sidepanel.js) -->
-    <details class="panel avanzado" id="avanzado">
-      <summary><h2 data-t="paneles.avanzado"></h2></summary>
-      <div class="avbloque">
-        <h3 data-t="amenazas.nombre"></h3>
-        <span id="threatpick" class="ringpick" data-t-title="amenazas.titulo">
-          <label><span data-t="amenazas.estilo"></span> <select id="threatstyle"></select></label>
-          <label data-t-title="amenazas.zonasTitulo"><span data-t="amenazas.zonas"></span> <select id="threatstrength"></select></label>
-          <label data-t-title="amenazas.rutasTitulo"><span data-t="amenazas.rutas"></span> <select id="threatpaths"></select></label>
-          <span class="threatkey" id="threatkey"><i class="ch"></i><span data-t="amenazas.leyendaCarga"></span> <i class="cl"></i><span data-t="amenazas.leyendaSinCobertura"></span></span>
-        </span>
-        <span id="ringpick" class="ringpick" style="display:none" data-t-title="anillos.titulo">
-          <label><span data-t="anillos.apostado"></span> <select id="ringready"></select></label>
-          <label><span data-t="anillos.activo"></span> <select id="ringactive"></select></label>
-        </span>
+      <div class="panel" data-tab="agente">
+        <h2 data-t="paneles.veredicto"></h2>
+        <div id="verdict"><span class="hint" data-t="veredicto.ayuda"></span></div>
       </div>
-      <div class="avbloque">
-        <h3 data-t="paneles.enLinea"></h3>
-        <div id="netbox"></div>
-        <div id="sharebox"></div>
+
+      <div class="panel" data-tab="agente">
+        <h2 data-t="paneles.blancos"></h2>
+        <div id="shots"><span class="hint" data-t="blancos.ayuda"></span></div>
       </div>
-      <div class="avbloque">
-        <h3 data-t="paneles.grabacion"></h3>
-        <div id="replaybox"></div>
-      </div>
-      <div class="avbloque">
-        <h3 data-t="paneles.importar"></h3>
-        <div class="btnrow">
-          <button class="mini" id="importbtn" data-t="zona.importar" data-t-title="zona.importarTitulo"></button>
-          <input type="file" id="importfile" style="display:none">
+
+      <div class="panel" data-tab="partida">
+        <h2 data-t="bandeja.titulo"></h2>
+        <div class="tray">
+          <div class="cell"><div class="v" id="tpv">1</div><div class="k" data-t="bandeja.puntoInflexion"></div></div>
+          <div class="cell"><div class="v teamA" id="cpa">3</div><div class="k" data-t-equipo="0" data-t="bandeja.pm"></div></div>
+          <div class="cell"><div class="v teamB" id="cpb">3</div><div class="k" data-t-equipo="1" data-t="bandeja.pm"></div></div>
+          <div class="cell"><div class="v teamA" id="vpa">0</div><div class="k" data-t-equipo="0" data-t="bandeja.pv"></div></div>
+          <div class="cell"><div class="v teamB" id="vpb">0</div><div class="k" data-t-equipo="1" data-t="bandeja.pv"></div></div>
+          <button class="mini" id="endtp" data-t="bandeja.finPI" data-t-title="bandeja.finPITitulo"></button>
+          <button class="mini" id="undo" data-t="bandeja.deshacer" data-t-title="bandeja.deshacerTitulo"></button>
+          <button class="mini" id="reset" data-t="bandeja.reiniciar"></button>
+          <button class="mini" id="rulerbtn" data-t="bandeja.regla" data-t-title="bandeja.reglaTitulo"></button>
         </div>
       </div>
-    </details>
+
+      <div class="panel" data-tab="partida">
+        <h2><span data-t="paneles.zona"></span> <span class="tag" id="buildtag" style="margin-left:6px;letter-spacing:.06em" data-t="zona.version" data-t-title="zona.versionTitulo"></span></h2>
+        <div id="mapbtns"></div>
+        <div class="hint" id="mapnote"></div>
+      </div>
+
+      <div class="panel" data-tab="partida">
+        <h2 data-t="paneles.miniaturas"></h2>
+        <div id="minis"></div>
+      </div>
+
+      <!-- Kill Team es el único reglamento: el selector queda oculto (src/rules/ conserva los demás) -->
+      <div class="panel" data-tab="partida" hidden>
+        <h2 data-t="paneles.reglas"></h2>
+        <div class="btnrow" id="rulebtns"></div>
+        <div class="hint" id="rulenote"></div>
+      </div>
+
+      <div class="panel" data-tab="mision">
+        <h2 data-t="paneles.operaciones"></h2>
+        <div id="opsbox"></div>
+      </div>
+
+      <div class="panel" data-tab="registro">
+        <h2 data-t="paneles.registro"></h2>
+        <div id="log"></div>
+      </div>
+
+      <!-- Lo que no hace falta para aprender: plegado; se recuerda abierto o cerrado (src/ui/sidepanel.js) -->
+      <details class="panel avanzado" id="avanzado" data-tab="mas">
+        <summary><h2 data-t="paneles.avanzado"></h2></summary>
+        <div class="avbloque">
+          <h3 data-t="amenazas.nombre"></h3>
+          <span id="threatpick" class="ringpick" data-t-title="amenazas.titulo">
+            <label><span data-t="amenazas.estilo"></span> <select id="threatstyle"></select></label>
+            <label data-t-title="amenazas.zonasTitulo"><span data-t="amenazas.zonas"></span> <select id="threatstrength"></select></label>
+            <label data-t-title="amenazas.rutasTitulo"><span data-t="amenazas.rutas"></span> <select id="threatpaths"></select></label>
+            <span class="threatkey" id="threatkey"><i class="ch"></i><span data-t="amenazas.leyendaCarga"></span> <i class="cl"></i><span data-t="amenazas.leyendaSinCobertura"></span></span>
+          </span>
+          <span id="ringpick" class="ringpick" style="display:none" data-t-title="anillos.titulo">
+            <label><span data-t="anillos.apostado"></span> <select id="ringready"></select></label>
+            <label><span data-t="anillos.activo"></span> <select id="ringactive"></select></label>
+          </span>
+        </div>
+        <div class="avbloque">
+          <h3 data-t="paneles.enLinea"></h3>
+          <div id="netbox"></div>
+          <div id="sharebox"></div>
+        </div>
+        <div class="avbloque">
+          <h3 data-t="paneles.grabacion"></h3>
+          <div id="replaybox"></div>
+        </div>
+        <div class="avbloque">
+          <h3 data-t="paneles.importar"></h3>
+          <div class="btnrow">
+            <button class="mini" id="importbtn" data-t="zona.importar" data-t-title="zona.importarTitulo"></button>
+            <input type="file" id="importfile" style="display:none">
+          </div>
+        </div>
+      </details>
+    </div>
   </aside>
 </div>
+
+<!-- zona del pulgar: pista, acciones del agente seleccionado (o de la partida) y pestañas -->
+<footer class="abajo">
+  <div class="filapista">
+    <div class="hint" id="hint" data-t="ayuda.inicio" aria-live="polite"></div>
+    <button class="mini icono" id="quitarsel" hidden data-t-title="acciones.deseleccionarTitulo" data-t-aria="acciones.deseleccionarTitulo">✕</button>
+  </div>
+  <div class="acciones" id="acciones" role="toolbar" data-t-aria="acciones.titulo"></div>
+  <nav class="hojatabs" role="tablist" data-t-aria="hoja.titulo">
+    <button role="tab" data-tab="agente" data-t="hoja.agente"></button>
+    <button role="tab" data-tab="partida" data-t="hoja.partida"></button>
+    <button role="tab" data-tab="mision" data-t="hoja.mision"></button>
+    <button role="tab" data-tab="registro" data-t="hoja.registro"></button>
+    <button role="tab" data-tab="mas" data-t="hoja.mas"></button>
+  </nav>
+</footer>
 
 </div>
 

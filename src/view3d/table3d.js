@@ -661,7 +661,8 @@ function panKeys() {
 }
 function resize3D() {
   if (!three) return;
-  const w = three.box.clientWidth || 800, h = Math.round(w * BH / BW);
+  // el tablero ocupa la pantalla: la mesa 3D toma el alto de su caja (sin caja aún, la proporción de la mesa)
+  const w = three.box.clientWidth || 800, h = three.box.clientHeight || Math.round(w * BH / BW);
   three.renderer.setSize(w, h);
   three.camera.aspect = w / h;
   three.camera.updateProjectionMatrix();

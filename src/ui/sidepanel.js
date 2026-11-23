@@ -1,44 +1,49 @@
 /**
- * The side panel (Battle tray, Ops & score, Rules, …) folds away so the table and its overlay
- * fill the screen. It starts folded; the choice is remembered in this browser. While folded,
- * End TP, Undo and Ruler sit in the view bar, and the table is sized to fit the window.
+ * La hoja de paneles (index.html, aside#sidepanel):
+ * - Teléfono y tablet (< 1024 px): hoja inferior sobre el tablero. Las pestañas de abajo
+ *   (Agente, Partida, Misión, Registro, Más) la abren con los paneles de esa pestaña; tocar la
+ *   pestaña abierta o ✕ la cierra. Empieza cerrada: primero el tablero.
+ * - Escritorio (≥ 1024 px): panel lateral con todos los paneles; el botón del encabezado lo
+ *   pliega y lo despliega, y se recuerda en este navegador.
  */
 import { T } from '../i18n/es.js';
 
-const KEY = "skirmishtable.sidebar";
+const KEY = "skirmishtable.sidebar";        // escritorio: "open" = panel lateral visible
+const KEY_AV = "skirmishtable.avanzado";    // la sección Avanzado, abierta o cerrada
+const ANCHO = typeof matchMedia === "function" ? matchMedia("(min-width: 1024px)") : { matches: true, addEventListener() {} };
 
-let open = false;
+let open = false;   // escritorio
+let tab = "";       // teléfono/tablet: pestaña abierta ("" = hoja cerrada)
 try { open = localStorage.getItem(KEY) === "open"; } catch (e) {}
 
-// the widest the table can be while its whole height still fits under the header and view bar
-function fit() {
-  const main = document.querySelector(".main"), stage = document.querySelector(".stage");
-  if (!main || !stage) return;
-  const top = stage.getBoundingClientRect().top + window.scrollY;
-  const h = Math.max(240, window.innerHeight - top - 12), w = Math.round(h * 960 / 704) + "px";
-  if (main.style.getPropertyValue("--fitw") === w) return false;
-  main.style.setProperty("--fitw", w);
-  return true;
-}
+const avisarTamano = () => window.dispatchEvent(new Event("resize"));   // la mesa 3D y las cajas de dados se ajustan a su caja
 
 function apply() {
-  const main = document.querySelector(".main"), btn = document.getElementById("panelbtn");
+  const main = document.querySelector(".main"), aside = document.getElementById("sidepanel");
+  const btn = document.getElementById("panelbtn");
   main.classList.toggle("folded", !open);
+  main.classList.toggle("hoja-abierta", !!tab);
+  aside.dataset.tab = tab;
   btn.textContent = open ? T.app.ocultarPanel : T.app.mostrarPanel;
   btn.setAttribute("aria-expanded", String(open));
-  fit();
-  window.dispatchEvent(new Event("resize"));   // the 3D table and the dice boxes size from their box
+  for (const b of document.querySelectorAll(".hojatabs [data-tab]")) b.setAttribute("aria-selected", String(b.dataset.tab === tab));
+  avisarTamano();
 }
 
-// La sección Avanzado (plegada por defecto) recuerda si la dejaste abierta.
-const KEY_AV = "skirmishtable.avanzado";
+// Abre una pestaña de la hoja (o la cierra si ya estaba abierta). Exportada para que otros
+// módulos puedan llevar al jugador a un panel, p. ej. el registro.
+export function abrirPestana(nombre) {
+  tab = tab === nombre ? "" : nombre;
+  apply();
+}
+export const cerrarHoja = () => { if (tab) { tab = ""; apply(); } };
+
 function wireAdvanced() {
   const av = document.getElementById("avanzado");
   if (!av) return;
   try { av.open = localStorage.getItem(KEY_AV) === "open"; } catch (e) {}
   av.addEventListener("toggle", () => {
     try { localStorage.setItem(KEY_AV, av.open ? "open" : "closed"); } catch (e) { /* ventana privada: no se recuerda */ }
-    window.dispatchEvent(new Event("resize"));
   });
 }
 
@@ -46,16 +51,16 @@ export function wireSidePanel() {
   wireAdvanced();
   document.getElementById("panelbtn").onclick = () => {
     open = !open;
-    try { localStorage.setItem(KEY, open ? "open" : "folded"); } catch (e) { /* private window: just don't remember */ }
+    try { localStorage.setItem(KEY, open ? "open" : "folded"); } catch (e) { /* ventana privada: no se recuerda */ }
     apply();
   };
-  // the folded view bar's buttons press the Battle tray's own
-  document.querySelectorAll("[data-press]").forEach(b => b.onclick = () => document.getElementById(b.dataset.press).click());
-  window.addEventListener("resize", fit);
-  // the header and view bar change height too (3D controls appear, rows wrap, the replay bar opens)
+  for (const b of document.querySelectorAll(".hojatabs [data-tab]")) b.onclick = () => abrirPestana(b.dataset.tab);
+  document.getElementById("hojacerrar").onclick = cerrarHoja;
+  ANCHO.addEventListener("change", avisarTamano);
+  // la barra de acciones y la pista cambian de alto: el tablero (y la mesa 3D) se reajustan
   if (window.ResizeObserver) {
-    const ro = new ResizeObserver(() => { if (fit()) window.dispatchEvent(new Event("resize")); });
-    ["header", ".viewbar", "#replaybar"].forEach(q => { const e = document.querySelector(q); if (e) ro.observe(e); });
+    const stage = document.querySelector(".stage");
+    if (stage) new ResizeObserver(avisarTamano).observe(stage);
   }
   apply();
 }
