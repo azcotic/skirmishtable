@@ -469,7 +469,12 @@ body { overflow: hidden; overscroll-behavior: none; }
   border-top: 1px solid #3a332a; border-radius: 12px 12px 0 0; box-shadow: 0 -8px 24px rgba(0, 0, 0, .5);
 }
 .main:not(.hoja-abierta) .hoja { display: none; }
-.hojaasa { display: flex; justify-content: flex-end; padding: 4px 6px 0; }
+/* la agarradera: arrastrarla agranda o cierra la hoja (sidepanel.js) */
+.hojaasa { position: relative; display: flex; justify-content: flex-end; padding: 4px 6px 0; min-height: 32px;
+  touch-action: none; cursor: grab; }
+.hojaasa::before { content: ""; position: absolute; left: 50%; top: 10px; width: 44px; height: 5px; border-radius: 3px;
+  background: #4a4238; transform: translateX(-50%); }
+.hoja.alta { max-height: 92%; }
 .hojacuerpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   display: flex; flex-direction: column; gap: 10px; padding: 4px 10px 12px; }
 .hoja .panel[data-tab] { display: none; }

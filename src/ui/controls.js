@@ -9,6 +9,7 @@ import { convertGallowdark, convertVolkusBag, findVolkusBags, parseBSON } from '
 import { buildStatic, renderAll, renderTray } from './board.js';
 import { HINT0, hint, logEl, logLine, svg } from './dom.js';
 import { T } from '../i18n/es.js';
+import { reiniciarVista } from './vista2d.js';
 import { anunciarDespliegue, modoDespliegue, prepararDespliegue } from './despliegue.js';
 import { cancelMode, doUndo, snapshot, tray, undoStack } from './panels.js';
 import { build3DScene, setView, three, view3D } from '../view3d/table3d.js';
@@ -31,7 +32,7 @@ export function loadMap(keyOrMap) {
   const modo = modoDespliegue();
   if (modo === "azar") scatterRoster();
   else if (modo === "turnos") prepararDespliegue();
-  svg.setAttribute("viewBox", `0 0 ${px(BW)} ${px(BH)}`);
+  reiniciarVista();               // mapa completo, en vertical u horizontal según la pantalla (vista2d.js)
   state.sel = null; state.target = null; state.lastShot = null; state.drag = null;
   undoStack.length = 0;
   restartRecording();             // a new table is a new game to record

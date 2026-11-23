@@ -27,6 +27,7 @@ import { wireOptions } from './ui/options.js';
 import { wireSidePanel } from './ui/sidepanel.js';
 import { wireAcciones } from './ui/acciones.js';
 import { despliegueActivo, wireDespliegue } from './ui/despliegue.js';
+import { wireVista2D } from './ui/vista2d.js';
 import { cancelMode } from './ui/panels.js';
 import * as table3d from './view3d/table3d.js';
 import * as rules from './rules/index.js';
@@ -44,6 +45,7 @@ wireHud();
 wireControls();
 table3d.wireViewToggle();
 wireThreatPicker(() => renderAll());
+wireVista2D();                    // mapa 2D: en vertical si la pantalla está de pie; zoom con dos dedos o la rueda
 wireOptions();
 wireSidePanel();
 wireDespliegue();

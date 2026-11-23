@@ -7,7 +7,7 @@ import { T, pulg } from '../../src/i18n/es.js';
 const kz = (page, fn, arg) => page.evaluate(fn, arg);
 // board inches -> screen pixels (recomputed each time: the side panel can scroll the page)
 const toScreen = (page, x, y) => page.evaluate(([x, y]) => {
-  const p = new DOMPoint(x * 32, y * 32).matrixTransform(document.getElementById('board').getScreenCTM());
+  const p = new DOMPoint(x * 32, y * 32).matrixTransform(document.getElementById('raiz').getScreenCTM());   // con el giro y el zoom del mapa
   return { x: p.x, y: p.y };
 }, [x, y]);
 async function place(page, id, x, y) {

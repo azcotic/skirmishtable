@@ -36,7 +36,40 @@ export function abrirPestana(nombre) {
   tab = tab === nombre ? "" : nombre;
   apply();
 }
-export const cerrarHoja = () => { if (tab) { tab = ""; apply(); } };
+export const cerrarHoja = () => {
+  document.getElementById("sidepanel").classList.remove("alta");
+  if (tab) { tab = ""; apply(); }
+};
+
+// La agarradera de la hoja (teléfono/tablet): arrastrarla hacia arriba la agranda casi a
+// pantalla completa; hacia abajo, la vuelve a su alto o la cierra.
+function wireAsa() {
+  const asa = document.querySelector(".hojaasa"), aside = document.getElementById("sidepanel");
+  if (!asa) return;
+  let y0 = null, h0 = 0;
+  asa.addEventListener("pointerdown", ev => {
+    if (ANCHO.matches || ev.target.closest("button")) return;
+    y0 = ev.clientY; h0 = aside.getBoundingClientRect().height;
+    asa.setPointerCapture(ev.pointerId);
+  });
+  asa.addEventListener("pointermove", ev => {
+    if (y0 === null) return;
+    const h = Math.max(60, h0 - (ev.clientY - y0));
+    aside.style.maxHeight = aside.style.height = h + "px";   // la hoja sigue al dedo
+  });
+  const soltar = ev => {
+    if (y0 === null) return;
+    const dy = ev.clientY - y0;
+    y0 = null;
+    aside.style.maxHeight = aside.style.height = "";
+    if (dy < -40) aside.classList.add("alta");
+    else if (dy > 80 && !aside.classList.contains("alta")) cerrarHoja();
+    else if (dy > 30) aside.classList.remove("alta");
+    avisarTamano();
+  };
+  asa.addEventListener("pointerup", soltar);
+  asa.addEventListener("pointercancel", soltar);
+}
 
 function wireAdvanced() {
   const av = document.getElementById("avanzado");
@@ -49,6 +82,7 @@ function wireAdvanced() {
 
 export function wireSidePanel() {
   wireAdvanced();
+  wireAsa();
   document.getElementById("panelbtn").onclick = () => {
     open = !open;
     try { localStorage.setItem(KEY, open ? "open" : "folded"); } catch (e) { /* ventana privada: no se recuerda */ }

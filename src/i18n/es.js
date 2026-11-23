@@ -151,6 +151,7 @@ export const T = {
     mapa2dTitulo: 'Mapa cenital con la regla de medir y las sombras de la línea de visión',
     cenital: 'Cenital',
     cenitalTitulo: 'Mira la mesa desde arriba (vuelve a tocar para la vista inclinada)',
+    reiniciarZoom: 'Ver el mapa completo',
     descargarSteam: 'Descargar de Steam',
     descargarSteamTitulo: 'Descarga a este navegador los escaneos y texturas exactos de Tabletop Simulator desde el CDN de Steam Workshop. Este sitio no los aloja.',
     nota3d: 'Arrastra un agente para moverlo · arrastra la mesa para girarla, usa la rueda para acercar y WASD para desplazarte · la regla está en el mapa 2D.',

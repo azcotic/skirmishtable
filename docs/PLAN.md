@@ -166,6 +166,14 @@ el tablero no se mueva bajo el dedo al seleccionar. Quedan para la Fase 4: girar
 - Configuración de partida limitada a estos dos equipos.
 
 ### Fase 4 — Interacción táctil (1–2 días)
+**Hecho (rama `ui/esqueleto`):** el mapa 2D gira 90° cuando la pantalla está de pie (tu zona abajo, textos
+derechos); zoom con pellizco, rueda o un dedo sobre espacio vacío, y ⤢ para volver al mapa completo
+(`src/ui/vista2d.js`); la hoja inferior se agranda o se cierra arrastrando su agarradera. Además, paso de
+**despliegue** antes de jugar (`src/engine/deploy.js`, `src/ui/despliegue.js`): por turnos, de uno en uno,
+dentro de la zona de descenso y con orden de ocultarse; en línea cada jugador en su turno; opción "al azar".
+Pendiente: mantener pulsado para ver la info de un agente; desplegar tocando la mesa 3D; desplegar por
+tercios del comando como dicen las reglas.
+
 - Tocar para seleccionar, arrastrar para mover (ya existe; revisar), mantener pulsado para info.
 - Pellizcar para zoom y dos dedos para rotar en 3D, sin conflictos con el arrastre de agentes.
 - Selector de vista 3D / 2D siempre visible. En teléfono, sugerir 2D al inicio (más ligero), con el 3D a un toque.

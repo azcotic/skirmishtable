@@ -38,9 +38,15 @@ export function hint(t) { document.getElementById("hint").textContent = t; }
 
 /* ---------- board rendering ---------- */
 export const svg = document.getElementById("board");
+// Todo el mapa se dibuja dentro de un grupo raíz (#raiz, lo crea board.js) que lleva el giro
+// del mapa en vertical (vista2d.js); girarTextos: los textos se giran al revés, para leerse derechos.
+export const lienzo = { g: null, girarTextos: false };
 export const NS = "http://www.w3.org/2000/svg";
 export function el(tag, attrs, parent) {
   const e = document.createElementNS(NS, tag);
   for (const k in attrs) e.setAttribute(k, attrs[k]);
-  (parent || svg).appendChild(e); return e;
+  const p = parent || lienzo.g || svg;
+  if (tag === "text" && lienzo.girarTextos && p !== svg && attrs && attrs.x !== undefined && !attrs.transform)
+    e.setAttribute("transform", `rotate(90 ${attrs.x} ${attrs.y})`);
+  p.appendChild(e); return e;
 }

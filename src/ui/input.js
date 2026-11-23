@@ -14,6 +14,7 @@ import { RULES, fmtIn, moveSpec } from '../rules/index.js';
 import { renderAll, renderOverlay } from './board.js';
 import { hint, logLine, svg } from './dom.js';
 import { T } from '../i18n/es.js';
+import { lienzo } from './dom.js';
 import { colocarEn, despliegueActivo } from './despliegue.js';
 import { cancelMode, defaultMoveType, refreshSight, snapshot, toggleOrder } from './panels.js';
 import { mayControl } from '../net/sync.js';
@@ -22,7 +23,7 @@ import { openOpMenu } from './opmenu.js';
 
 function svgPoint(ev) {
   const pt = new DOMPoint(ev.clientX, ev.clientY);
-  const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+  const p = pt.matrixTransform((lienzo.g || svg).getScreenCTM().inverse());   // con el giro y el zoom del mapa 2D
   return [p.x / S, p.y / S];
 }
 // screen -> board inches for the active view (null = off the board)

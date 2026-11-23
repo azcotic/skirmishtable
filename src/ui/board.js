@@ -14,7 +14,8 @@ import { SHOT_KINDS, shotsFrom } from '../engine/shots.js';
 import { coneShadows, sightCone, visibilityPolygon } from '../engine/sight.js';
 import { BH, BW, DECOR, DROPZONES, MAP, OBJECTIVES, OPS, OVERHEAD, TERRAIN } from '../engine/world.js';
 import { pump } from '../net/sync.js';
-import { NS, el, svg } from './dom.js';
+import { NS, el, lienzo, svg } from './dom.js';
+import { transformRaiz } from './vista2d.js';
 import { RULES, fmtIn, moveLabel } from '../rules/index.js';
 import { T, pulg } from '../i18n/es.js';
 import { zonaActiva } from './despliegue.js';
@@ -34,6 +35,7 @@ function climbText(z) {
 }
 export function buildStatic() {
   svg.innerHTML = "";
+  lienzo.g = el("g", {id: "raiz", transform: transformRaiz()}, svg);   // el giro del mapa en vertical (vista2d.js)
   gStatic = el("g", {});
   // heat glow for the Engage order
   const grad = el("radialGradient", {id:"hotglow"}, gStatic);
@@ -56,7 +58,9 @@ export function buildStatic() {
   for (const dz of DROPZONES) {
     el("rect", {x:px(dz.x), y:px(dz.y), width:px(dz.w), height:px(dz.h),
       fill: dz.team===0 ? "#e0672f" : "#5b93a6", opacity:0.14}, gStatic);
-    el("text", {x:px(dz.x+dz.w/2), y: dz.y < BH/2 ? px(Math.min(1.1, dz.y+dz.h-0.4)) : px(BH-0.5),
+    // en vertical (vista2d.js) el rótulo va al centro de la zona, a lo ancho de la pantalla
+    const rotuloY = lienzo.girarTextos && MAP && MAP.dropEdge !== "long" ? px(BH/2) : dz.y < BH/2 ? px(Math.min(1.1, dz.y+dz.h-0.4)) : px(BH-0.5);
+    el("text", {x:px(dz.x+dz.w/2), y: rotuloY,
       "text-anchor":"middle", fill: dz.team===0?"#b4571f":"#4a7a8c",
       "font-family":"'Big Shoulders',sans-serif", "font-size":15, "font-weight":700,
       "letter-spacing":"2"}, gStatic).textContent = T.terreno.zonaDescenso(TEAMNAME[dz.team]);

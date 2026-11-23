@@ -83,7 +83,7 @@ test('a finger drags an operative on the 2D map', async ({ page }) => {
   await place(page, 'A2', 10, 12);
   await page.locator('#board').scrollIntoViewIfNeeded();
   const pt = (x, y) => kz(page, ([x, y]) => {
-    const p = new DOMPoint(x * 32, y * 32).matrixTransform(document.getElementById('board').getScreenCTM());
+    const p = new DOMPoint(x * 32, y * 32).matrixTransform(document.getElementById('raiz').getScreenCTM());   // en vertical el mapa gira
     return { x: p.x, y: p.y };
   }, [x, y]);
   const during = await fingerDrag(page, await pt(10, 12), await pt(13, 12));
