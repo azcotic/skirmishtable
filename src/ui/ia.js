@@ -86,7 +86,7 @@ export async function jugarTurnoIA() {
       refreshSight(); renderAll();
       hint(T.ia.activa(nombre(mejor.o), T.reaccion.iaDispara(nombre(mejor.d.blanco))));
       await esperar(control.pausa);
-      doShoot();
+      await doShoot();
       await esperar(control.pausa);
       if (mejor.o.alive && mejor.o.ready) endActivation(mejor.o);
       return;
@@ -121,7 +121,7 @@ export async function jugarTurnoIA() {
         state.sel = op; state.target = paso.blanco;
         refreshSight(); renderAll();
         await esperar(control.pausa / 2);
-        if (paso.accion === "shoot") doShoot(); else doFight();
+        await (paso.accion === "shoot" ? doShoot() : doFight());   // espera a que se resuelva (y a tus decisiones)
         await esperar(control.pausa);
       }
     }

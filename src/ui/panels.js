@@ -2,8 +2,10 @@
  * Side panels (operative card, verdict, tray), actions (shoot, fight, undo) and UI state.
  */
 import { state } from '../state.js';
-import { CTRL, TEAMCOL_LT, WPN } from '../config.js';
-import { effHit, fightRoll, isInjured, meleeKey, shootRoll } from '../engine/dice.js';
+import { CTRL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
+import { aplicarCombate, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
+  isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
+import { elegirCombate, elegirRepeticion } from './tirada.js';
 import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
 import { SHOT_KINDS, cannotShoot, judgeShot, shotsFrom } from '../engine/shots.js';
@@ -19,7 +21,25 @@ import { T, pulg } from '../i18n/es.js';
 import { renderAcciones } from './acciones.js';
 import { accionesLegales, agotada, alcanceArma, blancoValidoCon, buscadoraAplica, puede, puedeCambiarOrden } from '../game/acciones.js';
 import { conectarTurno, pistaDeTurno, porQueNoActua, puedeActuar, todosUsados } from './turno.js';
-import { control } from './control.js';
+import { control, esDeLaIA } from './control.js';
+
+// Repetición de mando (ardid de tiroteo, 1 PM, sin límite de usos): repetir un dado fallado.
+// Pregunta al jugador (la IA decide sola: repite su peor fallo si le queda PM). Cambia `dados`
+// en el lugar y devuelve true si se usó.
+async function repeticionDeMando(team, dados, exito, die, titulo, quien) {
+  if (tray.cp[team] < 1) return false;
+  const ok = dados.map(exito);
+  if (ok.every(Boolean)) return false;
+  let i;
+  if (esDeLaIA(team)) i = dados.map((v, k) => [v, k]).filter(([, k]) => !ok[k]).sort((x, y) => x[0] - y[0])[0][1];
+  else i = await elegirRepeticion({ titulo, quien, dados, exito: ok, pm: tray.cp[team] });
+  if (i === null || i === undefined) return false;
+  const antes = dados[i];
+  dados[i] = die();
+  tray.cp[team] -= 1;
+  logLine(T.repeticion.log(TEAMNAME[team], antes, dados[i]));
+  return true;
+}
 // el agente al que ya se le sugirió terminar su activación por quedarse sin PA
 let avisadoSinPA = null;
 let avisadoOrden = null;
@@ -85,16 +105,31 @@ export function doShoot() {
   // what is rolled for: the shot as this table judges it, fixed before the dice are known
   const what = {k: "shoot", by: state.sel.id, at: state.target.id, w: state.sel.weapon,
                 acc: Math.min(shot.accurate, w.atk), obsc: !!shot.obscured, cover: !!shot.save};
-  const why = rollFor(what, (die, done, n, cancel) => {
+  // la tirada puede esperar decisiones del jugador: la promesa se cumple al resolverse (la IA la espera)
+  let terminar;
+  const hecho = new Promise(r => { terminar = r; });
+  const why = rollFor(what, async (die, done, n, cancel) => {
     // the dice arrive a moment after the click: judge again what they are for
     const a = OPS.find(o => o.id === what.by), b = OPS.find(o => o.id === what.at);
     if (!a || !b || !a.alive || !b.alive || a.ap < 1 || a.weapon !== what.w) {
       cancel();
       logLine(T.disparo.yaNo(a ? a.name : what.by));
-      renderAll(); return;
+      renderAll(); terminar(); return;
     }
     snapshot();
-    const r = shootRoll(what, a, b, die);
+    let r;
+    if (n != null || online()) r = shootRoll(what, a, b, die);   // en línea: sin decisiones a mitad de tirada
+    else {
+      // fuera de línea: se puede usar Repetición de mando en el ataque y en la defensa
+      const w = WPN[what.w], hit = effHit(a, w), cd = critDesde(w.rules);
+      const atk = rollAttack(Math.max(0, w.atk - certera(what, w)), hit, w.rules, die);
+      if (await repeticionDeMando(a.team, atk.dice, v => v !== 1 && (v >= cd || v >= hit), die, T.repeticion.ataque, a.name))
+        Object.assign(atk, clasificarAtaque(atk.dice, hit, w.rules));
+      r = resolverDisparo(what, w, hit, atk, b, die);
+      const dfn = [...r.dfn.dice];
+      if (dfn.length && await repeticionDeMando(b.team, dfn, v => v === 6 || (v !== 1 && v >= b.save), die, T.repeticion.defensa, b.name))
+        r = resolverDisparo(what, w, hit, atk, b, die, dfn, r.hotDado);
+    }
     showRoll(r.atk.dice, r.hit, a.team, T.disparo.tiradaAtq(a.name));
     showRoll(r.dfn.dice, b.save, b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
     b.wounds = Math.max(0, b.wounds - r.dmg);
@@ -110,8 +145,10 @@ export function doShoot() {
     }
     logLine(line + fairNote(n), r.dmg > 0, true);   // también en un aviso en pantalla
     rolled(n, done);
+    terminar();
   });
-  if (why) hint(T.disparo.aunNo(why));
+  if (why) { hint(T.disparo.aunNo(why)); terminar(); }
+  return hecho;
 }
 // a roll's result is in: send it (online), and online a shared roll can't be undone
 function rolled(n, done) {
@@ -126,15 +163,42 @@ export function doFight() {
   if (gap > CTRL) { logLine(T.combate.fueraDeZona(CTRL)); return; }
   const what = {k: "fight", by: state.sel.id, at: state.target.id, wa: meleeKey(state.sel),
                 wb: state.target.weapons.find(k => WPN[k].type === "M") || "knife"};
-  const why = rollFor(what, (die, done, n, cancel) => {
+  let terminar;
+  const hecho = new Promise(r => { terminar = r; });
+  const why = rollFor(what, async (die, done, n, cancel) => {
     const a = OPS.find(o => o.id === what.by), b = OPS.find(o => o.id === what.at);
     if (!a || !b || !a.alive || !b.alive || a.ap < 1 || opGap(a, b) > CTRL) {
       cancel();
       logLine(T.combate.yaNo(a ? a.name : what.by));
-      renderAll(); return;
+      renderAll(); terminar(); return;
     }
     snapshot();
-    const r = fightRoll(what, a, b, die);
+    let r;
+    if (n != null || online()) r = fightRoll(what, a, b, die);   // en línea: decisiones automáticas
+    else {
+      // fuera de línea: Repetición de mando y, en cada turno, golpear o bloquear (la IA decide sola)
+      const est = iniciarCombate(what, a, b, die);
+      for (const [k, op, roll, hit, w] of [[0, a, est.ra, est.hitA, est.wa], [1, b, est.rb, est.hitB, est.wb]]) {
+        const cd = critDesde(w.rules);
+        if (await repeticionDeMando(op.team, roll.dice, v => v !== 1 && (v >= cd || v >= hit), die, T.repeticion.combate, op.name)) {
+          Object.assign(roll, clasificarAtaque(roll.dice, hit, w.rules));
+          est.pools[k].crit = roll.crit; est.pools[k].norm = roll.norm;
+        }
+      }
+      const quedan = k => est.pools[k].crit + est.pools[k].norm > 0;
+      est.fin = !quedan(0) && !quedan(1);
+      if (!est.fin && !quedan(0)) est.turno = 1;
+      let guard = 0;
+      while (!est.fin && guard++ < 60) {
+        const ops = opcionesCombate(est);
+        if (!ops.length) { est.turno = 1 - est.turno; if (!opcionesCombate(est).length) break; continue; }
+        const lado = est.turno === 0 ? a : b;
+        const op = esDeLaIA(lado.team) ? decisionCombate(est)
+          : await elegirCombate(est, { nombres: [a.name, b.name], opciones: ops });
+        aplicarCombate(est, op);
+      }
+      r = { wa: est.wa, wb: est.wb, hitA: est.hitA, hitB: est.hitB, ra: est.ra, rb: est.rb, a: est.vida[0], b: est.vida[1], pasos: est.pasos };
+    }
     showRoll(r.ra.dice, r.hitA, a.team, T.combate.tiradaAtq(a.name));
     showRoll(r.rb.dice, r.hitB, b.team, T.combate.tiradaDef(b.name));
     Object.assign(a, r.a); Object.assign(b, r.b);
@@ -144,8 +208,10 @@ export function doFight() {
     if (!a.alive) line += T.combate.cae(a.name);
     logLine(line + fairNote(n), true, true);
     rolled(n, done);
+    terminar();
   });
-  if (why) hint(T.combate.aunNo(why));
+  if (why) { hint(T.combate.aunNo(why)); terminar(); }
+  return hecho;
 }
 // The ruleset's move actions as buttons: ① main move, ② secondary move, and its charge.
 function moveButtons(repoUsed, dashUsed, chargeUsed) {

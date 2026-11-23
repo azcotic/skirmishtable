@@ -125,7 +125,7 @@ export const certera = (what, w) => Math.max(0, Math.min((what.acc | 0) + numero
 // Del ataque ya tirado (y quizá repetido con Repetición de mando) al daño: ofuscado,
 // Devastadora, Penetración, Saturación, la defensa (tirada aquí con `die`, o `dfnDados` si ya
 // se tiró), bloqueos y Sobrecalentamiento.
-export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null) {
+export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null, hotDado = null) {
   const R = w.rules, notes = [...(atk.notes || [])];
   const acc = certera(what, w);
   let aCrit = atk.crit, aNorm = atk.norm + acc;
@@ -147,12 +147,12 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null)
     : rollDefence(b.save, cover, die, Math.max(0, 3 - pen));
   if (dfn.cover) notes.push("cover save banked");
   const rest = bloquear(aNorm, aCrit, dfn.norm, dfn.crit, w.dmgN, w.dmgC);
-  let selfDmg = 0;
+  let selfDmg = 0, hotV = null;
   if (regla(R, "Hot")) {   // tras disparar: 1D6; si sale menos que Impactar, el tirador recibe el doble
-    const v = die();
-    if (v < hit) { selfDmg = v * 2; notes.push("hot:" + selfDmg); }
+    hotV = hotDado ?? die();
+    if (hotV < hit) { selfDmg = hotV * 2; notes.push("hot:" + selfDmg); }
   }
-  return { w, hit, atk, dfn, dmg: dev + rest.dmg, notes, selfDmg, pen, cover };
+  return { w, hit, atk, dfn, dmg: dev + rest.dmg, notes, selfDmg, pen, cover, hotDado: hotV };
 }
 
 /* ---------- Fight ---------- */

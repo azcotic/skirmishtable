@@ -476,6 +476,24 @@ body { overflow: hidden; overscroll-behavior: none; }
 .acciones .accion.orden b { display: inline; }
 .acciones .accion.orden small { flex-basis: 100%; }
 
+/* decisiones en mitad de una tirada (src/ui/tirada.js) */
+dialog.tirada { width: min(420px, calc(100vw - 24px)); padding: 16px; border: 1px solid #e0672f; border-radius: 14px;
+  background: #1d1914; color: #e8e2d8; }
+dialog.tirada::backdrop { background: rgba(10, 8, 6, .7); }
+dialog.tirada h2 { margin: 0 0 4px; font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 22px; text-transform: uppercase; color: #f3ece2; }
+dialog.tirada .tquien { margin: 0 0 8px; color: #f0a276; font-weight: 600; }
+dialog.tirada p { margin: 6px 0; font-size: 12px; color: #b8ad9e; }
+.tdados { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.tdado { width: 52px; height: 52px; padding: 0; border-radius: 10px; font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 26px;
+  background: #3a1714; border: 2px solid #c0392b; color: #ffd8d2; }
+.tdado.exito { background: #1f2c22; border-color: #4f7f5a; color: #cfe8d4; opacity: .7; }
+.tno, .topc { display: block; width: 100%; min-height: 48px; margin-top: 8px; border-radius: 10px; text-align: left; padding: 8px 12px; }
+.topc.golpe { border-color: #c0392b; } .topc.bloqueo { border-color: #5b7f99; }
+.tlado { padding: 8px 10px; margin: 6px 0; border-radius: 10px; border: 1px solid #3a332a; }
+.tlado.turno { border-color: #e0672f; background: #2a1f17; }
+.tlado span { color: #9a9184; margin-left: 6px; } .texitos { font-size: 12px; color: #d8cfc2; margin-top: 2px; }
+dialog.tirada .tnota { font-size: 10px; color: #8b8072; }
+
 /* avisos en el centro de la pantalla (dom.js, aviso): los dados se leen sin abrir el registro */
 .avisos { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 80; width: min(92vw, 420px);
   display: flex; flex-direction: column; gap: 8px; pointer-events: none; }

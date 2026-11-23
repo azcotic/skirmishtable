@@ -564,6 +564,25 @@ export const T = {
     irMesa: 'Ir a la mesa',
   },
 
+  // Repetición de mando (ardid de tiroteo) y combate con decisiones (src/ui/tirada.js)
+  repeticion: {
+    ataque: 'Repetición de mando · ataque',
+    defensa: 'Repetición de mando · defensa',
+    combate: 'Repetición de mando · combate',
+    explica: pm => `Puedes repetir uno de tus dados fallados por 1 ${PM} (tienes ${pm}). Toca el dado que quieres repetir.`,
+    noUsar: 'No usar',
+    dadoAria: (v, ok) => `${v}${ok ? ', éxito' : ', fallo: repetir'}`,
+    log: (equipo, antes, despues) => `<b>${equipo}</b> usa Repetición de mando (−1 ${PM}): repite un ${antes} y saca un ${despues}.`,
+  },
+  combateInt: {
+    titulo: 'Combate',
+    turno: n => `Turno de ${n}: elige qué hacer con uno de tus éxitos.`,
+    exitos: (c, dc, n, dn) => `${c} ${c === 1 ? 'crítico' : 'críticos'} (${dc} daño) · ${n} ${n === 1 ? 'normal' : 'normales'} (${dn} daño)`,
+    golpe: (con, d) => `💥 Golpear con un ${con === 'crit' ? 'crítico' : 'normal'} (${d} de daño)`,
+    bloqueo: (con, contra) => `🛡 Bloquear su ${contra === 'crit' ? 'crítico' : 'normal'} con tu ${con === 'crit' ? 'crítico' : 'normal'}`,
+    nota: 'Se turnan, empezando por el atacante. Un normal bloquea un normal; un crítico bloquea cualquiera (contra un arma Brutal solo se bloquea con críticos).',
+  },
+
   // Reaccionar (src/ui/reaccion.js)
   reaccion: {
     boton: `${G.reaccionar.es}`,
