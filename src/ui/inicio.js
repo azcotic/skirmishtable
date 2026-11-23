@@ -33,7 +33,7 @@ import { OPS, rosterInit } from '../engine/world.js';
 import { agenteDeMuestra, comandoPorId, eleccionesDe, modelosPara, pesoAgente, plantillaDefs, puedeAnadir, seleccionesMax,
   validarComando } from '../data/teams/index.js';
 import { abrirFicha } from './ficha.js';
-import { ARDID, dadosGuardados, guardarDestino, quitarDestino } from './ardides.js';
+import { ARDID, DOCTRINAS, dadosGuardados, doctrina, elegirDoctrina, guardarDestino, quitarDestino } from './ardides.js';
 import { d6 } from '../engine/dice.js';
 import { gradoActual, puntuarKillOp, reiniciarPuntos } from './ops.js';
 import { setPick } from '../view3d/units.js';
@@ -218,8 +218,12 @@ function contenido() {
         // qué hace (si lo sabemos) y, para El destino es mi arma, los dados que guardó
         const desc = `${T.ardidDesc[n] ? esc(T.ardidDesc[n]) + "<br>" : ""}${usado ? E.ardidUsado : E.ardidCoste}` +
           (usado && n === ARDID.destino ? ` · ${T.destino.guardados(dadosGuardados(lado))}` : "");
-        return opcion("ardid:" + n, esc(n), desc,
+        const op = opcion("ardid:" + n, esc(n), desc,
           { activa: usado, deshabilitada: !mio || (!usado && !puedeUsarArdid(tray.cp, tray.ardides || [[], []], lado, n)) });
+        // Doctrina de combate: una vez usado, se elige la doctrina
+        if (!(usado && n === ARDID.doctrina)) return op;
+        return op + `<div class="pant-grupo"><h3>${T.doctrinas.titulo}</h3>` +
+          DOCTRINAS.map(d => opcion("doc:" + d, esc(T.doctrinas[d]), "", { activa: doctrina(lado) === d, deshabilitada: !mio })).join("") + "</div>";
       }).join("");
       const ultimo = paso === "ardidesB";
       return { titulo: `${E.titulo(tray.tp)} · ${E.ardidesTitulo}`,
@@ -315,6 +319,13 @@ function elegir(v) {
       return fijarIniciativa(+v.slice(3));
     case "ardidesA": case "ardidesB":
       if (v.startsWith("ardid:")) return alternarArdid(ordenArdides[paso === "ardidesA" ? 0 : 1], v.slice(6));
+      if (v.startsWith("doc:")) {
+        const lado = ordenArdides[paso === "ardidesA" ? 0 : 1];
+        if (!mayControl({ team: lado })) return;
+        snapshot(); elegirDoctrina(lado, v.slice(4));
+        logLine(T.doctrinas.log(TEAMNAME[lado], T.doctrinas[v.slice(4)].split(":")[0].toLowerCase()));
+        renderAll(); return render();
+      }
       break;
     case "ardidesT":
       if (v.startsWith("ardidT:")) return alternarArdid(ladoTiroteo, v.slice(7), "ardidesT");
@@ -327,6 +338,7 @@ export function abrirFaseEstrategia() {
   if (!el) return;
   tirada = null;
   tray.ardides = [[], []];
+  tray.doctrina = [null, null];
   paso = "iniciativa"; pila.length = 0;
   el.hidden = false;
   render();

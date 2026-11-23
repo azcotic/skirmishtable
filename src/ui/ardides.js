@@ -13,12 +13,19 @@
  *   ataque de una secuencia (tuyo o del rival), uno por secuencia. Si sumaban menos de 9, al usar
  *   uno se descarta el otro. Los que queden se descartan al final del punto de inflexión.
  *
- * Los tres primeros cambian el arma con la que se tira (ajustesArma, src/engine/dice.js): los dos
+ * Ángeles de la Muerte:
+ * - Doctrina de combate: se elige una doctrina (tray.doctrina[bando]); sus armas tienen Equilibrada
+ *   al disparar a más de 6″ (devastadora), a 6″ o menos (táctica) o al combatir (asalto).
+ * - Y no conocerán el miedo: sus agentes lesionados no empeoran Impactar ni Movimiento.
+ * - Indomitus: si les disparan y sacan dos fallos o más en defensa, uno pasa a éxito normal.
+ * - Tácticas flexibles: cambia la táctica de capítulo secundaria (pendiente: aún no hay tácticas).
+ *
+ * Los tres primeros del Aquelarre cambian el arma con la que se tira (ajustesArma, src/engine/dice.js): los dos
  * navegadores de una partida en línea los aplican igual. El destino pide una decisión a mitad de
  * tirada: solo fuera de línea, como la Repetición de mando.
  */
 import { CTRL } from '../config.js';
-import { ajustesArma } from '../engine/dice.js';
+import { ajustesArma, ajustesDefensa, ignoraLesion } from '../engine/dice.js';
 import { KINDS, OPS } from '../engine/world.js';
 import { opGap } from '../engine/geometry.js';
 import { sightAnalysis } from '../engine/sight.js';
@@ -28,7 +35,12 @@ export const ARDID = {
   destino: 'El destino es mi arma',
   hermandad: 'Hermandad de hechiceros',
   rebano: 'Rebaño salvaje',
+  doctrina: 'Doctrina de combate',
+  miedo: 'Y no conocerán el miedo',
+  flexibles: 'Tácticas flexibles',
+  indomitus: 'Indomitus',
 };
+export const DOCTRINAS = ['devastadora', 'tactica', 'asalto'];
 
 // el marcador (panels.js lo presta al cargar: así no hay ciclo de módulos)
 let tray = null;
@@ -37,6 +49,7 @@ export const conectarArdides = t => { tray = t; };
 const activo = (s, nombre) => !!(tray && tray.ardides && (tray.ardides[s] || []).includes(nombre));
 const perfil = op => (op && KINDS[op.kind]) || {};
 const aquelarre = op => perfil(op).comando === '3348897103';
+const angeles = op => perfil(op).comando === '2272196183';
 const es = (op, palabra) => (perfil(op).palabras || []).includes(palabra);
 const amigos = op => OPS.filter(o => o.alive && o.deployed !== false && o.team === op.team && o.id !== op.id);
 const tiene = (w, r) => w.rules.some(x => x === r || x.startsWith(r.replace(/ \d+$/, '') + ' '));
@@ -54,6 +67,11 @@ ajustesArma.push((w, a, b, modo) => {
     const otro = amigos(a).some(o => es(o, 'hechicero') && opGap(o, a) <= 9 + 1e-9);
     anadir(otro ? 'Ceaseless' : 'Balanced');
   }
+  if (a && angeles(a) && activo(a.team, ARDID.doctrina)) {
+    const d = doctrina(a.team), lejos = b && opGap(a, b) > 6 + 1e-9;
+    if ((modo === 'disparo' && b && (d === 'devastadora' ? lejos : d === 'tactica' ? !lejos : false))
+      || (modo === 'combate' && d === 'asalto')) anadir('Balanced');
+  }
   if (modo === 'combate' && a && aquelarre(a) && es(a, 'tzaangor') && activo(a.team, ARDID.rebano) && w.type === 'M') {
     anadir('Accurate 1');
     const asistido = b && amigos(a).some(o => aquelarre(o) && opGap(o, b) <= CTRL + 1e-9);
@@ -62,6 +80,20 @@ ajustesArma.push((w, a, b, modo) => {
     if (asistido || hechicero) anadir('Severe');
   }
   return x || w;
+});
+
+// Doctrina de combate: la elegida por el bando (devastadora por defecto)
+export const doctrina = s => (tray && tray.doctrina && tray.doctrina[s]) || 'devastadora';
+export function elegirDoctrina(s, d) { tray.doctrina = tray.doctrina || [null, null]; tray.doctrina[s] = d; }
+
+// Y no conocerán el miedo
+ignoraLesion.push(op => angeles(op) && activo(op.team, ARDID.miedo));
+
+// Indomitus: dos fallos o más en la defensa -> uno pasa a éxito normal
+ajustesDefensa.push((dfn, b, w) => {
+  if (!b || !angeles(b) || !activo(b.team, ARDID.indomitus) || !w || w.type !== 'R') return null;
+  const fallos = (dfn.dice || []).filter(v => v !== 6 && (v === 1 || v < b.save)).length;
+  return fallos >= 2 ? { norm: dfn.norm + 1, nota: 'indomitus' } : null;
 });
 
 /* ---------- El destino es mi arma ---------- */

@@ -185,6 +185,8 @@ export function cleanTray(t, d) {
     const x = t.destino[i];
     return x && Array.isArray(x.dados) ? { dados: x.dados.filter(v => Number.isInteger(v) && v >= 1 && v <= 6).slice(0, 2), bajo: !!x.bajo } : null;
   });
+  // Doctrina de combate (Ángeles de la Muerte): la doctrina elegida por cada bando
+  if (Array.isArray(t.doctrina)) out.doctrina = [0, 1].map(i => ["devastadora", "tactica", "asalto"].includes(t.doctrina[i]) ? t.doctrina[i] : null);
   for (const clave of ["ardides", "ardidesT"])   // de estrategia y de tiroteo
     if (Array.isArray(t[clave]))
       out[clave] = [0, 1].map(i => Array.isArray(t[clave][i]) ? t[clave][i].filter(x => typeof x === "string").slice(0, 8).map(x => x.slice(0, 60)) : []);

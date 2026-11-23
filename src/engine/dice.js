@@ -110,9 +110,14 @@ export function bloquear(aN, aC, dN, dC, dmgN, dmgC) {
 }
 
 // Impactar: 1 peor si está lesionado o tiene una ficha de Quemar mente (no se acumulan)
-export function effHit(op, w) { return Math.min(6, w.hit + (isInjured(op) || op.quemarMente ? 1 : 0)); }
+export function effHit(op, w) { return Math.min(6, w.hit + (penalizaLesion(op) || op.quemarMente ? 1 : 0)); }
 export function isInjured(op) { return op.wounds < op.maxW/2; }
-export function effMove(op) { return isInjured(op) ? Math.max(4, op.move-2) : op.move; }
+export function effMove(op) { return penalizaLesion(op) ? Math.max(4, op.move-2) : op.move; }
+// Reglas que hacen ignorar los cambios por estar lesionado (p. ej. un ardid): (op) => true si lo ignora
+export const ignoraLesion = [];
+export const penalizaLesion = op => isInjured(op) && !ignoraLesion.some(f => f(op));
+// Reglas que cambian la defensa ya tirada (p. ej. un ardid): (dfn, defensor, w) => dfn nueva o null
+export const ajustesDefensa = [];
 
 /* ---------- Shoot ---------- */
 // One shot, `what` = {by, at, w: weapon key, acc: Accurate dice, obsc: obscured, cover}:
@@ -172,6 +177,7 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
     ? { ...clasificarDefensa(dfnDados, b.save, cover), dice: dfnDados, cover }
     : rollDefence(b.save, cover, die, Math.max(0, 3 - pen));
   if (dfn.cover) notes.push("cover save banked");
+  for (const f of ajustesDefensa) { const d = f(dfn, b, w); if (d) { Object.assign(dfn, d); if (d.nota) notes.push(d.nota); } }
   const rest = bloquear(aNorm, aCrit, dfn.norm, dfn.crit, w.dmgN, w.dmgC);
   let selfDmg = 0, hotV = null;
   if (regla(R, "Hot") && hotDado !== false) {   // tras disparar: 1D6; si sale menos que Impactar, el tirador recibe el doble

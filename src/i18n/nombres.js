@@ -59,7 +59,12 @@ const ARDIDES_AD = {
   estrategia: ['Protección etérea', 'El destino es mi arma', 'Hermandad de hechiceros', 'Rebaño salvaje'],
   tiroteo: ['Todo es polvo', 'Plan caprichoso', 'Cábala psíquica', 'Rebaño mutante'],
 };
+const ARDIDES_AM = {
+  estrategia: ['Doctrina de combate', 'Y no conocerán el miedo', 'Tácticas flexibles', 'Indomitus'],
+  tiroteo: [],
+};
 export const ARDIDES = {
+  '2272196183': ARDIDES_AM,   // Ángeles de la Muerte
   '3352828814': ARDIDES_GN,   // Garra Némesis
   '3348897103': ARDIDES_AD,   // Aquelarre Disforme
   '3352921015': ARDIDES_AD,   // Aquelarre Disforme (modelos de Space Marine 2)

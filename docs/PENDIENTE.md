@@ -4,41 +4,32 @@ Lo que falta, por prioridad. Actualizado el 23/11/2026. El plan general está en
 
 ## 1. Ángeles de la Muerte (Angels of Death): el equipo base
 
-Pasa a ser el equipo principal de la app.
+Pasa a ser el equipo principal de la app. Modelos: los azules (Ultramarines, mod `2272196183`).
 
-**Modelos 3D**
-- [ ] Elegir el mod de Steam. Candidatos (todos traen los 9 tipos de agente):
-  - `3357527933` "KT24 - Angels of Death": el más usado (~970 suscriptores). El Capitán viene como paquete de Unity, no como OBJ.
-  - `3421573143` "Lamenters AoD Angels of Death Kill Team": todo en OBJ, con 2 o más variantes de cada agente. Esquema de color de los Lamenters.
-  - `3353230106` "FS Angels of Death": todo en paquetes de Unity.
-- [ ] `scripts/tts-teams.mjs`: aceptar nombres con el formato `{14/14} Nombre` y `E {14/14} Nombre`. Añadir el id elegido y regenerar `src/data/tts-teams.js` (`npm run tts:teams`).
-- [ ] Nombres en español de los agentes en `src/i18n/nombres.js`.
-
-**Datos del equipo** (`src/data/teams/angeles-muerte.js`)
-- [ ] Fichas de datos de los 9 agentes: atributos y armas. Faltan las fotos de las fichas.
-- [ ] Composición, según la hoja del equipo:
-  - 1 líder: Sargento Intercesor de Asalto, Sargento Intercesor o Capitán Marine Espacial.
-  - 5 agentes de la lista: Granadero Intercesor de Asalto, Combatiente Intercesor de Asalto, Francotirador Eliminador, Tirador Intercesor Pesado, Tirador Intercesor y Combatiente Intercesor.
-  - Cada agente solo una vez, salvo los combatientes.
-- [ ] Opciones de arma como elecciones de facción:
-  - Sargentos: una opción de cada categoría.
-  - Tirador Intercesor: lanzagranadas auxiliar más un rifle bólter.
-  - Combatiente Intercesor: rifle bólter automático, rifle bólter o rifle bólter silencio, cada uno con puños.
-- [ ] La etiqueta "arma bólter": cualquier arma a distancia con "bólter" en el nombre. Algunas reglas del equipo la usan.
-- [ ] Reglas de facción y ardides. Faltan las fotos.
-- [ ] Tres configuraciones de ejemplo.
+- [x] Fichas de los 9 agentes (`src/data/teams/angeles-muerte.js`), revisadas contra las fichas.
+- [x] Composición: exactamente un líder y 5 agentes; cada uno una vez salvo los combatientes.
+- [x] Opciones de arma de los Sargentos, el Tirador Intercesor y el Combatiente Intercesor.
+- [x] Arma bólter y regla Astartes (dos Disparar con al menos un arma bólter; +1 PA con la misma arma pesada).
+- [x] Ardides de estrategia: Doctrina de combate, Y no conocerán el miedo e Indomitus.
+- [ ] Tácticas de capítulo (primaria y secundaria, 8 opciones) y el ardid Tácticas flexibles, que depende de ellas.
+- [ ] Ardides de tiroteo. Faltan las fotos.
+- [ ] Reglas de cada ficha: Líder heroico y Aura de hierro (Capitán), Guerra según las doctrinas y
+      Veterano del Capítulo (sargentos), Granadero (granadas con +1 a Impactar), Capa de camuflaje y
+      Óptica (Francotirador).
+- [ ] Color del capítulo: que cada jugador elija el color, girando el tono azul de las texturas.
+- [ ] Validar en el teléfono que los modelos azules se vean bien.
 
 ## 2. Reglas generales
 
 - [x] Ardides de estrategia del Aquelarre Disforme: descripción y efecto.
-- [ ] Ardides de tiroteo (más adelante, por decisión): el botón está oculto; el código de la pantalla sigue en `src/ui/inicio.js` (`abrirArdidesTiroteo`).
-- [ ] Ardides de estrategia de los demás equipos.
+- [ ] Ardides de tiroteo: el botón se muestra; se eligen y cuestan PM, pero aún no tienen efecto.
 - [ ] Ponerse en guardia, acciones psíquicas y acciones de misión.
-- [ ] Misiones: operación crítica y táctica, y marcadores de objetivo. Hoy solo puntúa sola la operación de bajas.
+- [ ] Misiones: operación crítica y táctica, y puntos por objetivos. Hoy solo puntúa sola la operación de bajas.
 - [ ] Vuelo inmaterial: no impedir atravesar una escotilla abierta.
 - [ ] Apéndice mutante y Maestro del Immaterium: se pueden elegir pero no tienen efecto (dependen de misiones y acciones psíquicas).
 - [ ] Opciones de arma con límite por comando (por ejemplo, una pistola de llamas disformes en el Aquelarre Disforme).
 - [ ] El modelo 3D según el arma elegida.
+- [ ] `tests/unit/link.test.js` falla desde antes de estos cambios (ida y vuelta de un enlace de partida).
 
 ## 3. IA
 

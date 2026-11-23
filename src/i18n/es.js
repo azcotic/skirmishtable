@@ -683,6 +683,17 @@ export const T = {
     'El destino es mi arma': 'Tira 2D6 y guárdalos. En el tiroteo de este PI, puedes poner uno en lugar de un dado de ataque recién tirado (tuyo o del rival), uno por secuencia; no se puede repetir. Si sumaban menos de 9, al usar uno se descarta el otro.',
     'Hermandad de hechiceros': 'Las armas psíquicas de tus Hechiceros tienen Equilibrada, o Incesante si hay otro Hechicero amigo a 9″ o menos.',
     'Rebaño salvaje': 'Las armas de combate de tus Tzaangor tienen Certera 1; y también Severa si un amigo los asiste o combaten a 6″ o menos de un Hechicero amigo que los vea.',
+    'Doctrina de combate': 'Elige una doctrina: tus agentes tienen Equilibrada al disparar a más de 6″ (devastadora), a 6″ o menos (táctica) o al combatir (asalto).',
+    'Y no conocerán el miedo': 'Tus agentes lesionados no empeoran sus atributos ni los de sus armas.',
+    'Tácticas flexibles': 'Cambia tu táctica de capítulo secundaria hasta el final del punto de inflexión. (Aún no tiene efecto en la app: faltan las tácticas de capítulo.)',
+    'Indomitus': 'Si disparan a uno de tus agentes y sacas dos fallos o más en defensa, uno cuenta como éxito normal.',
+  },
+  doctrinas: {
+    titulo: 'Doctrina elegida',
+    devastadora: 'Devastadora: disparar a más de 6″',
+    tactica: 'Táctica: disparar a 6″ o menos',
+    asalto: 'Asalto: combatir',
+    log: (equipo, d) => `${equipo} elige la doctrina ${d}.`,
   },
   destino: {
     titulo: 'El destino es mi arma',
