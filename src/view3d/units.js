@@ -150,6 +150,13 @@ export function syncBases() {
   }
   return any;
 }
+// La plantilla 3D de un modelo del catálogo (para el editor de encuadres): undefined mientras carga,
+// null si no se pudo descargar. Pide la carga si hace falta.
+export function plantillaDe(model) {
+  const key = keyOf(model);
+  if (!(key in ready)) { load(model); return undefined; }
+  return ready[key];
+}
 // La imagen de la miniatura de un agente para su ficha 2D (dataURL), o null mientras carga el
 // modelo o si no hay (la ficha muestra entonces su número). Ver retratos.js.
 export function retrato(op) {
@@ -157,7 +164,7 @@ export function retrato(op) {
   if (!model) return null;
   const key = keyOf(model);
   if (!(key in ready)) { load(model); return null; }
-  return ready[key] ? retratoDe(key, ready[key]) : null;
+  return ready[key] ? retratoDe(key, ready[key], { comando: minis.sides[op.team].team, nombre: model.name }) : null;
 }
 // The miniature for an operative, or null while it loads / when its side has no team.
 // Expended operatives' miniatures lose most of their colour. Every part gets its own material

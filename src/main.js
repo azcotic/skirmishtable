@@ -67,6 +67,15 @@ wireAcciones(() => { state.sel = null; state.target = null; state.lastShot = nul
 onRetrato(() => renderAll());      // un retrato de ficha 2D terminó de generarse
 onMinisChange(bases => { if (bases) { renderAll(); renderMinis(); } });   // a model measured: rings, reach and fit follow its base
 
+/* ---------- pantalla de encuadres de las fichas 2D (#/encuadres) ---------- */
+// Solo con el servidor de desarrollo: en el sitio publicado no existe (el archivo de encuadres lo
+// escribe el servidor de Vite, scripts/guardar-encuadres-plugin.js).
+const rutaEncuadres = () => import.meta.env.DEV && /^#\/?encuadres/.test(location.hash);
+const revisarRuta = () => { if (rutaEncuadres()) import('./ui/encuadres.js').then(m => m.abrirEncuadres()); };
+if (import.meta.env.DEV) window.addEventListener('hashchange', () => {
+  if (rutaEncuadres()) revisarRuta(); else import('./ui/encuadres.js').then(m => m.cerrarEncuadres());
+});
+
 /* ---------- go ---------- */
 world.initMaps();
 useRuleset("killteam", false);
@@ -87,4 +96,5 @@ if (window.THREE && THREE.OrbitControls) table3d.setView(!despliegueActivo());
 
 // Debug/test handle: live views of the engine modules and UI state, for the browser
 // console and the Playwright tests (e.g. skirmishtable.movement.findPath(...)).
+revisarRuta();                  // si la dirección es #/encuadres (solo desarrollo)
 window.skirmishtable = { world, grid, movement, sight, rules, table3d, state, loadMap, useRuleset, renderAll, diceTrays, minis, teams: TTS_TEAMS, tray, control, moverA };

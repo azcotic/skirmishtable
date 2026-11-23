@@ -47,6 +47,7 @@ Pasa a ser el equipo principal de la app. Modelos: los azules (Ultramarines, mod
 
 ## 5. Interfaz
 
+- [ ] Elegir el encuadre de cada miniatura en `http://localhost:5173/#/encuadres` (solo con el servidor de desarrollo; guarda en `src/data/retrato-encuadres.js`) y subir el archivo. Falta hacerlo con los 3 comandos.
 - [x] Fichas 2D con la imagen de cada miniatura, generadas desde el modelo 3D (`src/view3d/retratos.js`; falta verlas en pantalla con modelos reales y en el teléfono).
 - [ ] Modo aprendizaje.
 

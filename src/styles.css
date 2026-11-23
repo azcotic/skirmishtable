@@ -705,3 +705,31 @@ dialog.ficha::backdrop { background: rgba(10, 8, 6, .7); }
 .pant-fin-nombre { font-weight: 600; } .pant-fin-nombre small { color: #9a9184; font-weight: 400; }
 .pant-fin-bando span:last-child { font-size: 11px; color: #9a9184; }
 .pant-nota { margin: 4px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #a89a80; }
+
+/* ======================================================================================
+   Pantalla #/encuadres (solo desarrollo): elegir el encuadre del retrato 2D de cada miniatura
+   ====================================================================================== */
+#encuadres { position: fixed; inset: 0; z-index: 9999; background: #14110e; color: #f5e9d8; overflow: auto;
+  padding: calc(8px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom)); }
+#encuadres .enc-barra { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#encuadres h2 { margin: 0; font-size: 18px; }
+#encuadres .enc-ayuda { margin: 6px 0 10px; font-size: 13px; opacity: .85; max-width: 70ch; }
+#encuadres .enc-cuerpo { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+#encuadres .enc-lista { flex: 1 1 200px; max-width: 280px; display: flex; flex-direction: column; gap: 8px; }
+#encuadres select { min-height: 44px; font-size: 15px; }
+#encuadres .enc-agentes { display: flex; flex-direction: column; gap: 4px; }
+#encuadres .enc-ag { min-height: 44px; text-align: left; padding: 6px 10px; border: 1px solid #5a4a36; border-radius: 6px; background: #1b1610; color: inherit; font-size: 14px; }
+#encuadres .enc-ag.hecho { border-color: #6faf82; }
+#encuadres .enc-ag.ahora { background: #3a2a18; border-color: #e8722e; }
+#encuadres .enc-visor { flex: 2 1 320px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+#encuadres .enc-lienzo { position: relative; width: 420px; height: 420px; max-width: 100%; touch-action: none; background: #26301f; border-radius: 8px; overflow: hidden; }
+#encuadres .enc-lienzo canvas { width: 100%; height: 100%; display: block; }
+/* el círculo guía: lo de fuera se oscurece, lo de dentro es lo que saldrá en la ficha */
+#encuadres .enc-guia { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle closest-side at center, transparent 0, transparent calc(100% - 2px), #e8722e calc(100% - 2px), #e8722e 100%, rgba(10, 8, 6, .72) 100%); }
+#encuadres .enc-acciones { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+#encuadres .enc-acciones .mini { min-height: 44px; padding: 0 12px; }
+#encuadres .enc-guardar { background: #24402c; border-color: #6faf82; color: #d8f0dc; }
+#encuadres .enc-ficha { display: inline-flex; width: 64px; height: 64px; border-radius: 50%; overflow: hidden; background: #e8722e; border: 2px solid #e8722e; }
+#encuadres .enc-ficha canvas { width: 100%; height: 100%; }
+#encuadres .enc-estado { min-height: 1.4em; margin: 0; font-size: 13px; color: #d3a04a; }
