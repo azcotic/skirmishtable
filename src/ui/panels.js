@@ -304,7 +304,8 @@ export function renderVerdict() {
       why.push(shot.vantage ? V.cubiertoAventajado(c.id) : V.cubierto(c.id, RULES.cover.range)); }
     else { cls = "v-valid"; why.push(V.limpio); }
     if (shot.accurate) why.push(V.certera(shot.accurate));
-    if (RULES.orders && state.target.order === "conceal" && !c && shot.kind === "clear") why.push(V.ocultoSinCobertura);
+    // un blanco con orden de ocultarse sin cobertura sigue siendo válido (Reglas breves): se dice
+    if (RULES.orders && state.target.order === "conceal" && !c && (shot.kind === "clear" || shot.kind === "obscured")) why.push(V.ocultoSinCobertura);
     if (RULES.cover.voidWithin > 0 && s.gap <= RULES.cover.voidWithin) why.push(V.muyCerca(RULES.cover.voidWithin));
   }
   why.push(V.distancia(s.gap));
