@@ -30,7 +30,9 @@ Pasa a ser el equipo principal de la app.
 
 ## 2. Reglas generales
 
-- [ ] Efectos de los ardides: se eligen y cuestan PM, pero no hacen nada.
+- [x] Ardides de estrategia del Aquelarre Disforme: descripción y efecto.
+- [ ] Ardides de tiroteo (más adelante, por decisión): el botón está oculto; el código de la pantalla sigue en `src/ui/inicio.js` (`abrirArdidesTiroteo`).
+- [ ] Ardides de estrategia de los demás equipos.
 - [ ] Ponerse en guardia, acciones psíquicas y acciones de misión.
 - [ ] Misiones: operación crítica y táctica, y marcadores de objetivo. Hoy solo puntúa sola la operación de bajas.
 - [ ] Vuelo inmaterial: no impedir atravesar una escotilla abierta.

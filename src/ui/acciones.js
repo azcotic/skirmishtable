@@ -12,7 +12,8 @@ import { state } from '../state.js';
 // [id del botón original, clase extra]
 const DEL_AGENTE = [["mv-reposition", "mov"], ["mv-dash", "mov"], ["mv-charge", "mov"], ["ordbtn", ""],
   ["tgtbtn", ""], ["shootbtn", "fuerte"], ["fightbtn", "fuerte"], ["endact", ""]];
-const DE_LA_PARTIDA = [["endtp", ""], ["undo", ""], ["rulerbtn", ""], ["ardidestiroteo", ""], ["iasugerir", "ia"]];
+// ("ardidestiroteo", los ardides de tiroteo, queda fuera hasta que tengan efecto: docs/PENDIENTE.md)
+const DE_LA_PARTIDA = [["endtp", ""], ["undo", ""], ["rulerbtn", ""], ["iasugerir", "ia"]];
 
 let alQuitarSeleccion = () => {};
 // 🪽 volar (Vuelo inmaterial): input.js dice si el agente seleccionado puede y si ya lo eligió
