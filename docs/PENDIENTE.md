@@ -51,6 +51,8 @@ Pasa a ser el equipo principal de la app. Modelos: los azules (Ultramarines, mod
 - [x] Fichas 2D con la imagen de cada miniatura, generadas desde el modelo 3D (`src/view3d/retratos.js`; falta verlas en pantalla con modelos reales y en el teléfono).
 - [ ] Modo aprendizaje.
 
+- [ ] Al recargar en mitad del turno de la computadora, esta no retoma sola su jugada (el resto de la partida sí se conserva).
+
 ## 6. Tests y entrega
 
 - [ ] Ejecutar una vez la suite completa (`npm test`) y los tests de navegador (`npm run test:e2e`).

@@ -14,7 +14,7 @@ import { control } from './ui/control.js';
 import { loadMap, useRuleset, wireControls } from './ui/controls.js';
 import { logLine } from './ui/dom.js';
 import { renderMinis } from './ui/minis.js';
-import { mayControl, mayPlay, maySetUp, net, online, wireNet } from './net/sync.js';
+import { mayControl, mayPlay, maySetUp, net, online, setAlCambiar, wireNet } from './net/sync.js';
 import { diceTrays, wireDice } from './ui/dicetray.js';
 import { wireDiceBox } from './ui/dicebox.js';
 import { wireOps } from './ui/ops.js';
@@ -31,6 +31,7 @@ import { wireAcciones } from './ui/acciones.js';
 import { despliegueActivo, wireDespliegue } from './ui/despliegue.js';
 import { wireVista2D } from './ui/vista2d.js';
 import { wireInicio } from './ui/inicio.js';
+import { programarGuardado, restaurarPartida, wireMenuPartida } from './ui/guardado.js';
 import { wireFicha } from './ui/ficha.js';
 import { wireIA } from './ui/ia.js';
 import { wireReaccion } from './ui/reaccion.js';
@@ -90,6 +91,10 @@ wireStatusCards();
 wireNet();                      // host or join if the address says so (#host= / #room=)
 wireShare();                    // or open a shared snapshot (#game=)
 wireReplay();                   // record this game; or open a replay (#replay=)
+// la partida guardada vuelve al recargar; si no hay (o no se pudo), pantallas de inicio
+setAlCambiar(programarGuardado);
+restaurarPartida();
+wireMenuPartida();
 wireInicio();                   // pantallas de inicio: modo, mapa, comandos, despliegue (si no hay partida en la dirección)
 // la mesa 3D es la vista por defecto, salvo durante el despliegue (se despliega en el mapa 2D)
 if (window.THREE && THREE.OrbitControls) table3d.setView(!despliegueActivo());

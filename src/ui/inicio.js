@@ -41,6 +41,7 @@ import { bandoEnTurno } from './turno.js';
 import { mayControl } from '../net/sync.js';
 
 const KEY = "skirmishtable.inicio";
+export const KEY_PARTIDA = "skirmishtable.partida";   // la partida guardada (src/ui/guardado.js)
 // los comandos de prueba (ids del catálogo de Steam): Garra Némesis y Aquelarre Disforme
 const COMANDOS_PRUEBA = ["3352828814", "3348897103", "2272196183"];   // Garra Némesis, Aquelarre Disforme, Ángeles de la Muerte
 const ORDEN = ["modo", "mapa", "comando0", "plantilla0", "comando1", "plantilla1", "despliegue", "resumen"];
@@ -449,6 +450,7 @@ function aTiroteo() {
 
 // Arma la partida con lo elegido y cierra las pantallas (en línea: antes, la de invitar).
 function empezar() {
+  ultimaEleccion = JSON.parse(JSON.stringify(eleccion)); partidaIniciada = true;   // para Reiniciar y para guardar
   control.ia = eleccion.modo === "ia" ? 1 : null;   // contra la computadora: la IA lleva el comando rival
   setOption("despliegue", eleccion.despliegue);
   setTeam(0, eleccion.comando[0] || null);
@@ -477,6 +479,8 @@ export function abrirInicio() {
   const el = pantalla();
   if (!el) return;
   finMostrado = false;
+  partidaIniciada = false; ultimaEleccion = null;   // el menú principal: la partida anterior se abandona
+  try { localStorage.removeItem(KEY_PARTIDA); } catch (e) {}
   Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], tacticas: [[null, null], [null, null]], despliegue: null });
   paso = "modo"; pila.length = 0;
   el.hidden = false;
@@ -521,8 +525,43 @@ export function abrirListo() {
   render();
 }
 
+/* ---------- la partida en curso (guardado.js: recargar, Reiniciar y Salir) ---------- */
+let partidaIniciada = false;
+let ultimaEleccion = null;          // lo elegido en las pantallas de inicio, para Reiniciar
+export const hayPartidaIniciada = () => partidaIniciada;
+export const eleccionDeLaPartida = () => ultimaEleccion;
+export function marcarPartida(e) { partidaIniciada = true; ultimaEleccion = e || null; }
+const PASOS_GUARDABLES = ["iniciativa", "ardidesA", "ardidesB", "ardidesT", "listo"];
+// La pantalla de la fase de estrategia abierta ahora (para volver a ella al recargar), o null
+export function pantallaGuardable() {
+  const el = pantalla();
+  if (!el || el.hidden || !PASOS_GUARDABLES.includes(paso)) return null;
+  return { paso, ordenArdides, ladoTiroteo, tirada };
+}
+export function restaurarPantalla(p) {
+  const el = pantalla();
+  if (!el || !p || !PASOS_GUARDABLES.includes(p.paso)) return;
+  paso = p.paso; pila.length = 0;
+  if (Array.isArray(p.ordenArdides)) ordenArdides = p.ordenArdides;
+  if (p.ladoTiroteo === 0 || p.ladoTiroteo === 1) ladoTiroteo = p.ladoTiroteo;
+  tirada = p.tirada || null;
+  el.hidden = false;
+  render();
+}
+// Reiniciar: la misma configuración, desde el principio
+export function reiniciarPartida() {
+  if (!ultimaEleccion) return abrirInicio();
+  Object.assign(eleccion, JSON.parse(JSON.stringify(ultimaEleccion)));
+  finMostrado = false;
+  empezar();
+  logLine(T.guardado.reiniciada);
+}
+// Salir: al menú principal, olvidando la partida
+export function salirAlMenu() { abrirInicio(); }
+
 // ¿Se muestra al abrir la app?
 export function inicioAlAbrir() {
+  try { if (localStorage.getItem(KEY_PARTIDA)) return false; } catch (e) {}   // hay una partida guardada: main.js la restaura
   if (typeof location !== "undefined" && (/#(room|host|game|replay)=/.test(location.hash) || /[?&]deploy=/.test(location.search))) return false;
   try { if (localStorage.getItem(KEY) === "omitir") return false; } catch (e) {}
   return true;

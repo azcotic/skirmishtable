@@ -733,3 +733,9 @@ dialog.ficha::backdrop { background: rgba(10, 8, 6, .7); }
 #encuadres .enc-ficha { display: inline-flex; width: 64px; height: 64px; border-radius: 50%; overflow: hidden; background: #e8722e; border: 2px solid #e8722e; }
 #encuadres .enc-ficha canvas { width: 100%; height: 100%; }
 #encuadres .enc-estado { min-height: 1.4em; margin: 0; font-size: 13px; color: #d3a04a; }
+
+/* menú ⚙: Reiniciar partida y Salir */
+#options .optpartida { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; padding-bottom: 12px; border-bottom: 1px solid #2e2921; }
+#options .optpartida:has(> [hidden]:only-child), #options .optpartida:not(:has(> :not([hidden]))) { display: none; }
+#options .optpartida .mini { min-height: 44px; flex: 1 1 160px; }
+#options .optpartida [hidden] { display: none; }

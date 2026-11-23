@@ -701,6 +701,17 @@ export const T = {
       no: 'No, guardarla para después',
     },
   },
+  // la partida guardada, Reiniciar y Salir (src/ui/guardado.js, menú ⚙)
+  guardado: {
+    reiniciar: '↻ Reiniciar partida',
+    reiniciarTitulo: 'Empieza otra vez con el mismo comando, mapa y configuración',
+    salir: '⏏ Salir al menú principal',
+    salirTitulo: 'Abandona esta partida y vuelve al menú principal',
+    confirmarReiniciar: '¿Reiniciar la partida? Se pierde el avance y se empieza de nuevo con la misma configuración.',
+    confirmarSalir: '¿Salir al menú principal? Se pierde la partida en curso.',
+    reiniciada: '<b>Partida reiniciada</b> con la misma configuración.',
+    restaurada: 'Se recuperó tu partida tal como la dejaste.',
+  },
   // pantalla #/encuadres: elegir el encuadre del retrato 2D de cada miniatura (src/ui/encuadres.js)
   encuadres: {
     titulo: 'Encuadres de las fichas 2D',

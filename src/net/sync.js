@@ -141,8 +141,12 @@ function addLines(lines) {
 // the replay recorder looks for a new step).
 // One action can render several times (Shoot fills two dice trays, then the wounds), so
 // the send waits for the end of the action: everything it did goes as one update.
+// quien quiera enterarse de cada cambio de la mesa (el guardado de la partida, src/ui/guardado.js)
+let alCambiar = () => {};
+export const setAlCambiar = fn => { alCambiar = fn; };
 export function pump() {
   noteChange();
+  alCambiar();
   if (!online() || applying || queued) return;
   queued = true;
   queueMicrotask(flush);
