@@ -751,6 +751,7 @@ export const T = {
     autoPuesto: 'Encuadre automático puesto (aún no se guardó).',
     borrado: 'Guardado borrado: vuelve a usarse el automático.',
     guardado: n => `Guardado el encuadre de ${n} en src/data/retrato-encuadres.js.`,
+    sinArchivo: 'No se pudo leer el archivo de encuadres (¿el servidor de desarrollo está corriendo en este equipo?). Lo que guardes no se escribirá.',
     falloArchivo: 'No se pudo escribir el archivo (¿está corriendo el servidor de desarrollo en este equipo?).',
   },
   sigilosos: {

@@ -11,7 +11,7 @@ import { T } from '../i18n/es.js';
 import { TTS_TEAMS } from '../data/tts-teams.js';
 import { comandoPorId } from '../data/teams/index.js';
 import { plantillaDe } from '../view3d/units.js';
-import { FOV, borrarEncuadre, encuadreAuto, encuadreDeCamara, encuadreGuardado, frenteAuto, guardarEncuadre, ponerCamara,
+import { FOV, borrarEncuadre, cargarEncuadresDelArchivo, encuadreAuto, encuadreDeCamara, encuadreGuardado, frenteAuto, guardarEncuadre, ponerCamara,
   prepararEscena, texturasListas } from '../view3d/retratos.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -78,8 +78,13 @@ export function abrirEncuadres() {
   $("encborrar").onclick = async () => { if (!nombre) return; const ok = await borrarEncuadre(equipo, nombre); pintarLista(); estado(ok ? E.borrado : E.falloArchivo); };
   $("encsig").onclick = () => { const n = nombres(equipo), i = n.indexOf(nombre); seleccionar(n[(i + 1) % n.length]); };
   window.addEventListener("resize", ajustar);
-  pintarLista();
-  if (equipo) seleccionar(nombres(equipo)[0]);
+  // lo guardado de verdad (el archivo), no la copia con que se cargó la página
+  cargarEncuadresDelArchivo().then(ok => {
+    if (!abierto) return;
+    pintarLista();
+    if (!ok) { estado(T.encuadres.sinArchivo); return; }   // sin el archivo no se puede guardar: no tiene sentido empezar
+    if (equipo) seleccionar(nombres(equipo)[0]);
+  });
 }
 
 export function cerrarEncuadres() {

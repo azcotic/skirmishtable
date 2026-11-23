@@ -27,39 +27,44 @@ export const onRetrato = fn => oyentes.push(fn);
 const hash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return "r" + (h >>> 0).toString(36) + s.length; };
 
 /* ---------- encuadres guardados ---------- */
+// Lo que dice el archivo AHORA (el editor lo pide al abrirse al servidor de desarrollo). Sin esto, la página usa la
+// copia con que se cargó, que puede estar desactualizada.
+let delArchivo = null;
+export async function cargarEncuadresDelArchivo() {
+  try {
+    const r = await fetch("/__encuadres", { cache: "no-store" });
+    if (!r.ok) return false;
+    delArchivo = await r.json();
+    for (const c of Object.keys(sesion)) delete sesion[c];   // lo que había en memoria ya está en el archivo
+    return true;
+  } catch (e) { return false; }
+}
 // El encuadre guardado de un agente (el de esta sesión del editor si lo hay, si no el del archivo); o null
 export function encuadreGuardado(comando, nombre) {
-  const e = (sesion[comando] || {})[nombre] !== undefined ? sesion[comando][nombre] : (ENCUADRES[comando] || {})[nombre];
+  const base = delArchivo || ENCUADRES;
+  const e = (sesion[comando] || {})[nombre] !== undefined ? sesion[comando][nombre] : (base[comando] || {})[nombre];
   return e && Array.isArray(e.p) && Array.isArray(e.t) && e.p.length === 3 && e.t.length === 3 ? e : null;
 }
-// Guarda el encuadre en memoria y en el archivo del proyecto (solo el servidor de desarrollo lo escribe).
-// Devuelve una promesa: true si quedó escrito en el archivo.
 // El frente de una miniatura en grados (0 = +z, que es lo que se supone si no se fijó): la mesa 3D la gira
 // para que ese lado mire hacia donde apunta su línea de visión
 export function frenteDe(comando, nombre) {
   const e = encuadreGuardado(comando, nombre);
   return e && Number.isFinite(e.g) ? e.g : 0;
 }
+// Guarda UN encuadre en memoria y en el archivo del proyecto (solo el servidor de desarrollo lo escribe, y lo
+// combina con lo que el archivo tiene en ese momento). Devuelve una promesa: true si quedó escrito.
 export function guardarEncuadre(comando, nombre, enc) {
-  (sesion[comando] = sesion[comando] || {})[nombre] = { p: enc.p.map(redondear), t: enc.t.map(redondear), ...(Number.isFinite(enc.g) ? { g: redondear(enc.g) } : {}) };
-  return escribirArchivo();
+  const e = { p: enc.p.map(redondear), t: enc.t.map(redondear), ...(Number.isFinite(enc.g) ? { g: redondear(enc.g) } : {}) };
+  (sesion[comando] = sesion[comando] || {})[nombre] = e;
+  return enviar(comando, nombre, e);
 }
 export function borrarEncuadre(comando, nombre) {
   (sesion[comando] = sesion[comando] || {})[nombre] = null;   // null: borrado en esta sesión
-  return escribirArchivo();
+  return enviar(comando, nombre, null);
 }
-// Todos los encuadres (el archivo con lo de esta sesión encima), sin los borrados
-function todos() {
-  const out = JSON.parse(JSON.stringify(ENCUADRES));
-  for (const c of Object.keys(sesion)) for (const [n, e] of Object.entries(sesion[c])) {
-    if (e) (out[c] = out[c] || {})[n] = e; else if (out[c]) delete out[c][n];
-  }
-  for (const c of Object.keys(out)) if (!Object.keys(out[c]).length) delete out[c];
-  return out;
-}
-async function escribirArchivo() {
+async function enviar(comando, nombre, enc) {
   try {
-    const r = await fetch("/__encuadres", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(todos()) });
+    const r = await fetch("/__encuadres", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ comando, nombre, enc }) });
     return r.ok;
   } catch (e) { return false; }
 }
