@@ -20,6 +20,12 @@ function probar(f) {
 }
 // funciones que reciben listas u otros tipos: sus argumentos de ejemplo
 const ARGS = {
+  'orden.boton': ['engage'],
+  'orden.botonFijo': ['conceal'],
+  'orden.titulo': ['engage'],
+  'orden.log': ['A1', 'conceal'],
+  'orden.ayuda': ['A1', 'engage'],
+  'estrategia.logIni': ['Ash', 1, 2, 'Ash', 'Slate'],
   'ficha.reglas': [['Ceaseless', 'Lethal']],
   'mover.contra': [['B1', 'B2']],
   'mover.incluye': [['trepando 2″']],

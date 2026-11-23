@@ -76,6 +76,9 @@ describe('activaciones alternas', () => {
     expect(turnoDeActivacion(ops, 1, null)).toBe(1);
     expect(turnoDeActivacion(ops, 1, 1)).toBe(0);
     ops[0].ready = false;
+    // A1 está usado pero con orden de trabarse: le toca igual, para reaccionar (o pasar)
+    expect(turnoDeActivacion(ops, 1, 1)).toBe(0);
+    ops[0].reacciono = true;            // ya reaccionó en este punto de inflexión: sigue el rival
     expect(turnoDeActivacion(ops, 1, 1)).toBe(1);
     ops[1].ready = ops[2].ready = false;
     expect(turnoDeActivacion(ops, 1, 1)).toBe(null);
