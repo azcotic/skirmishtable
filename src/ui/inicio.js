@@ -32,6 +32,7 @@ import { pmDelPI, puedeUsarArdid, quienDecide, tirarD6, COSTE_ARDID } from '../g
 import { OPS, rosterInit } from '../engine/world.js';
 import { modelosPara, plantillaDefs } from '../data/teams/index.js';
 import { setPick } from '../view3d/units.js';
+import { bandoEnTurno } from './turno.js';
 import { mayControl } from '../net/sync.js';
 
 const KEY = "skirmishtable.inicio";
@@ -44,7 +45,7 @@ let paso = "modo";
 const pila = [];
 let tirada = null;          // fase de estrategia en línea: {dados: [a, b], decide: 0|1|null}
 let ordenArdides = [0, 1];  // quién elige ardides primero (quien tiene la iniciativa)
-const SIN_ATRAS = ["invitar", "listo", "iniciativa", "ardidesA", "ardidesB", "fin"];
+const SIN_ATRAS = ["invitar", "listo", "iniciativa", "ardidesA", "ardidesB", "fin", "ardidesT"];
 const bando = s => { const t = teamOf(s); return t ? `${TEAMNAME[s]} · ${t.name}` : TEAMNAME[s]; };
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -113,6 +114,19 @@ function contenido() {
       const mio = mayControl({ team: tirada.decide });
       return { titulo: `${E.titulo(tray.tp)} · ${E.iniTitulo}`, sub: mio ? E.decide(esc(TEAMNAME[tirada.decide])) : E.esperaDecision(esc(TEAMNAME[tirada.decide])),
         html: dados + opciones(!mio) };
+    }
+    case "ardidesT": {   // ardides de tiroteo: se usan durante la fase de tiroteo
+      const E = T.estrategia, lado = ladoTiroteo, mio = mayControl({ team: lado }) && !esDeLaIA(lado);
+      const t = teamOf(lado), lista = (t && ARDIDES[t.id] && ARDIDES[t.id].tiroteo) || [];
+      const usados = (tray.ardidesT && tray.ardidesT[lado]) || [];
+      const html = (!lista.length ? `<p class="pant-nota">${E.sinArdides}</p>` : lista.map(n => {
+        const usado = usados.includes(n);
+        return opcion("ardidT:" + n, esc(n), usado ? E.ardidUsado : E.ardidCoste,
+          { activa: usado, deshabilitada: !mio || (!usado && !puedeUsarArdid(tray.cp, tray.ardidesT || [[], []], lado, n)) });
+      }).join("")) + `<p class="pant-nota">${E.repeticionNota}</p>`;
+      const otro = control.ia === null ? `<button class="pant-secundario" id="pantotrobando">${E.verOtro(esc(TEAMNAME[1 - lado]))}</button>` : "";
+      return { titulo: `${E.titulo(tray.tp)} · ${E.tiroteoTitulo}`, sub: E.tiroteoSub(esc(bando(lado)), tray.cp[lado]), html,
+        principal: `<button class="pant-jugar" id="pantmesa">${E.volverMesa}</button>${otro}` };
     }
     case "ardidesA": case "ardidesB": {
       const E = T.estrategia, lado = ordenArdides[paso === "ardidesA" ? 0 : 1], mio = mayControl({ team: lado });
@@ -187,6 +201,9 @@ function elegir(v) {
       return fijarIniciativa(+v.slice(3));
     case "ardidesA": case "ardidesB":
       if (v.startsWith("ardid:")) return alternarArdid(ordenArdides[paso === "ardidesA" ? 0 : 1], v.slice(6));
+      break;
+    case "ardidesT":
+      if (v.startsWith("ardidT:")) return alternarArdid(ladoTiroteo, v.slice(7), "ardidesT");
   }
 }
 
@@ -218,19 +235,31 @@ function irArdides(p) {
   ir(p);
 }
 // Usar un ardid (−1 PM) o devolverlo si fue sin querer (+1 PM).
-function alternarArdid(lado, n) {
+// clave: "ardides" (de estrategia) o "ardidesT" (de tiroteo), los usados en este punto de inflexión
+function alternarArdid(lado, n, clave = "ardides") {
   if (!mayControl({ team: lado })) return;
-  tray.ardides = tray.ardides || [[], []];
-  const usados = tray.ardides[lado];
+  tray[clave] = tray[clave] || [[], []];
+  const usados = tray[clave][lado];
   snapshot();
   if (usados.includes(n)) {
     usados.splice(usados.indexOf(n), 1); tray.cp[lado] += COSTE_ARDID;
     logLine(T.estrategia.logDevuelto(TEAMNAME[lado], n));
-  } else if (puedeUsarArdid(tray.cp, tray.ardides, lado, n)) {
+  } else if (puedeUsarArdid(tray.cp, tray[clave], lado, n)) {
     usados.push(n); tray.cp[lado] -= COSTE_ARDID;
     logLine(T.estrategia.logArdid(TEAMNAME[lado], n));
   }
   renderAll();
+  render();
+}
+// Ardides de tiroteo: la pantalla del bando que juega (contra la computadora, siempre el tuyo)
+let ladoTiroteo = 0;
+export function abrirArdidesTiroteo() {
+  const el = pantalla();
+  if (!el) return;
+  const enTurno = bandoEnTurno();
+  ladoTiroteo = control.ia !== null ? 1 - control.ia : enTurno !== null ? enTurno : 0;
+  paso = "ardidesT"; pila.length = 0;
+  el.hidden = false;
   render();
 }
 function aTiroteo() {
@@ -325,6 +354,7 @@ export function wireInicio() {
     if (b.id === "pantjugar") return empezar();
     if (b.id === "pantmesa") return cerrar();
     if (b.id === "pantnueva") return abrirInicio();
+    if (b.id === "pantotrobando") { ladoTiroteo = 1 - ladoTiroteo; return render(); }
     if (b.id === "pantempezar") {                  // confirmado: empieza el primer punto de inflexión
       logLine(T.despliegue.termina); abrirFaseEstrategia(); return;
     }
@@ -348,6 +378,8 @@ export function wireInicio() {
   let omitir = false;
   try { omitir = localStorage.getItem(KEY) === "omitir"; } catch (e) {}
   if (!omitir) setAlNuevoPI(abrirFaseEstrategia);
+  const at = document.getElementById("ardidestiroteo");
+  if (at) at.onclick = abrirArdidesTiroteo;
   const nueva = document.getElementById("nuevapartida");
   if (nueva) nueva.onclick = abrirInicio;
   if (inicioAlAbrir()) abrirInicio();

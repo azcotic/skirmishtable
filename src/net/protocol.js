@@ -159,8 +159,9 @@ export function cleanTray(t, d) {
   const out = { tp: num(t.tp, d.tp), cp: pair(t.cp, d.cp), vp: pair(t.vp, d.vp) };
   // fase de estrategia: quién tiene la iniciativa y los ardides usados en este punto de inflexión
   if (t.ini === 0 || t.ini === 1) out.ini = t.ini;
-  if (Array.isArray(t.ardides))
-    out.ardides = [0, 1].map(i => Array.isArray(t.ardides[i]) ? t.ardides[i].filter(x => typeof x === "string").slice(0, 8).map(x => x.slice(0, 60)) : []);
+  for (const clave of ["ardides", "ardidesT"])   // de estrategia y de tiroteo
+    if (Array.isArray(t[clave]))
+      out[clave] = [0, 1].map(i => Array.isArray(t[clave][i]) ? t[clave][i].filter(x => typeof x === "string").slice(0, 8).map(x => x.slice(0, 60)) : []);
   return out;
 }
 export function cleanMinis(sides, teamIds) {
