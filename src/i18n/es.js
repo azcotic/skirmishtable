@@ -423,6 +423,33 @@ export const T = {
     objetivo: lpa => `${lpa} ${G.lpa.abrev}`,
   },
 
+  // fase de estrategia de cada punto de inflexión (src/ui/inicio.js, src/game/fases.js)
+  estrategia: {
+    titulo: tp => `${G.puntoInflexion.es[0].toUpperCase() + G.puntoInflexion.es.slice(1)} ${tp}`,
+    iniTitulo: 'Iniciativa',
+    iniSoloSub: 'En solitario eliges tú. Quien tiene la iniciativa activa primero a sus agentes y elige primero sus ardides.',
+    iniOpDesc: 'Tiene la iniciativa en este punto de inflexión',
+    tirarSub: 'Cada jugador tira 1D6: quien saque más decide quién tiene la iniciativa.',
+    tirar: 'Tirar los dados',
+    empate: 'Empate: vuelvan a tirar.',
+    decide: equipo => `Decide ${equipo}: ¿quién tiene la iniciativa?`,
+    esperaDecision: equipo => `Decide ${equipo}. Espera su elección.`,
+    logIni: (equipo, g0, g1, e0, e1) => `<b>Iniciativa: ${equipo}.</b> ${PM}: +${g0} ${e0}, +${g1} ${e1}.`,
+    logDados: (e0, d0, e1, d1) => `Tirada de iniciativa: ${e0} ${d0}, ${e1} ${d1}.`,
+    ardidesTitulo: 'Ardides de estrategia',
+    ardidesSub: (equipo, pm) => `${equipo} tiene ${pm} ${PM}. Cada ardid cuesta 1 ${PM} y se usa una vez por punto de inflexión. Su efecto está en la ficha del comando.`,
+    esperaArdides: equipo => `Turno de ${equipo}: espera a que elija sus ardides.`,
+    sinArdides: 'Este bando no tiene comando elegido: no hay ardides que mostrar.',
+    ardidCoste: `Usar por 1 ${PM}`,
+    ardidUsado: `Usado (−1 ${PM}) · toca para devolverlo`,
+    logArdid: (equipo, n) => `<b>${equipo}</b> usa el ardid <b>${n}</b> (−1 ${PM}).`,
+    logDevuelto: (equipo, n) => `<b>${equipo}</b> devuelve el ardid <b>${n}</b> (+1 ${PM}).`,
+    siguiente: equipo => `Listo · turno de ${equipo}`,
+    aTiroteo: 'Listo · a la fase de tiroteo',
+    tiroteo: equipo => `Fase de tiroteo: empieza ${equipo}, que tiene la iniciativa. Activa a un agente.`,
+    logTiroteo: equipo => `<b>Fase de tiroteo.</b> Empieza ${equipo}.`,
+  },
+
   // pantallas de inicio de partida (src/ui/inicio.js)
   inicio: {
     atras: 'Volver',
@@ -660,7 +687,7 @@ export const T = {
     soloAnfitrion: 'En línea, solo el anfitrión cambia el mapa o las reglas, o reinicia.',
     soloJugadores: 'Estás mirando: solo los dos jugadores pueden hacer eso.',
     finBatalla: `<b>La batalla termina después del ${G.puntoInflexion.es} 4.</b> ¡Cuenten sus ${PV}!`,
-    nuevoPI: n => `<b>${G.puntoInflexion.es[0].toUpperCase() + G.puntoInflexion.es.slice(1)} ${n}.</b> Todos los agentes quedan apostados; +1 ${PM} cada uno (el jugador con la iniciativa recibiría 1 y el otro 2: ajústalo a mano).`,
+    nuevoPI: n => `<b>${G.puntoInflexion.es[0].toUpperCase() + G.puntoInflexion.es.slice(1)} ${n}.</b> Todos los agentes quedan apostados.`,
     regla: 'Regla: toca dos puntos para medir. Esc para salir.',
     contadorTitulo: 'toca para +1 · Mayús + clic para −1',
     importFallo: msg => `<span class="crit">Falló la importación:</span> ${msg}`,

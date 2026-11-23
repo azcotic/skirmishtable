@@ -10,6 +10,12 @@ import { buildStatic, renderAll, renderTray } from './board.js';
 import { HINT0, hint, logEl, logLine, svg } from './dom.js';
 import { T } from '../i18n/es.js';
 import { reiniciarVista } from './vista2d.js';
+import { PM_INICIALES, pmDelPI } from '../game/fases.js';
+
+// Qué pasa al empezar un punto de inflexión. Por defecto, reparte los PM según las reglas sin
+// preguntar; inicio.js pone sus pantallas de fase de estrategia (iniciativa y ardides).
+let alNuevoPI = () => { const g = pmDelPI(tray.tp, tray.ini); tray.cp[0] += g[0]; tray.cp[1] += g[1]; renderTray(); };
+export const setAlNuevoPI = fn => { alNuevoPI = fn; };
 import { anunciarDespliegue, modoDespliegue, prepararDespliegue } from './despliegue.js';
 import { cancelMode, doUndo, snapshot, tray, undoStack } from './panels.js';
 import { build3DScene, setView, three, view3D } from '../view3d/table3d.js';
@@ -36,7 +42,7 @@ export function loadMap(keyOrMap) {
   state.sel = null; state.target = null; state.lastShot = null; state.drag = null;
   undoStack.length = 0;
   restartRecording();             // a new table is a new game to record
-  Object.assign(tray, {tp:1, cp:[3,3], vp:[0,0]});
+  Object.assign(tray, {tp:1, cp:[PM_INICIALES, PM_INICIALES], vp:[0,0], ini:null, ardides:[[],[]]});
   cancelMode();
   buildStatic();
   renderAll();
@@ -133,10 +139,11 @@ export function wireControls() {
     if (playOnly()) return;
     snapshot();
     if (tray.tp >= 4) { logLine(T.partida.finBatalla); return; }
-    tray.tp += 1; tray.cp[0] += 1; tray.cp[1] += 1;
+    tray.tp += 1; tray.ardides = [[], []];
     OPS.forEach(o => { o.ready = true; o.ap = o.apl; o.used = []; });
     logLine(T.partida.nuevoPI(tray.tp));
     renderAll();
+    alNuevoPI();                  // fase de estrategia: iniciativa, PM y ardides (inicio.js)
   };
   document.getElementById("undo").onclick = () => { if (!playOnly() && !requestUndo()) doUndo(); };
   document.getElementById("reset").onclick = () => { if (setupOnly()) return; logEl.innerHTML = ""; loadMap(MAP); };

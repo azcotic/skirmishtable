@@ -19,8 +19,15 @@ import { setOption } from './options.js';
 import { hostGame, net, online } from '../net/sync.js';
 import { cerrarHoja } from './sidepanel.js';
 import { despliegueActivo, pista, setAlTerminarDespliegue } from './despliegue.js';
-import { doUndo } from './panels.js';
+import { doUndo, snapshot, tray } from './panels.js';
 import { hint, logLine } from './dom.js';
+import { renderAll } from './board.js';
+import { setAlNuevoPI } from './controls.js';
+import { TEAMNAME } from '../config.js';
+import { teamOf } from '../view3d/units.js';
+import { ARDIDES } from '../i18n/nombres.js';
+import { pmDelPI, puedeUsarArdid, quienDecide, tirarD6, COSTE_ARDID } from '../game/fases.js';
+import { mayControl } from '../net/sync.js';
 
 const KEY = "skirmishtable.inicio";
 // los comandos de prueba (ids del catálogo de Steam): Garra Némesis y Aquelarre Disforme
@@ -30,6 +37,10 @@ const ORDEN = ["modo", "mapa", "comando0", "comando1", "despliegue", "resumen"];
 const eleccion = { modo: null, mapa: null, comando: [null, null], despliegue: null };
 let paso = "modo";
 const pila = [];
+let tirada = null;          // fase de estrategia en línea: {dados: [a, b], decide: 0|1|null}
+let ordenArdides = [0, 1];  // quién elige ardides primero (quien tiene la iniciativa)
+const SIN_ATRAS = ["invitar", "listo", "iniciativa", "ardidesA", "ardidesB"];
+const bando = s => { const t = teamOf(s); return t ? `${TEAMNAME[s]} · ${t.name}` : TEAMNAME[s]; };
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const pantalla = () => document.getElementById("inicio");
@@ -86,6 +97,31 @@ function contenido() {
       opcion("operaciones", I.opsT, I.opsD, { deshabilitada: true, extra: `<span class="pant-pronto">${I.pronto}</span>` }),
       principal: `<button class="pant-jugar" id="pantempezar">${I.empezar}</button>` +
         `<button class="pant-secundario" id="pantdeshacer">${I.deshacerUltimo}</button>` };
+    case "iniciativa": {
+      const E = T.estrategia;
+      const opciones = d => [0, 1].map(s => opcion("ini" + s, esc(bando(s)), E.iniOpDesc, { deshabilitada: d, extra: `<span class="pant-marca-eq eq${s}"></span>` })).join("");
+      if (!online()) return { titulo: `${E.titulo(tray.tp)} · ${E.iniTitulo}`, sub: E.iniSoloSub, html: opciones(false) };
+      if (!tirada) return { titulo: `${E.titulo(tray.tp)} · ${E.iniTitulo}`, sub: E.tirarSub, html: opcion("tirar", E.tirar) };
+      const dados = `<div class="pant-dados"><span class="eq0">${esc(TEAMNAME[0])} <b>${tirada.dados[0]}</b></span><span class="eq1">${esc(TEAMNAME[1])} <b>${tirada.dados[1]}</b></span></div>`;
+      if (tirada.decide === null) return { titulo: `${E.titulo(tray.tp)} · ${E.iniTitulo}`, sub: E.empate, html: dados + opcion("tirar", E.tirar) };
+      const mio = mayControl({ team: tirada.decide });
+      return { titulo: `${E.titulo(tray.tp)} · ${E.iniTitulo}`, sub: mio ? E.decide(esc(TEAMNAME[tirada.decide])) : E.esperaDecision(esc(TEAMNAME[tirada.decide])),
+        html: dados + opciones(!mio) };
+    }
+    case "ardidesA": case "ardidesB": {
+      const E = T.estrategia, lado = ordenArdides[paso === "ardidesA" ? 0 : 1], mio = mayControl({ team: lado });
+      const t = teamOf(lado), lista = (t && ARDIDES[t.id] && ARDIDES[t.id].estrategia) || [];
+      const usados = (tray.ardides && tray.ardides[lado]) || [];
+      const html = !lista.length ? `<p class="pant-nota">${E.sinArdides}</p>` : lista.map(n => {
+        const usado = usados.includes(n);
+        return opcion("ardid:" + n, esc(n), usado ? E.ardidUsado : E.ardidCoste,
+          { activa: usado, deshabilitada: !mio || (!usado && !puedeUsarArdid(tray.cp, tray.ardides || [[], []], lado, n)) });
+      }).join("");
+      const ultimo = paso === "ardidesB";
+      return { titulo: `${E.titulo(tray.tp)} · ${E.ardidesTitulo}`,
+        sub: mio ? E.ardidesSub(esc(bando(lado)), tray.cp[lado]) : E.esperaArdides(esc(TEAMNAME[lado])), html,
+        principal: mio ? `<button class="pant-jugar" id="pantardidesok">${ultimo ? E.aTiroteo : E.siguiente(esc(TEAMNAME[ordenArdides[1]]))}</button>` : "" };
+    }
     case "invitar": {
       const link = location.origin + location.pathname + location.search + "#room=" + net.code;
       return { titulo: I.invitarTitulo, sub: I.invitarSub, html:
@@ -104,7 +140,7 @@ function render() {
   const puntos = i < 0 ? "" : ORDEN.map((_, k) => `<i class="${k < i ? "hecho" : k === i ? "ahora" : ""}"></i>`).join("");
   el.innerHTML = `<div class="pant" data-paso="${paso}">
     <div class="pant-cab">
-      ${pila.length && paso !== "invitar" ? `<button class="pant-atras" id="pantatras" aria-label="${T.inicio.atras}">←</button>` : `<span class="pant-marca">Skirmish<b>Table</b></span>`}
+      ${pila.length && !SIN_ATRAS.includes(paso) ? `<button class="pant-atras" id="pantatras" aria-label="${T.inicio.atras}">←</button>` : `<span class="pant-marca">Skirmish<b>Table</b></span>`}
       <div class="pant-puntos" aria-hidden="true">${puntos}</div>
     </div>
     <h2 class="pant-titulo">${c.titulo}</h2>
@@ -125,7 +161,60 @@ function elegir(v) {
     case "comando0": eleccion.comando[0] = v; return ir("comando1");
     case "comando1": eleccion.comando[1] = v; return ir("despliegue");
     case "despliegue": eleccion.despliegue = v; return ir("resumen");
+    case "iniciativa":
+      if (v === "tirar") {
+        tirada = { dados: [tirarD6(), tirarD6()] };
+        tirada.decide = quienDecide(tirada.dados, tray.ini);
+        logLine(T.estrategia.logDados(TEAMNAME[0], tirada.dados[0], TEAMNAME[1], tirada.dados[1]));
+        return render();
+      }
+      return fijarIniciativa(+v.slice(3));
+    case "ardidesA": case "ardidesB":
+      if (v.startsWith("ardid:")) return alternarArdid(ordenArdides[paso === "ardidesA" ? 0 : 1], v.slice(6));
   }
+}
+
+/* ---------- fase de estrategia (cada punto de inflexión) ---------- */
+export function abrirFaseEstrategia() {
+  const el = pantalla();
+  if (!el) return;
+  tirada = null;
+  tray.ardides = [[], []];
+  paso = "iniciativa"; pila.length = 0;
+  el.hidden = false;
+  render();
+}
+// Quien decide elige quién tiene la iniciativa: se reparten los PM del punto de inflexión.
+function fijarIniciativa(s) {
+  snapshot();
+  tray.ini = s;
+  const g = pmDelPI(tray.tp, s);
+  tray.cp[0] += g[0]; tray.cp[1] += g[1];
+  logLine(T.estrategia.logIni(TEAMNAME[s], g[0], g[1], TEAMNAME[0], TEAMNAME[1]));
+  ordenArdides = [s, 1 - s];
+  renderAll();
+  ir("ardidesA");
+}
+// Usar un ardid (−1 PM) o devolverlo si fue sin querer (+1 PM).
+function alternarArdid(lado, n) {
+  if (!mayControl({ team: lado })) return;
+  tray.ardides = tray.ardides || [[], []];
+  const usados = tray.ardides[lado];
+  snapshot();
+  if (usados.includes(n)) {
+    usados.splice(usados.indexOf(n), 1); tray.cp[lado] += COSTE_ARDID;
+    logLine(T.estrategia.logDevuelto(TEAMNAME[lado], n));
+  } else if (puedeUsarArdid(tray.cp, tray.ardides, lado, n)) {
+    usados.push(n); tray.cp[lado] -= COSTE_ARDID;
+    logLine(T.estrategia.logArdid(TEAMNAME[lado], n));
+  }
+  renderAll();
+  render();
+}
+function aTiroteo() {
+  cerrar();
+  logLine(T.estrategia.logTiroteo(TEAMNAME[tray.ini]));
+  hint(T.estrategia.tiroteo(TEAMNAME[tray.ini]));
 }
 
 // Arma la partida con lo elegido y cierra las pantallas (en línea: antes, la de invitar).
@@ -137,7 +226,8 @@ function empezar() {
   renderMinis();
   cerrarHoja();
   if (eleccion.modo === "linea" && !online()) { hostGame(); ir("invitar"); return; }
-  cerrar();
+  if (!despliegueActivo()) abrirFaseEstrategia();   // al azar: no hay despliegue, empieza ya el PI 1
+  else cerrar();
 }
 
 export function abrirInicio() {
@@ -177,8 +267,9 @@ export function wireInicio() {
     if (b.id === "pantjugar") return empezar();
     if (b.id === "pantmesa") return cerrar();
     if (b.id === "pantempezar") {                  // confirmado: empieza el primer punto de inflexión
-      cerrar(); logLine(T.despliegue.termina); hint(T.despliegue.terminaPista); return;
+      logLine(T.despliegue.termina); abrirFaseEstrategia(); return;
     }
+    if (b.id === "pantardidesok") { if (paso === "ardidesA") ir("ardidesB"); else aTiroteo(); return; }
     if (b.id === "pantdeshacer") {                 // vuelve al despliegue: se retira el último agente
       cerrar(); doUndo(); if (despliegueActivo()) hint(pista()); return;
     }
@@ -192,6 +283,10 @@ export function wireInicio() {
     if (b.dataset.v !== undefined) elegir(b.dataset.v);
   });
   setAlTerminarDespliegue(abrirListo);
+  // en cada punto de inflexión, la fase de estrategia (los tests la omiten: PM automáticos)
+  let omitir = false;
+  try { omitir = localStorage.getItem(KEY) === "omitir"; } catch (e) {}
+  if (!omitir) setAlNuevoPI(abrirFaseEstrategia);
   const nueva = document.getElementById("nuevapartida");
   if (nueva) nueva.onclick = abrirInicio;
   if (inicioAlAbrir()) abrirInicio();

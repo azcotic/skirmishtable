@@ -558,4 +558,10 @@ button.hsq.reserva { border-style: dashed; background: transparent; opacity: .75
 .pant-jugar:hover { background: #f08a4b; color: #14110e; }
 .pant-secundario { width: 100%; min-height: 48px; margin-top: 10px; border-radius: 12px; background: transparent;
   border: 1px solid #3a332a; color: #b8ad9e; font-size: 14px; }
+.pant-dados { display: flex; justify-content: center; gap: 24px; padding: 14px; border-radius: 12px; background: #1d1914;
+  border: 1px solid #3a332a; font-size: 14px; }
+.pant-dados b { font-family: "Big Shoulders", sans-serif; font-size: 34px; margin-left: 6px; vertical-align: middle; }
+.pant-dados .eq0 b { color: #f08a4b; } .pant-dados .eq1 b { color: #7fb6c9; }
+.pant-marca-eq { position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 3px 3px 0; }
+.pant-marca-eq.eq0 { background: #e0672f; } .pant-marca-eq.eq1 { background: #5b93a6; }
 .pant-nota { margin: 4px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #a89a80; }

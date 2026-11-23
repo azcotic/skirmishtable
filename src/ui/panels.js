@@ -19,7 +19,8 @@ import { T, pulg } from '../i18n/es.js';
 import { renderAcciones } from './acciones.js';
 
 /* ---------- state / undo / log ---------- */
-export let tray = {tp:1, cp:[3,3], vp:[0,0]};
+// ini: bando con la iniciativa (null antes de decidirla); ardides: los usados en este PI
+export let tray = {tp:1, cp:[2,2], vp:[0,0], ini:null, ardides:[[],[]]};
 export const undoStack = [];
 // other modules' state that undo restores too ({get, set}; the ops & score panel)
 export const undoExtras = [];

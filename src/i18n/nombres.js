@@ -49,6 +49,22 @@ export const AGENTES = {
   'Night Lord Warrior': 'Combatiente',
 };
 
+// Ardides de cada comando (solo los nombres oficiales; su efecto se lee en la ficha del comando).
+// Clave: id del comando en el catálogo de Steam (src/data/tts-teams.js).
+const ARDIDES_GN = {
+  estrategia: ['Venimos a por vosotros', 'La caza negra', 'Avistar la presa', 'Volver a la oscuridad'],
+  tiroteo: ['Vocogrito', 'Muerte al falso emperador', 'Predisposición homicida', 'Luchador rastrero'],
+};
+const ARDIDES_AD = {
+  estrategia: ['Protección etérea', 'El destino es mi arma', 'Hermandad de hechiceros', 'Rebaño salvaje'],
+  tiroteo: ['Todo es polvo', 'Plan caprichoso', 'Cábala psíquica', 'Rebaño mutante'],
+};
+export const ARDIDES = {
+  '3352828814': ARDIDES_GN,   // Garra Némesis
+  '3348897103': ARDIDES_AD,   // Aquelarre Disforme
+  '3352921015': ARDIDES_AD,   // Aquelarre Disforme (modelos de Space Marine 2)
+};
+
 // variantes con que los mods de Steam nombran a los mismos agentes
 const ALIAS = {
   'Rubric Gunner': 'Rubric Marine Gunner',
