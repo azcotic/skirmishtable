@@ -16,6 +16,7 @@ import { hint, logLine, svg } from './dom.js';
 import { T } from '../i18n/es.js';
 import { lienzo } from './dom.js';
 import { colocarEn, despliegueActivo } from './despliegue.js';
+import { porQueNoActua } from './turno.js';
 import { cancelMode, defaultMoveType, refreshSight, snapshot, toggleOrder } from './panels.js';
 import { mayControl } from '../net/sync.js';
 import { cancelMarker, placeMarkerAt } from './ops.js';
@@ -243,6 +244,8 @@ export function wireInput() {
       if (!mayControl(d.op)) {     // online: not yours to move; letting go still counts as a tap
         hint(T.mover.deOtro(d.op.name)); return;
       }
+      const noActua = porQueNoActua(d.op);   // activaciones alternas: no es su turno, u otro está activándose
+      if (noActua) { hint(noActua); return; }
       d.active = true;
       if (state.sel !== d.op) { state.sel = d.op; state.target = null; state.lastShot = null; state.moveType = defaultMoveType(d.op); }
       hint(T.mover.soltar(d.op.name, moveSpec(state.moveType) ? state.moveType : "reposition", measuring(), RULES.moves.charge ? CTRL : 0, LEVELS.length && !d.from3d));

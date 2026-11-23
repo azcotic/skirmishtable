@@ -18,6 +18,9 @@ import { renderMinis } from './minis.js';
 import { T, pulg } from '../i18n/es.js';
 import { renderAcciones } from './acciones.js';
 import { accionesLegales, puede } from '../game/acciones.js';
+import { conectarTurno, pistaDeTurno, porQueNoActua, puedeActuar, todosUsados } from './turno.js';
+// el agente al que ya se le sugirió terminar su activación por quedarse sin PA
+let avisadoSinPA = null;
 
 /* ---------- state / undo / log ---------- */
 // ini: bando con la iniciativa (null antes de decidirla); ardides: los usados en este PI
@@ -161,6 +164,9 @@ export function defaultMoveType(op) {
 }
 export function renderCard() {
   const c = document.getElementById("opcard");
+  // todos los agentes usados: sugerir "Fin del PI" (en el marcador y en la barra de acciones)
+  const finPI = document.getElementById("endtp");
+  if (finPI) finPI.classList.toggle("sugerido", todosUsados());
   if (!state.sel || !state.sel.alive) { c.innerHTML = `<span class="hint">${T.ficha.vacia}</span>`; renderAcciones(); return; }
   const inj = isInjured(state.sel);
   const meleeFoes = OPS.filter(o => o.alive && o.team !== state.sel.team && opGap(state.sel, o) <= CTRL);
@@ -184,7 +190,7 @@ export function renderCard() {
     </div>
     <div class="btnrow">
       ${RULES.orders ? `<button id="ordbtn">${T.orden.boton(state.sel.order)}</button>` : ""}
-      <button id="endact">${T.ficha.terminar}</button>
+      <button id="endact"${state.sel.ready && state.sel.ap <= 0 ? ' class="sugerido"' : ""}>${T.ficha.terminar}</button>
     </div>
     <div class="weapons">${state.sel.weapons.map(k => {
       const w = WPN[k];
@@ -221,8 +227,16 @@ export function renderCard() {
   c.querySelector("#tgtbtn").onclick = () => { state.mode = state.mode === "target" ? null : "target";
     hint(state.mode === "target" ? T.seleccion.apuntando : HINT0); renderAll(); };
   c.querySelector("#shootbtn").onclick = doShoot;
-  if (!mayControl(state.sel))    // online: look at the other side's operatives, don't act for them
+  // online: los agentes del otro jugador se ven, no se manejan; activaciones alternas: tampoco
+  // los que no tienen el turno (turno.js), con el motivo arriba de la ficha
+  const noActua = porQueNoActua(state.sel);
+  if (!mayControl(state.sel) || noActua)
     c.querySelectorAll("button:not(#tgtbtn), input").forEach(b => { b.disabled = true; });
+  if (noActua) c.insertAdjacentHTML("afterbegin", `<div class="turnoaviso">${noActua}</div>`);
+  // sin PA: sugerir "Terminar activación" (una vez por agente)
+  if (state.sel.ready && state.sel.ap <= 0 && mayControl(state.sel)) {
+    if (avisadoSinPA !== state.sel.id) { avisadoSinPA = state.sel.id; hint(T.turno.sinPA(state.sel.name)); }
+  } else if (avisadoSinPA === state.sel.id) avisadoSinPA = null;
   c.querySelector("#fightbtn").onclick = () => {
     if (!state.target || opGap(state.sel, state.target) > CTRL) {
       state.target = meleeFoes[0]; refreshSight();
@@ -315,13 +329,16 @@ export function allowance() {
 // el bando que activó por última vez en este punto de inflexión (para saber a quién le toca)
 export let ultimoBando = null;
 export const reiniciarActivaciones = () => { ultimoBando = null; };
+conectarTurno({ tray, ultimo: () => ultimoBando });   // turno.js consulta el marcador sin importar este módulo
 // Mark an operative expended: its activation is over for this turning point.
 export function endActivation(op) {
-  if (!op || !op.alive || !op.ready || !mayControl(op)) return;
+  if (!op || !op.alive || !op.ready || !mayControl(op) || !puedeActuar(op)) return;
   ultimoBando = op.team;
   snapshot(); op.ready = false; op.ap = op.apl; op.used = [];
   if (state.sel === op) state.moveType = "reposition";
   logLine(T.activacion.termina(op.name)); cancelMode(); renderAll();
+  const p = pistaDeTurno();          // activaciones alternas: a quién le toca ahora
+  if (p) hint(p);
 }
 // Something to undo: the operative has acted, or is expended.
 export const canUndoActivation = op => !!op && op.alive && (!untouched(op) || orderChanged(op));
@@ -371,6 +388,8 @@ export function refreshSight() {
 export function toggleOrder(oid) {
   const o = OPS.find(z => z.id === oid);
   if (!o || !o.alive || !mayControl(o)) return;
+  const noActua = porQueNoActua(o);
+  if (noActua) { hint(noActua); return; }
   snapshot();
   o.order = o.order === "conceal" ? "engage" : "conceal";
   refreshSight();

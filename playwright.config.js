@@ -10,7 +10,7 @@ export default defineConfig({
     baseURL: 'http://localhost:4173',
     viewport: { width: 1440, height: 1000 },
     // the side panel starts folded; the tests drive its buttons, so open it (src/ui/sidepanel.js)
-    storageState: { cookies: [], origins: [{ origin: 'http://localhost:4173', localStorage: [{ name: 'skirmishtable.sidebar', value: 'open' }, { name: 'skirmishtable.avanzado', value: 'open' }, { name: 'skirmishtable.options', value: '{"despliegue":"azar"}' }, { name: 'skirmishtable.inicio', value: 'omitir' }] }] },
+    storageState: { cookies: [], origins: [{ origin: 'http://localhost:4173', localStorage: [{ name: 'skirmishtable.sidebar', value: 'open' }, { name: 'skirmishtable.avanzado', value: 'open' }, { name: 'skirmishtable.options', value: '{"despliegue":"azar","activaciones":"libres"}' }, { name: 'skirmishtable.inicio', value: 'omitir' }] }] },
     launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
   },
   webServer: { command: 'npm run preview', url: 'http://localhost:4173', reuseExistingServer: !process.env.CI },

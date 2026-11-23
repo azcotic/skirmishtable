@@ -460,6 +460,14 @@ body { overflow: hidden; overscroll-behavior: none; }
 .acciones .accion.restricted { opacity: .45; }
 .acciones .accion:disabled { opacity: .35; }
 .acciones .accion.ia { border-color: #8d5fa8; color: #d9bff0; }
+/* sin PA: "Terminar activación" sugerido */
+.acciones .accion.sugerido, #endact.sugerido, #endtp.sugerido { border-color: #6faf82; background: #24402c; color: #d8f0dc; animation: sugerido 1.2s ease-in-out infinite; }
+@keyframes sugerido { 50% { box-shadow: 0 0 0 3px rgba(111, 175, 130, .45); } }
+@media (prefers-reduced-motion: reduce) { .acciones .accion.sugerido, #endact.sugerido, #endtp.sugerido { animation: none; } }
+/* activaciones alternas: el bando en turno en el marcador flotante, y el aviso en la ficha */
+.hside.enturno .hname::before { content: "▶ "; }
+.hside.enturno { text-shadow: 0 0 8px rgba(255, 255, 255, .25); }
+.turnoaviso { margin-bottom: 8px; padding: 6px 8px; border-radius: 6px; background: #2a2118; border: 1px solid #5a4630; color: #e8c9a0; font-size: 12px; }
 /* modo propio (despliegue): dos filas que se desplazan de lado, botones anchos con dos líneas */
 .abajo, .acciones { min-width: 0; }      /* la barra que se desplaza de lado no estira la página */
 .acciones.especial { grid-auto-flow: column; grid-template-columns: none; grid-template-rows: 44px 44px;

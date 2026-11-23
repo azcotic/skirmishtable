@@ -13,6 +13,9 @@ import { state } from '../state.js';
 import { TEAMCOL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
 import { effHit, effMove, isInjured } from '../engine/dice.js';
 import { KINDS, OPS } from '../engine/world.js';
+import { alternasObligatorias, bandoEnTurno } from './turno.js';
+import { enDespliegue } from '../engine/deploy.js';
+const despliegueActivo = () => enDespliegue(OPS);
 import { mayPlay } from '../net/sync.js';
 import { RULES, fmtIn } from '../rules/index.js';
 import { flashOp3D } from '../view3d/table3d.js';
@@ -52,7 +55,8 @@ function square(op) {
 }
 function side(s) {
   const ops = OPS.filter(o => o.team === s), left = ops.filter(o => o.alive && o.ready).length;
-  return `<div class="hside s${s}"><span class="hname" style="color:${TEAMCOL_LT[s]}">${esc(teamName(s))}</span>` +
+  const enTurno = alternasObligatorias() && !despliegueActivo() && bandoEnTurno() === s;
+  return `<div class="hside s${s}${enTurno ? " enturno" : ""}"><span class="hname" style="color:${TEAMCOL_LT[s]}">${esc(teamName(s))}</span>` +
     `<span class="hsqs">${ops.map(square).join("")}</span><span class="hleft">${T.hud.quedan(left)}</span></div>`;
 }
 

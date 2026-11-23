@@ -127,7 +127,7 @@ export function traducirRegla(r) {
   return `${REGLAS_ARMA[k]} ${resto}`;
 }
 
-const PI = G.puntoInflexion.abrev, PM = G.pm.abrev, PV = G.pv.abrev;
+const PI = G.puntoInflexion.abrev, PM = G.pm.abrev, PV = G.pv.abrev, PA_ = G.pa.abrev;
 
 /* ---------- textos de la interfaz ---------- */
 export const T = {
@@ -512,6 +512,15 @@ export const T = {
     irMesa: 'Ir a la mesa',
   },
 
+  // activaciones alternas (src/ui/turno.js)
+  turno: {
+    noEsTuTurno: equipo => `Turno de ${equipo}: las activaciones se alternan, activa uno de sus agentes.`,
+    terminaPrimero: n => `${n} está en plena activación: termínala antes de activar otro agente.`,
+    siguiente: equipo => `Turno de ${equipo}: elige uno de sus agentes y actívalo. Al acabar, toca "Terminar activación".`,
+    finPI: `Todos los agentes están usados: toca "Fin del ${PI}".`,
+    sinPA: n => `${n} no tiene más ${PA_}: toca "Terminar activación" para pasar el turno.`,
+  },
+
   // la IA (src/ai/facil.js, src/ui/ia.js)
   ia: {
     boton: '¿Qué haría la IA?',
@@ -641,6 +650,8 @@ export const T = {
   },
 
   opciones: {
+    activaciones: { label: 'Activaciones', help: 'Alternas: como en las reglas, cada jugador activa un agente y termina su activación antes de que el otro active uno. Libres: puedes mover cualquier agente en cualquier momento (mesa de medir).',
+      alternas: 'Alternas', libres: 'Libres' },
     despliegue: { label: 'Despliegue', help: 'Al empezar o reiniciar una partida. Por turnos: los jugadores colocan a sus agentes uno a uno en su zona de descenso, como en las reglas (en solitario los colocas tú todos). Al azar: los agentes aparecen repartidos por la mesa.',
       turnos: 'Por turnos', azar: 'Al azar' },
     panSpeed: { label: 'Velocidad del teclado', help: 'Qué tan rápido mueven W A S D la vista de la mesa 3D.' },

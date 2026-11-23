@@ -9,8 +9,8 @@ import { TEAMNAME, WPN } from '../config.js';
 import { OPS } from '../engine/world.js';
 import { state } from '../state.js';
 import { decidirActivacion } from '../ai/facil.js';
-import { turnoDeActivacion } from '../game/acciones.js';
-import { refreshSight, tray, ultimoBando } from './panels.js';
+import { refreshSight } from './panels.js';
+import { bandoEnTurno } from './turno.js';
 import { flashOp2D, renderAll } from './board.js';
 import { hint, logLine } from './dom.js';
 import { queEs } from './despliegue.js';
@@ -35,8 +35,6 @@ export function explicar(plan) {
   return t;
 }
 
-// A qué bando le toca activar ahora
-export const bandoEnTurno = () => turnoDeActivacion(OPS, tray.ini ?? 0, ultimoBando);
 
 export function sugerir() {
   const bando = bandoEnTurno();
