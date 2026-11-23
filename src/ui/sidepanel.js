@@ -30,7 +30,20 @@ function apply() {
   window.dispatchEvent(new Event("resize"));   // the 3D table and the dice boxes size from their box
 }
 
+// La sección Avanzado (plegada por defecto) recuerda si la dejaste abierta.
+const KEY_AV = "skirmishtable.avanzado";
+function wireAdvanced() {
+  const av = document.getElementById("avanzado");
+  if (!av) return;
+  try { av.open = localStorage.getItem(KEY_AV) === "open"; } catch (e) {}
+  av.addEventListener("toggle", () => {
+    try { localStorage.setItem(KEY_AV, av.open ? "open" : "closed"); } catch (e) { /* ventana privada: no se recuerda */ }
+    window.dispatchEvent(new Event("resize"));
+  });
+}
+
 export function wireSidePanel() {
+  wireAdvanced();
   document.getElementById("panelbtn").onclick = () => {
     open = !open;
     try { localStorage.setItem(KEY, open ? "open" : "folded"); } catch (e) { /* private window: just don't remember */ }

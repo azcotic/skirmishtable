@@ -7,18 +7,19 @@
  *   outlines — just the two edges (red thick, amber thin) over a faint wash
  *   warn     — no zones; only the landing ghost, its label and lines to the threats
  */
+import { T } from '../i18n/es.js';
 import { state } from '../state.js';
 import { G } from '../engine/grid.js';
 import { chargeRoute, threatMap, threatsAt } from '../engine/threat.js';
 import { RULES, fmtIn } from '../rules/index.js';
 
 export const THREAT_COL = {charge: "#d23c2a", close: "#e0a21e"};
-export const THREAT_STYLES = {bands: "Bands", outlines: "Outlines", warn: "Warn only", off: "Off"};
+export const THREAT_STYLES = T.amenaza.estilos;
 // how strongly the zones are painted (a multiplier on the soft defaults)
-export const THREAT_STRENGTHS = {faint: "Faint", soft: "Soft", bold: "Bold"};
+export const THREAT_STRENGTHS = T.amenaza.intensidad;
 const STRENGTH = {faint: 0.6, soft: 1, bold: 1.6};
 // how a charging enemy's route to the landing ghost is drawn
-export const PATH_STYLES = {flow: "Flowing dashes", comet: "Comets", arrow: "Arrows", line: "Straight lines"};
+export const PATH_STYLES = T.amenaza.rutas;
 function pref(name, opts, dflt) {
   const key = "skirmishtable." + name;
   try { const v = localStorage.getItem(key); state[name] = v in opts ? v : dflt; } catch { state[name] = dflt; }
@@ -43,8 +44,7 @@ export function wireThreatPicker(redraw) {
   const key = document.getElementById("threatkey");
   key.onmouseenter = () => {
     const L = threatLegend();
-    key.title = [L.charge && `red: ${L.charge}`, L.close && `amber stripes: ${L.close}`].filter(Boolean).join("\n") +
-      "\nOnly enemies that haven't activated this turning point. Zones are for your model's base centre.";
+    key.title = T.amenaza.leyenda(L.charge, L.close);
   };
 }
 // The zones for the active drag (null when there's nothing to show), plus who threatens
@@ -65,10 +65,7 @@ export function dragThreat() {
 export function threatLabel(at) {
   const ids = l => l.map(o => o.id).join(" ");
   const close = at.close.filter(o => !at.charge.includes(o));
-  const parts = [];
-  if (at.charge.length) parts.push(`${RULES.moves.charge.label}: ${ids(at.charge)}`);
-  if (close.length) parts.push(`Cover broken: ${ids(close)}`);
-  return parts.length ? "⚠ " + parts.join(" · ") : "";
+  return T.amenaza.etiqueta(at.charge.length ? ids(at.charge) : "", close.length ? ids(close) : "");
 }
 export const threatLevel = at => at.charge.length ? "charge" : at.close.length ? "close" : null;
 
@@ -76,8 +73,8 @@ export const threatLevel = at => at.charge.length ? "charge" : at.close.length ?
 export function threatLegend() {
   const M = RULES.moves, voidIn = RULES.cover && RULES.cover.voidWithin;
   return {
-    charge: M.charge ? `${M.charge.label} reach (${M.charge.label} move, then within ${fmtIn(RULES.controlRange)}")` : null,
-    close: voidIn ? `Cover broken (${M.primary.label}${M.secondary ? `, plus ${M.secondary.label} with APL 3+` : ""}, then shoots from within ${fmtIn(voidIn)}")` : null,
+    charge: M.charge ? T.amenaza.alcanceCarga(RULES.controlRange) : null,
+    close: voidIn ? T.amenaza.sinCobertura(!!M.secondary, voidIn) : null,
   };
 }
 

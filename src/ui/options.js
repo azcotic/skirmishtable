@@ -3,6 +3,8 @@
  * Add a setting by giving it a default in `options` and a row in OPTION_ROWS (a slider, or
  * `choices` for a drop-down).
  */
+import { T } from '../i18n/es.js';
+
 const KEY = "skirmishtable.options";
 // panSpeed: WASD camera pan, × the base speed; cardLayout: the status cards on the table
 // edges, as "chips" (a tab per card) or a "drawer" (one tab per side); idle: the miniatures
@@ -25,12 +27,12 @@ function setOption(k, v) {
 }
 
 const OPTION_ROWS = [
-  {key: "panSpeed", label: "Keyboard pan speed", help: "How fast W A S D slide the 3D table view.",
+  {key: "panSpeed", label: T.opciones.panSpeed.label, help: T.opciones.panSpeed.help,
    min: 0.25, max: 3, step: 0.25, fmt: v => `${v}×`},
-  {key: "cardLayout", label: "Status cards", help: "Chips: a small tab per card on the table edge; click one to read it. Drawer: one tab per side opens all its cards.",
-   choices: [["chips", "Chips"], ["drawer", "Drawer"]]},
-  {key: "idle", label: "Idle animation", help: "Miniatures on the 3D table breathe and shift their weight a little while they stand.",
-   choices: [["on", "On"], ["off", "Off"]]},
+  {key: "cardLayout", label: T.opciones.cardLayout.label, help: T.opciones.cardLayout.help,
+   choices: [["chips", T.opciones.cardLayout.chips], ["drawer", T.opciones.cardLayout.drawer]]},
+  {key: "idle", label: T.opciones.idle.label, help: T.opciones.idle.help,
+   choices: [["on", T.opciones.idle.on], ["off", T.opciones.idle.off]]},
 ];
 
 export function wireOptions() {

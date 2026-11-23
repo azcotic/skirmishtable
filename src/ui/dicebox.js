@@ -13,6 +13,7 @@
  * The faces come from rollFor (src/net/roll.js) as the dice leave the hand: right away
  * offline; online, the shared roll a moment later, while the dice are already tumbling.
  */
+import { T } from '../i18n/es.js';
 import { fairNote, rollFor } from '../net/roll.js';
 import { TEAMNAME } from '../config.js';
 import { clearDice, diceTrays, mayRoll, onDiceRender, rerollDice, setHit, setRoll, tally, wasRerolled } from './dicetray.js';
@@ -74,20 +75,20 @@ function makeBox(side, dock) {
 
   const mat = document.createElement("div");
   mat.className = "dicemat"; mat.id = "dicemat" + side; mat.hidden = true;
-  mat.setAttribute("role", "dialog"); mat.setAttribute("aria-label", `${TEAMNAME[side]} dice box`);
+  mat.setAttribute("role", "dialog"); mat.setAttribute("aria-label", T.dados.caja(TEAMNAME[side]));
   mat.innerHTML = `
     <div class="dmbar">
       <span class="dmtitle">${TEAMNAME[side]}</span>
-      ${[1, 2, 3, 4, 5, 6].map(n => `<button class="mini" data-n="${n}" title="Put ${n} dice on the mat">${n}</button>`).join("")}
-      <button class="mini dmadd" title="One more die">+1</button>
-      <button class="mini dmthrow" title="Throw the loose (or selected) dice in for me">Throw</button>
-      <label class="dmhitl" title="The hit or save target">on <select class="dmhit">${[2, 3, 4, 5, 6].map(h => `<option>${h}</option>`).join("")}</select>+</label>
-      <button class="mini dmend dmsound" title="Dice sounds"></button>
-      <button class="mini dmclose" title="Hide the dice box">✕</button>
+      ${[1, 2, 3, 4, 5, 6].map(n => `<button class="mini" data-n="${n}" title="${T.dados.poner(n)}">${n}</button>`).join("")}
+      <button class="mini dmadd" title="${T.dados.unoMas}">+1</button>
+      <button class="mini dmthrow" title="${T.dados.lanzarTitulo}">${T.dados.lanzar}</button>
+      <label class="dmhitl" title="${T.dados.objetivoTitulo}">${T.dados.a} <select class="dmhit">${[2, 3, 4, 5, 6].map(h => `<option>${h}</option>`).join("")}</select>+</label>
+      <button class="mini dmend dmsound" title="${T.dados.sonidoTitulo}"></button>
+      <button class="mini dmclose" title="${T.dados.ocultar}">✕</button>
     </div>
     <div class="dmplay">
-      <div class="dmfelt" data-hint="grab the dice, shake, drop them in the box"></div>
-      <div class="dmbox" title="Drop dice here to roll them"></div>
+      <div class="dmfelt" data-hint="${T.dados.fieltro}"></div>
+      <div class="dmbox" title="${T.dados.soltarAqui}"></div>
     </div>
     <div class="dmslots">${[1, 2, 3, 4, 5, 6].map(f => `<div class="dmslot">${f}</div>`).join("")}</div>
     <div class="dmsum"></div>
@@ -253,8 +254,8 @@ function makeBox(side, dock) {
       for (const d of order) d.val = die();
       landing = { done, n };
       kick();
-    }, why => { putBack(order); sum.innerHTML = `<span class="hint">The roll didn't happen: ${why}.</span>`; });
-    if (why) { putBack(order); sum.innerHTML = `<span class="hint">Can't roll yet: ${why}.</span>`; return false; }
+    }, why => { putBack(order); sum.innerHTML = `<span class="hint">${T.dados.noOcurrio(why)}</span>`; });
+    if (why) { putBack(order); sum.innerHTML = `<span class="hint">${T.dados.aunNo(why)}</span>`; return false; }
     rollT0 = performance.now(); settleT = 0;
     clack(1200);
     kick();
@@ -381,13 +382,12 @@ function makeBox(side, dock) {
     const off = !mayRoll(side), t = tray();
     bar.querySelectorAll("[data-n], .dmadd, .dmthrow, .dmhit").forEach(b => b.disabled = off);
     bar.querySelector(".dmhit").value = String(t.hit);
-    bar.querySelector(".dmsound").textContent = sound ? "Sound on" : "Sound off";
+    bar.querySelector(".dmsound").textContent = T.dados.sonido(sound);
     slotEls.forEach((e, i) => { e.className = "dmslot " + result(i + 1); });
     const c = tally(t.dice, t.hit);
     sum.innerHTML = t.dice.length
-      ? `${t.label ? t.label + " · " : ""}<b>${c.crit}</b> crit · <b>${c.norm}</b> hit · ${t.dice.length - c.crit - c.norm} miss` +
-        (t.rerolled.length ? ` · ${t.rerolled.length} re-rolled` : "")
-      : `<span class="hint">${off ? "The other player rolls here." : "Pick how many, then grab, shake and drop them in the box."}</span>`;
+      ? `${t.label ? t.label + " · " : ""}${T.dados.resumen(c.crit, c.norm, t.dice.length - c.crit - c.norm, t.rerolled.length)}`
+      : `<span class="hint">${off ? T.dados.otroTira : T.dados.elegir}</span>`;
     badge.textContent = t.dice.length ? `${c.crit}·${c.norm}` : "";
   }
 

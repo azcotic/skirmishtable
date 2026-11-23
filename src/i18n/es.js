@@ -141,6 +141,9 @@ export const T = {
     nota3d: 'Arrastra un agente para moverlo · arrastra la mesa para girarla, usa la rueda para acercar y WASD para desplazarte · la regla está en el mapa 2D.',
     sinModelos: mb => `Terreno en bloques: este sitio no aloja los modelos de TTS. Descárgalos directamente de Steam (${mb} MB, una sola vez).`,
     cargando: (pct, mb) => `Descargando los modelos y texturas de TTS… ${pct} % de ${mb} MB`,
+    falloDescarga: n => `${n === 1 ? 'Falló 1 descarga' : `Fallaron ${n} descargas`} de Steam: se muestran bloques en su lugar. Revisa la conexión o algún bloqueador de anuncios o contenido en cdn.steamusercontent.com.`,
+    reintentar: 'Reintentar',
+    sin3d: 'Las bibliotecas 3D no cargaron aquí: se usa el mapa 2D.',
   },
 
   anillos: {
@@ -152,6 +155,7 @@ export const T = {
   amenazas: {
     titulo: 'Mientras arrastras: hasta dónde podrían llegar a tu miniatura los enemigos que aún no se han activado',
     nombre: 'Amenazas',
+    estilo: 'Estilo',
     zonas: 'Zonas',
     zonasTitulo: 'Intensidad del color de las zonas de amenaza',
     rutas: 'Rutas de carga',
@@ -192,6 +196,8 @@ export const T = {
     blancos: 'Blancos válidos',
     veredicto: 'Veredicto',
     registro: 'Registro',
+    avanzado: 'Avanzado',
+    importar: 'Importar de Tabletop Simulator',
   },
 
   zona: {
@@ -397,6 +403,167 @@ export const T = {
       'mínimo 2″; bajar es gratis hasta 2″ por acción). Mantén Mayús al arrastrar para apuntar al piso, o señálalo en la mesa 3D. ' +
       'Arriba es terreno aventajado; la visión se sigue evaluando sobre el plano de la mesa.',
     objetivo: lpa => `${lpa} ${G.lpa.abrev}`,
+  },
+
+  // estado de un agente (marcador flotante y menú)
+  estado: { ready: 'Apostado', active: 'Activándose', spent: 'Usado', dead: 'Incapacitado', ajeno: 'No es tuyo' },
+
+  // marcador flotante sobre la mesa y hoja de puntuación (hud.js)
+  hud: {
+    aria: (id, n, estado, h, max) => `${id} ${n}, ${estado}${h != null ? `, ${h}/${max} heridas` : ''}`,
+    quedan: n => `${n} por activar`,
+    stat: { lpa: G.lpa.abrev, mov: 'Mov.', salv: 'Salv.', heridas: G.heridas.es },
+    notaOcultarse: `◖ Ocultarse: no puede ${G.disparar.es} ni ${G.cargar.es}; a salvo a cubierto`,
+    notaTrabarse: `▲ Trabarse: puede ${G.disparar.es} y ${G.cargar.es}`,
+    notaLesionado: mov => `Lesionado (menos de la mitad de sus heridas): mueve ${pulg(mov)} y empeora su Impactar`,
+    hizo: acciones => `Ya hizo: ${acciones.map(a => T.mover.nombre[a] || ({ shoot: G.disparar.es, fight: G.combatir.es })[a] || a).join(', ')}`,
+    hojaTitulo: `Hoja de puntuación: ${PV} de operaciones crítica, táctica y de eliminación por punto de inflexión, y ${PM}`,
+    pm: n => `${n} ${PM}`,
+    pi: n => `${PI} ${n}`,
+    gastar: `Gastar 1 ${PM}`,
+    ganar: `Ganar 1 ${PM}`,
+    bajas: n => `✕ ${n} ${n === 1 ? 'baja' : 'bajas'}`,
+    bajasTitulo: 'Agentes enemigos incapacitados (los cuenta la operación de eliminación)',
+    hoja: 'Hoja de puntuación',
+    cerrar: 'Cerrar',
+    hojaNota: `${PV} de eliminación según la carta de la operación de eliminación; el contador ✕ de arriba son los agentes enemigos caídos hasta ahora.`,
+    logPM: (equipo, gana, quedan) => `<b>${equipo}</b> ${gana ? 'gana' : 'gasta'} 1 ${PM} (le quedan ${quedan}).`,
+  },
+
+  // menú del agente (clic derecho o pulsación larga)
+  menu: {
+    usado: 'Marcar como usado',
+    deshacer: 'Deshacer activación',
+    incapacitar: '✕ Marcar incapacitado',
+    volver: 'Volver a la mesa',
+  },
+
+  // zonas de amenaza al arrastrar (threat.js)
+  amenaza: {
+    estilos: { bands: 'Bandas', outlines: 'Contornos', warn: 'Solo aviso', off: 'No' },
+    intensidad: { faint: 'Suave', soft: 'Media', bold: 'Intensa' },
+    rutas: { flow: 'Trazos en movimiento', comet: 'Cometas', arrow: 'Flechas', line: 'Líneas rectas' },
+    leyenda: (carga, cerca) => [carga && `rojo: ${carga}`, cerca && `franjas ámbar: ${cerca}`].filter(Boolean).join('\n') +
+      '\nSolo enemigos que aún no se han activado en este punto de inflexión. Las zonas son para el centro de la peana de tu miniatura.',
+    alcanceCarga: control => `Alcance de ${G.cargar.es} (movimiento de ${G.cargar.es} y luego a ${pulg(control)} o menos)`,
+    sinCobertura: (correr, vacio) => `Sin cobertura (${G.reposicionarse.es}${correr ? `, más ${G.correr.es} con ${G.lpa.abrev} 3+` : ''}, y luego dispara desde ${pulg(vacio)} o menos)`,
+    etiqueta: (carga, cerca) => {
+      const partes = [];
+      if (carga) partes.push(`${G.cargar.es}: ${carga}`);
+      if (cerca) partes.push(`Sin cobertura: ${cerca}`);
+      return partes.length ? '⚠ ' + partes.join(' · ') : '';
+    },
+  },
+
+  opciones: {
+    panSpeed: { label: 'Velocidad del teclado', help: 'Qué tan rápido mueven W A S D la vista de la mesa 3D.' },
+    cardLayout: { label: 'Tarjetas de estado', help: 'Fichas: una pestaña pequeña por tarjeta en el borde de la mesa; toca una para leerla. Cajón: una pestaña por bando que abre todas sus tarjetas.',
+      chips: 'Fichas', drawer: 'Cajón' },
+    idle: { label: 'Animación en reposo', help: 'Las miniaturas de la mesa 3D respiran y cambian un poco el peso mientras están quietas.',
+      on: 'Sí', off: 'No' },
+  },
+
+  // panel de operaciones y puntuación (ops.js)
+  operaciones: {
+    cols: ['Crít.', 'Tác.', 'Elim.'],
+    colNombre: ['crítica', 'táctica', 'de eliminación'],
+    temporada: 'Temporada',
+    critica: 'Op. crítica',
+    robar: 'Robar',
+    robarTitulo: 'Roba una operación crítica al azar',
+    tactica: 'Op. táctica',
+    primaria: 'Primaria',
+    primariaTitulo: 'Los PV de la operación primaria cuentan otra vez al final (la mitad, redondeando hacia arriba)',
+    eliminacion: 'Op. de eliminación',
+    iniciativa: 'Cartas de iniciativa',
+    equipo: 'Equipo',
+    marcadores: n => `Marcadores (${n})`,
+    marcadorTitulo: n => `${n}: luego toca la mesa`,
+    quitar: 'Quitar',
+    nota: 'Las cartas y fichas se descargan del Killzone Mod a este navegador; este sitio no las aloja.',
+    ampliar: t => `${t}: toca para ampliar`,
+    cerrarCarta: ' · toca para cerrar',
+    noDisponible: 'carta no disponible',
+    colocado: n => `Marcador <b>${n}</b> colocado.`,
+    criticaLog: n => `Op. crítica: <b>${n}</b>.`,
+    robada: n => `Op. crítica robada: <b>${n}</b>.`,
+    tacticaLog: (equipo, n) => `<b>${equipo}</b> op. táctica: <b>${n}</b>.`,
+    puntos: (equipo, tp, col, v, total) => `<b>${equipo}</b> ${PI}${tp} op. ${T.operaciones.colNombre[col]}: ${v} ${PV} (total ${total}).`,
+    colocar: n => `Toca la mesa para colocar ${n}. Esc para cancelar.`,
+    quienEdita: cualquiera => `Tarjetas de estado: ${cualquiera ? 'cualquier jugador puede editar ambos bandos' : 'cada jugador edita su propio bando'}.`,
+  },
+
+  // caja de dados (dicebox.js)
+  dados: {
+    caja: equipo => `Caja de dados de ${equipo}`,
+    poner: n => `Pon ${n} dados en el tapete`,
+    unoMas: 'Un dado más',
+    lanzar: 'Lanzar',
+    lanzarTitulo: 'Lanza por mí los dados sueltos (o los seleccionados)',
+    objetivoTitulo: 'El valor que hay que sacar para impactar o salvar',
+    a: 'a',
+    sonidoTitulo: 'Sonido de los dados',
+    ocultar: 'Ocultar la caja de dados',
+    fieltro: 'agarra los dados, agítalos y suéltalos en la caja',
+    soltarAqui: 'Suelta los dados aquí para tirarlos',
+    noOcurrio: motivo => `La tirada no se hizo: ${motivo}.`,
+    aunNo: motivo => `Aún no puedes tirar: ${motivo}.`,
+    sonido: si => `Sonido: ${si ? 'sí' : 'no'}`,
+    resumen: (crit, norm, fallos, repetidos) =>
+      `<b>${crit}</b> ${crit === 1 ? 'crítico' : 'críticos'} · <b>${norm}</b> ${norm === 1 ? 'éxito' : 'éxitos'} · ${fallos} ${fallos === 1 ? 'fallo' : 'fallos'}` +
+      (repetidos ? ` · ${repetidos} ${repetidos === 1 ? 'repetido' : 'repetidos'}` : ''),
+    otroTira: 'Aquí tira el otro jugador.',
+    elegir: 'Elige cuántos; luego agarra, agita y suelta los dados en la caja.',
+  },
+
+  // tarjetas de estado en los bordes de la mesa (statuscards.js)
+  tarjetas: {
+    encabezado: 'Encabezado',
+    principal: 'Texto principal',
+    pequeno: 'Texto pequeño',
+    guardar: 'Guardar',
+    cancelar: 'Cancelar',
+    quitar: 'Quitar',
+    quitarTitulo: 'Quita esta tarjeta',
+    editar: 'Editar',
+    editarTitulo: 'Edita esta tarjeta',
+    soloEdita: equipo => `Solo el jugador de ${equipo} edita estas tarjetas`,
+    plegar: 'Vuelve a plegarla en una pestaña',
+    cerrar: 'Cerrar',
+    cambiadaPor: equipo => `cambiada por ${equipo}`,
+    agregar: '+ tarjeta',
+    agregarTitulo: equipo => `Agrega una tarjeta de estado para ${equipo}`,
+    quienTitulo: 'Quién puede editar las tarjetas de estado (eres el anfitrión)',
+    ambos: 'ambos editan todo',
+    propio: 'cada uno lo suyo',
+    pestanaTitulo: equipo => `Tarjetas de estado de ${equipo}`,
+    pestana: n => n ? `${n} ${n === 1 ? 'tarjeta' : 'tarjetas'}` : 'tarjetas',
+    logCambio: (equipo, nueva, texto, extra) => `<b>${equipo}</b>: tarjeta de estado ${nueva ? 'agregada' : 'cambiada'}: <b>${texto}</b>${extra ? ` — ${extra}` : ''}.`,
+    logQuitada: (equipo, texto) => `<b>${equipo}</b>: tarjeta de estado quitada: <b>${texto}</b>.`,
+  },
+
+  // panel de miniaturas (minis.js)
+  miniaturas: {
+    maximo: n => `Un bando tiene como máximo ${n} agentes.`,
+    sinEspacio: equipo => `No queda espacio en la zona de descenso de ${equipo}.`,
+    minimo: 'Cada bando conserva al menos un agente.',
+    seUne: (n, id, equipo) => `<b>${n}</b> (${id}) se une a ${equipo}.`,
+    agenteGenerico: 'Agente',
+    comandoAria: equipo => `Comando de ${equipo}`,
+    fichasSimples: 'Fichas simples',
+    peana: mm => ` · peana de ${mm} mm, medida del modelo`,
+    modeloAria: id => `Modelo de ${id}`,
+    quitarTitulo: n => `Saca a ${n} de la lista`,
+    quitarAria: id => `Quitar ${id}`,
+    agregar: (n, max) => `Agregar (${n}/${max})`,
+    agregarTitulo: (n, h, equipo) => `Agrega un ${n} (${h} H) a ${equipo}`,
+    heridas: h => `${h} H`,
+    agente: '+ Agente',
+    nota: 'Los modelos se descargan de los mods de comandos de Steam Workshop a este navegador; este sitio no los aloja.',
+  },
+
+  captura: {
+    guardada: (archivo, es3d) => `Se guardó ${archivo}: una imagen ${es3d ? 'de la mesa 3D' : 'del mapa 2D'} tal como está ahora.`,
   },
 
   // bandeja, mapas e importación (controls.js)

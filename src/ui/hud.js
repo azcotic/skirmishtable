@@ -8,6 +8,7 @@
  *   - click the score bug: Crit / Tac / Kill VP per turning point, CP, and kills so far
  * It reads and writes the same state as the Battle tray and the Ops & score panel.
  */
+import { G, T, pulg } from '../i18n/es.js';
 import { state } from '../state.js';
 import { TEAMCOL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
 import { effHit, effMove, isInjured } from '../engine/dice.js';
@@ -23,7 +24,7 @@ import { mayScore, opsState, scoreTotal, setScore } from './ops.js';
 import { renderStatusCards } from './statuscards.js';
 import { openOpMenu } from './opmenu.js';
 
-const COLS = ["Crit", "Tac", "Kill"];
+const COLS = T.operaciones.cols;
 let sheetOpen = false;
 
 const teamName = s => (teamOf(s) && teamOf(s).name) || TEAMNAME[s];
@@ -34,7 +35,7 @@ const modelName = op => {
 // activating: selected and still ready, or part-way through its actions
 const activating = op => op.alive && op.ready && ((state.sel && state.sel.id === op.id) || op.used.length > 0);
 const status = op => !op.alive ? "dead" : activating(op) ? "active" : op.ready ? "ready" : "spent";
-const STATUS_LABEL = { ready: "Ready", active: "Activating", spent: "Expended", dead: "Incapacitated" };
+const STATUS_LABEL = T.estado;
 const kills = s => OPS.filter(o => o.team !== s && !o.alive).length;
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
@@ -46,28 +47,29 @@ function square(op) {
   const st = status(op), hp = op.alive ? Math.max(0.08, op.wounds / op.maxW) : 0;
   return `<button class="hsq ${st}${state.sel && state.sel.id === op.id ? " sel" : ""}" data-oid="${op.id}" ` +
     `style="--tc:${TEAMCOL[op.team]};--hp:${hp.toFixed(3)}" ` +
-    `aria-label="${esc(`${op.id} ${op.name}, ${STATUS_LABEL[st]}${op.alive ? `, ${op.wounds}/${op.maxW} wounds` : ""}`)}">` +
+    `aria-label="${esc(T.hud.aria(op.id, op.name, STATUS_LABEL[st], op.alive ? op.wounds : null, op.maxW))}">` +
     (st === "dead" ? SOFT_X : "") + `</button>`;
 }
 function side(s) {
   const ops = OPS.filter(o => o.team === s), left = ops.filter(o => o.alive && o.ready).length;
   return `<div class="hside s${s}"><span class="hname" style="color:${TEAMCOL_LT[s]}">${esc(teamName(s))}</span>` +
-    `<span class="hsqs">${ops.map(square).join("")}</span><span class="hleft">${left} left</span></div>`;
+    `<span class="hsqs">${ops.map(square).join("")}</span><span class="hleft">${T.hud.quedan(left)}</span></div>`;
 }
 
 /* ---------- hover card: who it is and its rules ---------- */
 function tipHTML(op) {
   const st = status(op), model = modelName(op), inj = op.alive && isInjured(op);
-  const stats = [["APL", op.apl], ["Move", fmtIn(RULES.moves.primary.allow(op)) + "″"], ["Save", op.save + "+"], ["Wounds", `${op.wounds}/${op.maxW}`]];
+  const S = T.hud.stat;
+  const stats = [[S.lpa, op.apl], [S.mov, pulg(RULES.moves.primary.allow(op))], [S.salv, op.save + "+"], [S.heridas, `${op.wounds}/${op.maxW}`]];
   const weapons = op.weapons.map(k => {
     const w = WPN[k];
     return `<div class="tw"><span>${w.type === "R" ? "⌖" : "⚔"} ${esc(w.name)}</span>` +
-      `<span>${w.atk}A ${effHit(op, w)}+ ${w.dmgN}/${w.dmgC}${w.rules.length ? " · " + esc(w.rules.join(", ")) : ""}</span></div>`;
+      `<span>${w.atk}A ${effHit(op, w)}+ ${w.dmgN}/${w.dmgC}${w.rules.length ? " · " + esc(T.ficha.reglas(w.rules)) : ""}</span></div>`;
   }).join("");
   const notes = [];
-  if (RULES.orders && op.alive) notes.push(op.order === "conceal" ? "◖ Conceal: can't Shoot or Charge; safe in cover" : "▲ Engage: can Shoot and Charge");
-  if (inj) notes.push(`Injured (under half wounds): move ${fmtIn(effMove(op))}″, worse hit rolls`);
-  if (op.alive && op.used.length) notes.push("Used: " + op.used.map(capName).join(", "));
+  if (RULES.orders && op.alive) notes.push(op.order === "conceal" ? T.hud.notaOcultarse : T.hud.notaTrabarse);
+  if (inj) notes.push(T.hud.notaLesionado(effMove(op)));
+  if (op.alive && op.used.length) notes.push(T.hud.hizo(op.used));
   return `<div class="tn" style="color:${TEAMCOL_LT[op.team]}">${esc(op.id)} · ${esc(op.name)}</div>` +
     `<div class="tk">${esc(model || capName(op.kind))}${model ? " · " + esc(op.kind) : ""} · <b class="${st}">${STATUS_LABEL[st]}</b></div>` +
     `<div class="ts">${stats.map(([k, v]) => `<span><b>${v}</b> ${k}</span>`).join("")}</div>${weapons}` +
@@ -87,28 +89,28 @@ const hideTip = () => { const t = document.getElementById("hudtip"); if (t) t.hi
 
 /* ---------- bottom score bug and sheet ---------- */
 function bug() {
-  return `<button class="hbug" id="hudbug" aria-expanded="${sheetOpen}" title="Score sheet: Crit, Tac and Kill VP per turning point, and CP">` +
-    `<span class="hcp">${tray.cp[0]} CP</span>` +
+  return `<button class="hbug" id="hudbug" aria-expanded="${sheetOpen}" title="${T.hud.hojaTitulo}">` +
+    `<span class="hcp">${T.hud.pm(tray.cp[0])}</span>` +
     `<span class="hvp"><b style="color:${TEAMCOL_LT[0]}">${tray.vp[0]}</b><i>–</i><b style="color:${TEAMCOL_LT[1]}">${tray.vp[1]}</b></span>` +
-    `<span class="hcp">${tray.cp[1]} CP</span><span class="htp">TP ${tray.tp}</span></button>`;
+    `<span class="hcp">${T.hud.pm(tray.cp[1])}</span><span class="htp">${T.hud.pi(tray.tp)}</span></button>`;
 }
 function sheet() {
   const dis = ok => ok ? "" : " disabled";
   const head = s => COLS.map(c => `<th>${c}</th>`).join("");
-  const rows = [0, 1, 2, 3].map(tp => `<tr class="${tp + 1 === tray.tp ? "now" : ""}"><th>TP${tp + 1}</th>${[0, 1].map(s => COLS.map((_, c) =>
+  const rows = [0, 1, 2, 3].map(tp => `<tr class="${tp + 1 === tray.tp ? "now" : ""}"><th>${T.hud.pi(tp + 1)}</th>${[0, 1].map(s => COLS.map((_, c) =>
     `<td><input type="number" min="0" max="9" class="hudvp" data-s="${s}" data-tp="${tp}" data-c="${c}" value="${opsState.score[s][tp][c] || ""}"${dis(mayScore(s))}></td>`).join("")).join("")}</tr>`).join("");
   const cp = s => `<div class="hcpctl"><span style="color:${TEAMCOL_LT[s]}">${esc(teamName(s))}</span>` +
-    `<button class="mini" data-cp="${s}" data-d="-1" aria-label="Spend 1 CP"${dis(mayPlay())}>−</button><b>${tray.cp[s]} CP</b>` +
-    `<button class="mini" data-cp="${s}" data-d="1" aria-label="Gain 1 CP"${dis(mayPlay())}>+</button>` +
-    `<span class="hkills" title="Enemy operatives incapacitated (the Kill Op counts these)">✕ ${kills(s)} kill${kills(s) === 1 ? "" : "s"}</span></div>`;
-  return `<div class="hsheethead"><b>Score sheet</b><button class="mini" id="hudclose" aria-label="Close">×</button></div>
+    `<button class="mini" data-cp="${s}" data-d="-1" aria-label="${T.hud.gastar}"${dis(mayPlay())}>−</button><b>${T.hud.pm(tray.cp[s])}</b>` +
+    `<button class="mini" data-cp="${s}" data-d="1" aria-label="${T.hud.ganar}"${dis(mayPlay())}>+</button>` +
+    `<span class="hkills" title="${T.hud.bajasTitulo}">${T.hud.bajas(kills(s))}</span></div>`;
+  return `<div class="hsheethead"><b>${T.hud.hoja}</b><button class="mini" id="hudclose" aria-label="${T.hud.cerrar}">×</button></div>
     <div class="hcprow">${cp(0)}${cp(1)}</div>
     <table class="hscore"><thead>
       <tr><th></th><th colspan="3" style="color:${TEAMCOL_LT[0]}">${esc(teamName(0))}</th><th colspan="3" style="color:${TEAMCOL_LT[1]}">${esc(teamName(1))}</th></tr>
       <tr><th></th>${head(0)}${head(1)}</tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr><th>VP</th><td colspan="3"><b>${scoreTotal(0)}</b></td><td colspan="3"><b>${scoreTotal(1)}</b></td></tr></tfoot></table>
-    <div class="hint">Kill VP from the Kill Op card; the ✕ count above is enemy operatives down so far.</div>`;
+      <tfoot><tr><th>${G.pv.abrev}</th><td colspan="3"><b>${scoreTotal(0)}</b></td><td colspan="3"><b>${scoreTotal(1)}</b></td></tr></tfoot></table>
+    <div class="hint">${T.hud.hojaNota}</div>`;
 }
 
 /* ---------- render and wiring ---------- */
@@ -116,7 +118,7 @@ export function renderHud() {
   const top = document.getElementById("hudtop"), bot = document.getElementById("hudbot"), sh = document.getElementById("hudsheet");
   if (!top) return;
   // only rewrite what changed, so a hover or a focused score box isn't lost on every render
-  const t = `${side(0)}<span class="hmid">TP ${tray.tp}</span>${side(1)}`;
+  const t = `${side(0)}<span class="hmid">${T.hud.pi(tray.tp)}</span>${side(1)}`;
   if (top._html !== t) { top.innerHTML = t; top._html = t; }
   const b = bug();
   if (bot._html !== b) { bot.innerHTML = b; bot._html = b; }
@@ -157,7 +159,7 @@ export function wireHud() {
     const s = +b.dataset.cp, d = +b.dataset.d;
     if (tray.cp[s] + d < 0) return;
     snapshot(); tray.cp[s] += d;
-    logLine(`<b>${esc(teamName(s))}</b> ${d > 0 ? "gains" : "spends"} 1CP (${tray.cp[s]} left).`);
+    logLine(T.hud.logPM(esc(teamName(s)), d > 0, tray.cp[s]));
     sh.innerHTML = sheet(); renderAll();
   });
   sh.addEventListener("change", ev => {

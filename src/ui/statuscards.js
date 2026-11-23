@@ -9,6 +9,7 @@
  * Which cards are open is this browser's; the cards themselves are shared online with the
  * mission (opsState.notes). Each side edits its own, or both when the host allows it.
  */
+import { T } from '../i18n/es.js';
 import { TEAMNAME } from '../config.js';
 import { net, online } from '../net/sync.js';
 import { onOptionChange, options } from './options.js';
@@ -47,27 +48,27 @@ function cardHTML(s, i) {
   const n = opsState.notes[s][i] || { h: "", m: "", s: "" };
   if (editing && editing.s === s && editing.i === i) {
     const field = (k, ph) => `<input class="sc${k}" data-f="${k}" maxlength="${LEN[k]}" value="${esc(n[k])}" placeholder="${ph}" aria-label="${ph}">`;
-    return `<form class="scard editing" data-s="${s}" data-i="${i}">${field("h", "Header")}${field("m", "Main text")}${field("s", "Small text")}
-      <div class="scbtns"><button class="mini" type="submit">Save</button><button class="mini" type="button" data-act="cancel">Cancel</button>
-      ${i < opsState.notes[s].length ? `<button class="mini" type="button" data-act="del" title="Remove this card">Remove</button>` : ""}</div></form>`;
+    return `<form class="scard editing" data-s="${s}" data-i="${i}">${field("h", T.tarjetas.encabezado)}${field("m", T.tarjetas.principal)}${field("s", T.tarjetas.pequeno)}
+      <div class="scbtns"><button class="mini" type="submit">${T.tarjetas.guardar}</button><button class="mini" type="button" data-act="cancel">${T.tarjetas.cancelar}</button>
+      ${i < opsState.notes[s].length ? `<button class="mini" type="button" data-act="del" title="${T.tarjetas.quitarTitulo}">${T.tarjetas.quitar}</button>` : ""}</div></form>`;
   }
-  const tools = (mayNote(s) ? `<button class="scbtn" data-act="edit" title="Edit this card" aria-label="Edit">✎</button>`
-                            : `<span class="sclock" title="Only the ${TEAMNAME[s]} player edits these">${LOCK}</span>`) +
-    (options.cardLayout === "chips" ? `<button class="scbtn" data-act="close" title="Fold it back to a tab" aria-label="Close">×</button>` : "");
+  const tools = (mayNote(s) ? `<button class="scbtn" data-act="edit" title="${T.tarjetas.editarTitulo}" aria-label="${T.tarjetas.editar}">✎</button>`
+                            : `<span class="sclock" title="${T.tarjetas.soloEdita(TEAMNAME[s])}">${LOCK}</span>`) +
+    (options.cardLayout === "chips" ? `<button class="scbtn" data-act="close" title="${T.tarjetas.plegar}" aria-label="${T.tarjetas.cerrar}">×</button>` : "");
   return `<div class="scard" data-s="${s}" data-i="${i}"><div class="sch"><span>${esc(n.h)}</span><span class="sctools">${tools}</span></div>` +
     `<div class="scm">${esc(n.m)}</div>${n.s ? `<div class="scs">${esc(n.s)}</div>` : ""}` +
-    (n.by === 0 || n.by === 1 ? `<div class="scby">changed by ${TEAMNAME[n.by]}</div>` : "") + `</div>`;
+    (n.by === 0 || n.by === 1 ? `<div class="scby">${T.tarjetas.cambiadaPor(TEAMNAME[n.by])}</div>` : "") + `</div>`;
 }
 function dockHTML(s) {
   const notes = opsState.notes[s], adding = editing && editing.s === s && editing.i === notes.length;
-  const add = mayNote(s) && !adding && notes.length < MAX ? `<button class="scadd" data-act="add" title="Add a status card for ${TEAMNAME[s]}">+ card</button>` : "";
+  const add = mayNote(s) && !adding && notes.length < MAX ? `<button class="scadd" data-act="add" title="${T.tarjetas.agregarTitulo(TEAMNAME[s])}">${T.tarjetas.agregar}</button>` : "";
   const who = online() && mayNoteSetUp() && s === 0
-    ? `<button class="scadd" data-act="who" title="Who may edit the status cards (you're the host)">${opsState.noteEdit === "any" ? "both edit both" : "own side only"}</button>` : "";
+    ? `<button class="scadd" data-act="who" title="${T.tarjetas.quienTitulo}">${opsState.noteEdit === "any" ? T.tarjetas.ambos : T.tarjetas.propio}</button>` : "";
   const cards = notes.map((_, i) => i);
   if (adding) cards.push(notes.length);
   if (options.cardLayout === "drawer") {
     if (!notes.length && !add && !adding) return "";
-    const tab = `<button class="sctab" data-act="drawer" aria-expanded="${drawer[s]}" title="${TEAMNAME[s]} status cards">${notes.length ? notes.length + " " : ""}card${notes.length === 1 ? "" : "s"}</button>`;
+    const tab = `<button class="sctab" data-act="drawer" aria-expanded="${drawer[s]}" title="${T.tarjetas.pestanaTitulo(TEAMNAME[s])}">${T.tarjetas.pestana(notes.length)}</button>`;
     return `<div class="scrow">${tab}${drawer[s] || adding ? `<div class="sccol">${cards.map(i => cardHTML(s, i)).join("")}${add}${who}</div>` : ""}</div>`;
   }
   return cards.map(i => open[s].has(i) || (editing && editing.s === s && editing.i === i) ? cardHTML(s, i)
@@ -99,13 +100,13 @@ function save(s, form) {
   if (!card.h && !card.m && !card.s) { renderStatusCards(); return; }   // an empty new card: nothing to keep
   list[i] = card;
   if (options.cardLayout === "chips") open[s].add(i);
-  setNotes(s, list, `<b>${TEAMNAME[s]}</b> status card ${isNew ? "added" : "changed"}: <b>${esc(card.m || card.h)}</b>${card.s ? " — " + esc(card.s) : ""}.`);
+  setNotes(s, list, T.tarjetas.logCambio(TEAMNAME[s], isNew, esc(card.m || card.h), card.s ? esc(card.s) : ""));
 }
 function remove(s, i) {
   const list = opsState.notes[s].filter((_, j) => j !== i), gone = opsState.notes[s][i];
   open[s] = new Set([...open[s]].filter(j => j !== i).map(j => j > i ? j - 1 : j));
   editing = null;
-  setNotes(s, list, `<b>${TEAMNAME[s]}</b> status card removed: <b>${esc(gone.m || gone.h)}</b>.`);
+  setNotes(s, list, T.tarjetas.logQuitada(TEAMNAME[s], esc(gone.m || gone.h)));
 }
 
 export function wireStatusCards() {

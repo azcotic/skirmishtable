@@ -178,21 +178,21 @@ test('right-click menu on the 2D token and the top bar: mark expended, undo an a
   const at = await toScreen(page, 12.05, 4.25);
   await page.mouse.click(at.x, at.y, { button: 'right' });
   await expect(page.locator('.opmenu')).toBeVisible();
-  await page.locator('.opmenu button', { hasText: 'Undo activation' }).click();
+  await page.locator('.opmenu button', { hasText: T.menu.deshacer }).click();
   await expect(page.locator('.opmenu')).toHaveCount(0);
   expect(await a2(page)).toEqual([10.71, 7.48, true, true, 0]);
   await expect(page.locator('#log p').first()).toContainText('Se deshizo la activación');
   // the top bar's circle has the same menu: nothing done yet, so only Mark expended
   await page.locator('.hsq[data-oid="A2"]').click({ button: 'right' });
-  await expect(page.locator('.opmenu button', { hasText: 'Undo activation' })).toBeDisabled();
-  await page.locator('.opmenu button', { hasText: 'Mark expended' }).click();
+  await expect(page.locator('.opmenu button', { hasText: T.menu.deshacer })).toBeDisabled();
+  await page.locator('.opmenu button', { hasText: T.menu.usado }).click();
   expect((await a2(page))[2]).toBe(false);
   await expect(page.locator('.hsq[data-oid="A2"]')).toHaveClass(/spent/);
   // and back to ready from the token
   const back = await toScreen(page, 10.71, 7.48);
   await page.mouse.click(back.x, back.y, { button: 'right' });
-  await expect(page.locator('.opmenu button', { hasText: 'Mark expended' })).toBeDisabled();
-  await page.locator('.opmenu button', { hasText: 'Undo activation' }).click();
+  await expect(page.locator('.opmenu button', { hasText: T.menu.usado })).toBeDisabled();
+  await page.locator('.opmenu button', { hasText: T.menu.deshacer }).click();
   expect(await a2(page)).toEqual([10.71, 7.48, true, true, 0]);
   // a change of order alone can be undone, and Undo puts the order from before back
   // (the side panel's button scrolls the page: measure the board afresh each time)
@@ -204,13 +204,13 @@ test('right-click menu on the 2D token and the top bar: mark expended, undo an a
   expect(await order()).not.toBe(was);
   await drag(page, [10.71, 7.48], [12.05, 4.25]);   // a snapshot after the flip keeps the order from before
   await clickAt(12.05, 4.25, 'right');
-  await page.locator('.opmenu button', { hasText: 'Undo activation' }).click();
+  await page.locator('.opmenu button', { hasText: T.menu.deshacer }).click();
   expect(await a2(page)).toEqual([10.71, 7.48, true, true, 0]);
   expect(await order()).toBe(was);
   await page.locator('#ordbtn').click();
   await clickAt(10.71, 7.48, 'right');
-  await expect(page.locator('.opmenu button', { hasText: 'Undo activation' })).toBeEnabled();
-  await page.locator('.opmenu button', { hasText: 'Undo activation' }).click();
+  await expect(page.locator('.opmenu button', { hasText: T.menu.deshacer })).toBeEnabled();
+  await page.locator('.opmenu button', { hasText: T.menu.deshacer }).click();
   expect(await order()).toBe(was);
   // Escape closes it
   await page.locator('.hsq[data-oid="A2"]').click({ button: 'right' });
@@ -226,27 +226,27 @@ test('an expended token greys out; Mark incapacitated takes it off the table, an
   const filter = () => tok.evaluate(g => g.style.filter);
   expect(await filter()).toBe('');
   await page.locator('.hsq[data-oid="A2"]').click({ button: 'right' });
-  await page.locator('.opmenu button', { hasText: 'Mark expended' }).click();
+  await page.locator('.opmenu button', { hasText: T.menu.usado }).click();
   expect(await filter()).toContain('grayscale');
   // incapacitated: gone from the map, a cross in the top bar
   const at = await toScreen(page, 10.71, 7.48);
   await page.mouse.click(at.x, at.y, { button: 'right' });
-  await page.locator('.opmenu button', { hasText: 'Mark incapacitated' }).click();
+  await page.locator('.opmenu button', { hasText: T.menu.incapacitar }).click();
   await expect(tok).toHaveCount(0);
   await expect(page.locator('.hsq[data-oid="A2"]')).toHaveClass(/dead/);
   await expect(page.locator('#log p').first()).toContainText('queda incapacitado');
   // its circle offers only Back on the table, which puts it back where it was
   await page.locator('.hsq[data-oid="A2"]').click({ button: 'right' });
   await expect(page.locator('.opmenu button')).toHaveCount(1);
-  await page.locator('.opmenu button', { hasText: 'Back on the table' }).click();
+  await page.locator('.opmenu button', { hasText: T.menu.volver }).click();
   await expect(tok).toHaveCount(1);
   expect(await kz(page, () => { const o = skirmishtable.world.OPS.find(o => o.id === 'A2'); return [o.alive, +o.x.toFixed(2), o.wounds > 0]; })).toEqual([true, 10.71, true]);
   // someone moved onto its spot while it was down: it comes back beside them, not on top
   await page.mouse.click(at.x, at.y, { button: 'right' });
-  await page.locator('.opmenu button', { hasText: 'Mark incapacitated' }).click();
+  await page.locator('.opmenu button', { hasText: T.menu.incapacitar }).click();
   await kz(page, () => { const o = skirmishtable.world.OPS.find(o => o.id === 'A3'); o.alive = true; o.x = 10.71; o.y = 7.48; o.z = 0; skirmishtable.renderAll(); });
   await page.locator('.hsq[data-oid="A2"]').click({ button: 'right' });
-  await page.locator('.opmenu button', { hasText: 'Back on the table' }).click();
+  await page.locator('.opmenu button', { hasText: T.menu.volver }).click();
   await expect(tok).toHaveCount(1);
   await expect(page.locator('#log p').first()).toContainText('se movió a un lado');
   // its new spot is clear of A3 and of terrain
@@ -257,7 +257,7 @@ test('right-click menu on the 3D model', async ({ page }) => {
   await place(page, 'A2', 10.71, 7.48);
   const m = await toScreen3D(page, 10.71, 7.48, 0.7);
   await page.mouse.click(m.x, m.y, { button: 'right' });
-  await page.locator('.opmenu button', { hasText: 'Mark expended' }).click();
+  await page.locator('.opmenu button', { hasText: T.menu.usado }).click();
   expect((await a2(page))[2]).toBe(false);
   // a right-drag from the model pans: no menu, whether contextmenu comes on the press or the release
   await page.mouse.move(m.x, m.y);
@@ -344,7 +344,7 @@ test('the Miniatures panel adds and removes operatives, and undo brings one back
   expect(await ids()).toEqual(['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7']);
   expect(await tokens()).toBe(13);
   await expect(page.locator('.hsqs').first().locator('.hsq')).toHaveCount(7);
-  await expect(page.locator('#log p').first()).toContainText('joins');
+  await expect(page.locator('#log p').first()).toContainText('se une a');
   await page.locator('#minis .minirm[data-op="A2"]').click();
   expect(await ids()).toEqual(['A1', 'A3', 'A4', 'A5', 'A6', 'A7']);
   expect(await tokens()).toBe(12);

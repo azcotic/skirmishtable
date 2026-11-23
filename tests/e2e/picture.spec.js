@@ -29,7 +29,7 @@ test('saves a picture of the 3D table and of the 2D map', async ({ page }) => {
   expect(p.w).toBe(canvas[0] * 2);
   expect(p.h).toBe(canvas[1] * 2 + Math.round(canvas[0] * 2 / 40));
   expect(p.bytes).toBeGreaterThan(30000);
-  await expect(page.locator('#hint')).toContainText('3D table');
+  await expect(page.locator('#hint')).toContainText('mesa 3D');
   // the grab resized the canvas, which clears it: the table is drawn again afterwards
   await expect.poll(frame).toBeGreaterThanOrEqual(f0 + 2);   // the grab, then the redraw
 
@@ -40,6 +40,6 @@ test('saves a picture of the 3D table and of the 2D map', async ({ page }) => {
   p = await png(dl);
   expect([p.w, p.h]).toEqual([vb[0], vb[1] + Math.round(vb[0] / 40)]);
   expect(p.bytes).toBeGreaterThan(30000);
-  await expect(page.locator('#hint')).toContainText('2D map');
+  await expect(page.locator('#hint')).toContainText('mapa 2D');
   expect(errors).toEqual([]);
 });

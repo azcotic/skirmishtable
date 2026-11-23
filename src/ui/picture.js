@@ -4,6 +4,7 @@
  * downloaded in this browser. Nothing is uploaded; the picture never leaves the player's
  * own machine until they send it. Pairs with share links (src/net/share.js).
  */
+import { T } from '../i18n/es.js';
 import { MAP } from '../engine/world.js';
 import { RULES } from '../rules/index.js';
 import { requestRender, three, view3D } from '../view3d/table3d.js';
@@ -85,5 +86,5 @@ export async function savePicture() {
   a.download = pictureName(MAP.name, tray.tp);
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-  hint(`Saved ${a.download} — a picture of the ${view3D ? "3D table" : "2D map"} as it is now.`);
+  hint(T.captura.guardada(a.download, view3D));
 }

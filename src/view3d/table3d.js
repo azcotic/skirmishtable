@@ -921,8 +921,8 @@ function showModels(note) {
     if (pct < 100) note.textContent = T.vista.cargando(pct, (progress.total / 1e6).toFixed(0));
     else if (progress.failed) {
       // say so (blocks and cylinders stand in) rather than leave a bare table; the console has the cause
-      note.textContent = `${progress.failed} download${progress.failed > 1 ? "s" : ""} from Steam failed: blocks stand in. Check the connection, or an ad/content blocker on cdn.steamusercontent.com.`;
-      btn.textContent = "Retry"; btn.style.display = "";
+      note.textContent = T.vista.falloDescarga(progress.failed);
+      btn.textContent = T.vista.reintentar; btn.style.display = "";
     } else note.textContent = NOTE3D;
   };
   build3DScene(); progress.onChange();
@@ -937,7 +937,7 @@ export function setView(to3d) {
   document.getElementById("ringpick").style.display = to3d ? "" : "none";
   const note = document.getElementById("v3dnote");
   if (to3d) {
-    if (!window.THREE || !THREE.OrbitControls) { note.textContent = "3D libraries didn't load here — using the 2D map."; setView(false); return; }
+    if (!window.THREE || !THREE.OrbitControls) { note.textContent = T.vista.sin3d; setView(false); return; }
     if (!three) init3D();
     build3DScene();
     // the exact models when the pack is there (else the decimated scans), with progress

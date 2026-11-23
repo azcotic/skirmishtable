@@ -4,6 +4,7 @@
  * activation began; Mark incapacitated takes it off the table, and its top-bar circle then
  * offers Back on the table (panels.js). On a phone a long press opens it.
  */
+import { T } from '../i18n/es.js';
 import { TEAMCOL_LT } from '../config.js';
 import { OPS } from '../engine/world.js';
 import { mayControl } from '../net/sync.js';
@@ -22,13 +23,14 @@ export function openOpMenu(op, x, y) {
   // [key, label, enabled, action]: an operative on the table gets the first three, one that's
   // down (only its top-bar circle is left) the last
   const items = op.alive ? [
-    ["expend", "Mark expended", mine && op.ready, cur => endActivation(cur)],
-    ["undo", "Undo activation", mine && canUndoActivation(op), cur => undoActivation(cur)],
-    ["dead", "✕ Mark incapacitated", mine, cur => setIncapacitated(cur, true)],
+    ["expend", T.menu.usado, mine && op.ready, cur => endActivation(cur)],
+    ["undo", T.menu.deshacer, mine && canUndoActivation(op), cur => undoActivation(cur)],
+    ["dead", T.menu.incapacitar, mine, cur => setIncapacitated(cur, true)],
   ] : [
-    ["revive", "Back on the table", mine, cur => setIncapacitated(cur, false)],
+    ["revive", T.menu.volver, mine, cur => setIncapacitated(cur, false)],
   ];
-  const why = !op.alive ? "Incapacitated" : !mine ? "Not yours to change" : !op.ready ? "Expended" : op.used.length ? "Activating" : "Ready";
+  const E = T.estado;
+  const why = !op.alive ? E.dead : !mine ? E.ajeno : !op.ready ? E.spent : op.used.length ? E.active : E.ready;
   menu = document.createElement("div");
   menu.className = "opmenu"; menu.setAttribute("role", "menu");
   menu.innerHTML = `<div class="omh" style="color:${TEAMCOL_LT[op.team]}">${esc(op.id)} · ${esc(op.name)}<span>${why}</span></div>` +

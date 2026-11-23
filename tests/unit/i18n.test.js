@@ -15,7 +15,7 @@ const EJEMPLOS = [['Ash', 3, 2.5, 1], [3, 2.5, 1, 1], ['Ash', 'Slate', 3, 1], ['
 const limpio = s => typeof s === 'string' && s.length > 0 && !/undefined|NaN|\[object/.test(s);
 function probar(f) {
   let ultimo;
-  for (const e of EJEMPLOS) { try { ultimo = f(...e.slice(0, f.length || 1)); if (limpio(ultimo)) return ultimo; } catch (err) { ultimo = String(err); } }
+  for (const e of EJEMPLOS) { try { ultimo = f(...e.slice(0, f.length || 1)); if (limpio(ultimo)) return ultimo; } catch (err) { ultimo = `undefined (lanzó: ${err})`; } }
   return ultimo;
 }
 // funciones que reciben listas u otros tipos: sus argumentos de ejemplo
@@ -32,6 +32,9 @@ const ARGS = {
   'mover.soltar': ['A1', 'charge', 'medida exacta', 1, true],
   'disparo.log': ['A1', 'B1', 'Bólter', '6 4', '3', true, 3, ['Accurate 1', 'cover save banked']],
   'combate.log': ['A1', 'B1', '6 4', '5 2', 2, 0],
+  'hud.aria': ['A1', 'Vekk', 'Apostado', 10, 14],
+  'hud.hizo': [['reposition', 'shoot']],
+  'operaciones.puntos': ['Ash', 2, 0, 3, 5],
   'terreno.trepar': [2, 0, ['Reposicionarse', 'Cargar']],
   'partida.notaFina': ['Volkus AO 1', 30, 22, 'despliegue', 40, ''],
   'partida.notaMuros': ['Gallowdark', 30, 22, 'despliegue', 12, 2, 'fuente'],

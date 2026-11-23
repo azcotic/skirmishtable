@@ -401,3 +401,13 @@ table.hscore tfoot td { font-size: 14px; padding-top: 3px; }
   50% { box-shadow: 0 0 12px 3px rgba(224, 103, 47, .75); }
 }
 @media (prefers-reduced-motion: reduce) { #loadtts { animation: none; } }
+
+/* Avanzado: sección plegable al final del panel lateral (index.html) */
+.panel.avanzado > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+.panel.avanzado > summary::-webkit-details-marker { display: none; }
+.panel.avanzado > summary::before { content: "▸"; color: #8b8072; transition: transform .15s; }
+.panel.avanzado[open] > summary::before { transform: rotate(90deg); }
+.panel.avanzado > summary h2 { margin: 0; }
+.panel.avanzado .avbloque { margin-top: 12px; padding-top: 10px; border-top: 1px solid #2e2921; }
+.panel.avanzado .avbloque h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #a89a80; }
+.panel.avanzado .ringpick { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }

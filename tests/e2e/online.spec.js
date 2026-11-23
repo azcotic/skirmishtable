@@ -76,7 +76,7 @@ test('dice, mission cards, score and markers are shared', async ({ context }) =>
   const dice = await tray(guest, 1);
   await expect.poll(() => tray(host, 1)).toBe(dice);
   await expect(host.locator('#dicemat1')).toBeVisible();
-  await expect(host.locator('#dicemat1 .dmsum')).toContainText('crit');
+  await expect(host.locator('#dicemat1 .dmsum')).toContainText('crític');
   await expect(host.locator('#dicemat1 [data-n="2"]')).toBeDisabled();
   await guest.locator('#dicedock0 .diceicon').click();
   await expect(guest.locator('#dicemat0 [data-n="2"]')).toBeDisabled();
@@ -99,7 +99,7 @@ test('dice, mission cards, score and markers are shared', async ({ context }) =>
   });
   const box = await guest.locator('#board').boundingBox();
   await guest.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-  await expect(host.locator('#opsbox summary').last()).toContainText('Markers (1)');
+  await expect(host.locator('#opsbox summary').last()).toContainText(T.operaciones.marcadores(1));
 
   expect(errors).toEqual([]);
 });

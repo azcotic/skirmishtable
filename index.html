@@ -31,16 +31,6 @@
       <button id="view3d" class="mini active" data-t="vista.mesa3d" data-t-title="vista.mesa3dTitulo"></button>
       <button id="view2d" class="mini" data-t="vista.mapa2d" data-t-title="vista.mapa2dTitulo"></button>
       <button id="view3dtop" class="mini" style="display:none" data-t="vista.cenital" data-t-title="vista.cenitalTitulo"></button>
-      <span id="ringpick" class="ringpick" style="display:none" data-t-title="anillos.titulo">
-        <label><span data-t="anillos.apostado"></span> <select id="ringready"></select></label>
-        <label><span data-t="anillos.activo"></span> <select id="ringactive"></select></label>
-      </span>
-      <span id="threatpick" class="ringpick" data-t-title="amenazas.titulo">
-        <label><span data-t="amenazas.nombre"></span> <select id="threatstyle"></select></label>
-        <label data-t-title="amenazas.zonasTitulo"><span data-t="amenazas.zonas"></span> <select id="threatstrength"></select></label>
-        <label data-t-title="amenazas.rutasTitulo"><span data-t="amenazas.rutas"></span> <select id="threatpaths"></select></label>
-        <span class="threatkey" id="threatkey"><i class="ch"></i><span data-t="amenazas.leyendaCarga"></span> <i class="cl"></i><span data-t="amenazas.leyendaSinCobertura"></span></span>
-      </span>
       <span class="foldonly">
         <button class="mini" data-press="endtp" data-t="bandeja.finPI" data-t-title="bandeja.finPITitulo"></button>
         <button class="mini" data-press="undo" data-t="bandeja.deshacer" data-t-title="bandeja.deshacerTitulo"></button>
@@ -92,30 +82,16 @@
     </div>
 
     <div class="panel">
-      <h2 data-t="paneles.enLinea"></h2>
-      <div id="netbox"></div>
-      <div id="sharebox"></div>
+      <h2><span data-t="paneles.zona"></span> <span class="tag" id="buildtag" style="margin-left:6px;letter-spacing:.06em" data-t="zona.version" data-t-title="zona.versionTitulo"></span></h2>
+      <div id="mapbtns"></div>
+      <div class="hint" id="mapnote"></div>
     </div>
 
-    <div class="panel">
-      <h2 data-t="paneles.grabacion"></h2>
-      <div id="replaybox"></div>
-    </div>
-
-    <div class="panel">
+    <!-- Kill Team es el único reglamento: el selector queda oculto (src/rules/ conserva los demás) -->
+    <div class="panel" hidden>
       <h2 data-t="paneles.reglas"></h2>
       <div class="btnrow" id="rulebtns"></div>
       <div class="hint" id="rulenote"></div>
-    </div>
-
-    <div class="panel">
-      <h2><span data-t="paneles.zona"></span> <span class="tag" id="buildtag" style="margin-left:6px;letter-spacing:.06em" data-t="zona.version" data-t-title="zona.versionTitulo"></span></h2>
-      <div id="mapbtns"></div>
-      <div class="btnrow">
-        <button class="mini" id="importbtn" data-t="zona.importar" data-t-title="zona.importarTitulo"></button>
-        <input type="file" id="importfile" style="display:none">
-      </div>
-      <div class="hint" id="mapnote"></div>
     </div>
 
     <div class="panel">
@@ -142,6 +118,40 @@
       <h2 data-t="paneles.registro"></h2>
       <div id="log"></div>
     </div>
+
+    <!-- Lo que no hace falta para aprender: plegado; se recuerda abierto o cerrado (src/ui/sidepanel.js) -->
+    <details class="panel avanzado" id="avanzado">
+      <summary><h2 data-t="paneles.avanzado"></h2></summary>
+      <div class="avbloque">
+        <h3 data-t="amenazas.nombre"></h3>
+        <span id="threatpick" class="ringpick" data-t-title="amenazas.titulo">
+          <label><span data-t="amenazas.estilo"></span> <select id="threatstyle"></select></label>
+          <label data-t-title="amenazas.zonasTitulo"><span data-t="amenazas.zonas"></span> <select id="threatstrength"></select></label>
+          <label data-t-title="amenazas.rutasTitulo"><span data-t="amenazas.rutas"></span> <select id="threatpaths"></select></label>
+          <span class="threatkey" id="threatkey"><i class="ch"></i><span data-t="amenazas.leyendaCarga"></span> <i class="cl"></i><span data-t="amenazas.leyendaSinCobertura"></span></span>
+        </span>
+        <span id="ringpick" class="ringpick" style="display:none" data-t-title="anillos.titulo">
+          <label><span data-t="anillos.apostado"></span> <select id="ringready"></select></label>
+          <label><span data-t="anillos.activo"></span> <select id="ringactive"></select></label>
+        </span>
+      </div>
+      <div class="avbloque">
+        <h3 data-t="paneles.enLinea"></h3>
+        <div id="netbox"></div>
+        <div id="sharebox"></div>
+      </div>
+      <div class="avbloque">
+        <h3 data-t="paneles.grabacion"></h3>
+        <div id="replaybox"></div>
+      </div>
+      <div class="avbloque">
+        <h3 data-t="paneles.importar"></h3>
+        <div class="btnrow">
+          <button class="mini" id="importbtn" data-t="zona.importar" data-t-title="zona.importarTitulo"></button>
+          <input type="file" id="importfile" style="display:none">
+        </div>
+      </div>
+    </details>
   </aside>
 </div>
 

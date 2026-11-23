@@ -9,6 +9,7 @@
  *   - the universal equipment cards, and markers (grenades, objective tokens) on the table
  * Shared online like the rest of the game (src/net/sync.js).
  */
+import { G, T } from '../i18n/es.js';
 import { TTS_OPS } from '../data/tts-ops.js';
 import { TEAMCOL, TEAMNAME } from '../config.js';
 import { state } from '../state.js';
@@ -17,7 +18,7 @@ import { hint, logLine, HINT0 } from './dom.js';
 import { renderAll } from './board.js';
 import { snapshot, tray, undoExtras } from './panels.js';
 
-const COLS = ["Crit", "Tac", "Kill"];
+const COLS = T.operaciones.cols;
 const blankScore = () => [0, 1].map(() => [0, 1, 2, 3].map(() => [0, 0, 0]));
 // notes: each side's status cards on the board edges ({h header, m main, s small text,
 // by: the side that last changed it, when not its own}); noteEdit: "own" or "any" side may edit them
@@ -59,7 +60,7 @@ export function cardImage(c) {
 function fillImages(box) {
   box.querySelectorAll("img[data-card]").forEach(im => {
     const c = cardFrom(im.dataset.card);
-    if (c) cardImage(c).then(u => { im.src = u; im.classList.add("ready"); }, () => { im.alt = "card unavailable"; });
+    if (c) cardImage(c).then(u => { im.src = u; im.classList.add("ready"); }, () => { im.alt = T.operaciones.noDisponible; });
   });
 }
 function cardFrom(ref) {
@@ -71,7 +72,7 @@ function cardFrom(ref) {
   if (kind === "eq") return TTS_OPS.equipment[+i];
   return null;
 }
-const cardImg = (ref, title, cls = "") => `<img class="cardthumb ${cls}" data-card="${ref}" alt="${title}" title="${title} — click to enlarge">`;
+const cardImg = (ref, title, cls = "") => `<img class="cardthumb ${cls}" data-card="${ref}" alt="${title}" title="${T.operaciones.ampliar(title)}">`;
 function showCard(ref) {
   const c = cardFrom(ref);
   if (!c) return;
@@ -81,7 +82,7 @@ function showCard(ref) {
     ov.onclick = () => ov.remove();
     document.body.appendChild(ov);
   }
-  ov.innerHTML = `<figure><img alt="${c.name}"><figcaption>${c.name}${c.text ? " — " + c.text.replace(/</g, "&lt;") : ""} · click to close</figcaption></figure>`;
+  ov.innerHTML = `<figure><img alt="${c.name}"><figcaption>${c.name}${c.text ? " — " + c.text.replace(/</g, "&lt;") : ""}${T.operaciones.cerrarCarta}</figcaption></figure>`;
   cardImage(c).then(u => { ov.querySelector("img").src = u; });
 }
 
@@ -92,7 +93,7 @@ export function placeMarkerAt(x, y) {
   snapshot();
   const k = markerPick, id = (opsState.markers.reduce((a, m) => Math.max(a, m.id), 0) || 0) + 1;
   opsState.markers.push({ id, k, x: +x.toFixed(2), y: +y.toFixed(2) });
-  logLine(`Placed <b>${TTS_OPS.tokens[k].name}</b> marker.`);
+  logLine(T.operaciones.colocado(TTS_OPS.tokens[k].name));
   markerPick = null; state.mode = null; hint(HINT0);
   changed();
   return true;
@@ -114,48 +115,48 @@ export function renderOps() {
   const side = s => {
     const tac = opsState.tac[s], p = opsState.primary[s];
     return `<div class="opside"><b style="color:${TEAMCOL[s]}">${TEAMNAME[s]}</b>
-      <label>Tac Op <select class="optac" data-s="${s}"${dis(mine(s))}>${opt(set.tac, tac)}</select></label>
-      <label title="The Primary op's VP count again (half, rounded up) at the end">Primary
+      <label>${T.operaciones.tactica} <select class="optac" data-s="${s}"${dis(mine(s))}>${opt(set.tac, tac)}</select></label>
+      <label title="${T.operaciones.primariaTitulo}">${T.operaciones.primaria}
         <select class="opprim" data-s="${s}"${dis(mine(s))}><option value="">—</option>${COLS.map((n, i) => `<option value="${i}"${p === i ? " selected" : ""}>${n}</option>`).join("")}</select></label>
       ${tac !== null ? cardImg("tac:" + tac, set.tac[tac].name) : ""}</div>`;
   };
-  const scoreRows = [0, 1, 2, 3].map(tp => `<tr><th>TP${tp + 1}</th>${[0, 1].map(s => COLS.map((_, c) =>
+  const scoreRows = [0, 1, 2, 3].map(tp => `<tr><th>${T.hud.pi(tp + 1)}</th>${[0, 1].map(s => COLS.map((_, c) =>
     `<td><input type="number" min="0" max="9" class="opvp" data-s="${s}" data-tp="${tp}" data-c="${c}" value="${opsState.score[s][tp][c] || ""}"${dis(mine(s))}></td>`).join("")).join("")}</tr>`).join("");
   box.innerHTML = `
     <div class="btnrow oprow">
-      <label>Season <select id="opset"${dis(host())}>${TTS_OPS.sets.map((x, i) => `<option value="${i}"${i === opsState.set ? " selected" : ""}>${x.name}</option>`).join("")}</select></label>
-      <label>Crit Op <select id="opcrit"${dis(host())}>${opt(set.crit, opsState.crit)}</select></label>
-      <button class="mini" id="opcritrnd"${dis(host())} title="Draw a random Crit Op">Draw</button>
+      <label>${T.operaciones.temporada} <select id="opset"${dis(host())}>${TTS_OPS.sets.map((x, i) => `<option value="${i}"${i === opsState.set ? " selected" : ""}>${x.name}</option>`).join("")}</select></label>
+      <label>${T.operaciones.critica} <select id="opcrit"${dis(host())}>${opt(set.crit, opsState.crit)}</select></label>
+      <button class="mini" id="opcritrnd"${dis(host())} title="${T.operaciones.robarTitulo}">${T.operaciones.robar}</button>
     </div>
     <div class="cardrow">
       ${opsState.crit !== null ? cardImg("crit:" + opsState.crit, set.crit[opsState.crit].name) : ""}
-      ${set.kill ? cardImg("kill:0", "Kill Op") : ""}
+      ${set.kill ? cardImg("kill:0", T.operaciones.eliminacion) : ""}
     </div>
     <div class="opsides">${side(0)}${side(1)}</div>
     <table class="opscore"><thead>
       <tr><th></th><th colspan="3" style="color:${TEAMCOL[0]}">${TEAMNAME[0]}</th><th colspan="3" style="color:${TEAMCOL[1]}">${TEAMNAME[1]}</th></tr>
       <tr><th></th>${[0, 1].map(() => COLS.map(n => `<th>${n}</th>`).join("")).join("")}</tr></thead>
       <tbody>${scoreRows}</tbody>
-      <tfoot><tr><th>VP</th><td colspan="3"><b>${scoreTotal(0)}</b></td><td colspan="3"><b>${scoreTotal(1)}</b></td></tr></tfoot></table>
-    ${set.extras.length ? `<details><summary>Initiative cards</summary><div class="cardrow">${set.extras.map((c, i) => cardImg("extra:" + i, c.name, "small")).join("")}</div></details>` : ""}
-    <details><summary>Equipment</summary><div class="cardrow">${TTS_OPS.equipment.map((c, i) => cardImg("eq:" + i, c.name, "small")).join("")}</div></details>
-    <details${opsState.markers.length || markerPick !== null ? " open" : ""}><summary>Markers (${opsState.markers.length})</summary>
-      <div class="tokrow">${TTS_OPS.tokens.map((t, i) => `<button class="tok${markerPick === i ? " active" : ""}" data-k="${i}" title="${t.name} — then click the table"${dis(mine(0) || mine(1))}><img src="${t.img}" alt="${t.name}" crossorigin="anonymous"></button>`).join("")}</div>
-      ${opsState.markers.length ? `<div class="toklist">${opsState.markers.map(m => `<span>${TTS_OPS.tokens[m.k] ? TTS_OPS.tokens[m.k].name : "?"} <button class="mini" data-rm="${m.id}" title="Remove"${dis(mine(0) || mine(1))}>×</button></span>`).join(" ")}</div>` : ""}
+      <tfoot><tr><th>${G.pv.abrev}</th><td colspan="3"><b>${scoreTotal(0)}</b></td><td colspan="3"><b>${scoreTotal(1)}</b></td></tr></tfoot></table>
+    ${set.extras.length ? `<details><summary>${T.operaciones.iniciativa}</summary><div class="cardrow">${set.extras.map((c, i) => cardImg("extra:" + i, c.name, "small")).join("")}</div></details>` : ""}
+    <details><summary>${T.operaciones.equipo}</summary><div class="cardrow">${TTS_OPS.equipment.map((c, i) => cardImg("eq:" + i, c.name, "small")).join("")}</div></details>
+    <details${opsState.markers.length || markerPick !== null ? " open" : ""}><summary>${T.operaciones.marcadores(opsState.markers.length)}</summary>
+      <div class="tokrow">${TTS_OPS.tokens.map((t, i) => `<button class="tok${markerPick === i ? " active" : ""}" data-k="${i}" title="${T.operaciones.marcadorTitulo(t.name)}"${dis(mine(0) || mine(1))}><img src="${t.img}" alt="${t.name}" crossorigin="anonymous"></button>`).join("")}</div>
+      ${opsState.markers.length ? `<div class="toklist">${opsState.markers.map(m => `<span>${TTS_OPS.tokens[m.k] ? TTS_OPS.tokens[m.k].name : "?"} <button class="mini" data-rm="${m.id}" title="${T.operaciones.quitar}"${dis(mine(0) || mine(1))}>×</button></span>`).join(" ")}</div>` : ""}
     </details>
-    <div class="hint">Cards and token art load from the Killzone Mod into this browser; this site doesn't host them.</div>`;
+    <div class="hint">${T.operaciones.nota}</div>`;
   fillImages(box);
   box.querySelectorAll("img[data-card]").forEach(im => im.onclick = () => showCard(im.dataset.card));
   const sel = (q, fn) => { const e = box.querySelector(q); if (e) e.onchange = () => fn(e.value); };
   sel("#opset", v => { snapshot(); Object.assign(opsState, { set: +v, crit: null, tac: [null, null] }); changed(); });
-  sel("#opcrit", v => { snapshot(); opsState.crit = v === "" ? null : +v; if (v !== "") logLine(`Crit Op: <b>${set.crit[+v].name}</b>.`); changed(); });
+  sel("#opcrit", v => { snapshot(); opsState.crit = v === "" ? null : +v; if (v !== "") logLine(T.operaciones.criticaLog(set.crit[+v].name)); changed(); });
   box.querySelector("#opcritrnd").onclick = () => {
     snapshot(); opsState.crit = Math.floor(Math.random() * set.crit.length);
-    logLine(`Crit Op drawn: <b>${set.crit[opsState.crit].name}</b>.`); changed();
+    logLine(T.operaciones.robada(set.crit[opsState.crit].name)); changed();
   };
   box.querySelectorAll(".optac").forEach(e => e.onchange = () => {
     snapshot(); opsState.tac[+e.dataset.s] = e.value === "" ? null : +e.value;
-    if (e.value !== "") logLine(`<b>${TEAMNAME[+e.dataset.s]}</b> Tac Op: <b>${set.tac[+e.value].name}</b>.`);
+    if (e.value !== "") logLine(T.operaciones.tacticaLog(TEAMNAME[+e.dataset.s], set.tac[+e.value].name));
     changed();
   });
   box.querySelectorAll(".opprim").forEach(e => e.onchange = () => { snapshot(); opsState.primary[+e.dataset.s] = e.value === "" ? null : +e.value; changed(); });
@@ -166,7 +167,7 @@ export function renderOps() {
   box.querySelectorAll(".tok").forEach(b => b.onclick = () => {
     markerPick = markerPick === +b.dataset.k ? null : +b.dataset.k;
     state.mode = markerPick === null ? null : "marker";
-    hint(markerPick === null ? HINT0 : `Click the table to place ${TTS_OPS.tokens[markerPick].name}. Esc to cancel.`);
+    hint(markerPick === null ? HINT0 : T.operaciones.colocar(TTS_OPS.tokens[markerPick].name));
     renderOps();
   });
   box.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => {
@@ -178,7 +179,7 @@ export const mayScore = s => mine(s);
 export function setScore(s, tp, c, value, render = true) {
   const v = Math.max(0, Math.min(9, value | 0));
   snapshot(); opsState.score[s][tp][c] = v;
-  logLine(`<b>${TEAMNAME[s]}</b> TP${tp + 1} ${COLS[c]} Op: ${v} VP (total ${scoreTotal(s)}).`);
+  logLine(T.operaciones.puntos(TEAMNAME[s], tp + 1, c, v, scoreTotal(s)));
   changed(render);
 }
 // status cards: your own side's, or both when the host has said anyone may edit them
@@ -191,7 +192,7 @@ export function setNotes(s, list, line) {
 }
 export function setNoteEdit(v) {
   snapshot(); opsState.noteEdit = v === "any" ? "any" : "own";
-  logLine(`Status cards: ${opsState.noteEdit === "any" ? "either player may edit both sides" : "each player edits their own side"}.`);
+  logLine(T.operaciones.quienEdita(opsState.noteEdit === "any"));
   changed(false);
 }
 // Esc / another mode clears a pending marker
