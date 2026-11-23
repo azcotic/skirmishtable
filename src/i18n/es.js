@@ -479,6 +479,22 @@ export const T = {
     logTiroteo: equipo => `<b>Fase de tiroteo.</b> Empieza ${equipo}.`,
   },
 
+  // fin de la batalla (src/ui/inicio.js)
+  fin: {
+    titulo: 'Fin de la batalla',
+    trasPI: tp => `Terminó el ${G.puntoInflexion.es} ${tp}.`,
+    aniquilado: equipo => `Solo quedan agentes de ${equipo} en la mesa.`,
+    logAniquilado: '<b>Un comando se quedó sin agentes: fin de la batalla.</b>',
+    gana: (equipo, ia) => ia ? `Gana la computadora (${equipo})` : `Gana ${equipo}`,
+    empate: 'Empate',
+    computadora: 'computadora',
+    enPie: (n, total) => `${n} de ${total} en pie`,
+    bajas: n => `${n} ${n === 1 ? 'enemigo incapacitado' : 'enemigos incapacitados'}`,
+    notaPV: `Los ${PV} se anotan a mano en la pestaña Misión, hasta que las misiones puntúen solas.`,
+    nueva: 'Nueva partida',
+    verMesa: 'Ver la mesa',
+  },
+
   // pantallas de inicio de partida (src/ui/inicio.js)
   inicio: {
     atras: 'Volver',

@@ -25,6 +25,7 @@ import { hint, logLine } from './dom.js';
 import { renderAll } from './board.js';
 import { setAlNuevoPI } from './controls.js';
 import { TEAMNAME } from '../config.js';
+import { G } from '../i18n/es.js';
 import { teamOf } from '../view3d/units.js';
 import { ARDIDES } from '../i18n/nombres.js';
 import { pmDelPI, puedeUsarArdid, quienDecide, tirarD6, COSTE_ARDID } from '../game/fases.js';
@@ -43,7 +44,7 @@ let paso = "modo";
 const pila = [];
 let tirada = null;          // fase de estrategia en línea: {dados: [a, b], decide: 0|1|null}
 let ordenArdides = [0, 1];  // quién elige ardides primero (quien tiene la iniciativa)
-const SIN_ATRAS = ["invitar", "listo", "iniciativa", "ardidesA", "ardidesB"];
+const SIN_ATRAS = ["invitar", "listo", "iniciativa", "ardidesA", "ardidesB", "fin"];
 const bando = s => { const t = teamOf(s); return t ? `${TEAMNAME[s]} · ${t.name}` : TEAMNAME[s]; };
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -126,6 +127,16 @@ function contenido() {
       return { titulo: `${E.titulo(tray.tp)} · ${E.ardidesTitulo}`,
         sub: mio ? E.ardidesSub(esc(bando(lado)), tray.cp[lado]) : E.esperaArdides(esc(TEAMNAME[lado])), html,
         principal: mio ? `<button class="pant-jugar" id="pantardidesok">${ultimo ? E.aTiroteo : E.siguiente(esc(TEAMNAME[ordenArdides[1]]))}</button>` : "" };
+    }
+    case "fin": {
+      const F = T.fin, r = resultadoFinal();
+      const fila = s => `<div class="pant-fin-bando eq${s}${r.ganador === s ? " gana" : ""}">` +
+        `<span class="pant-fin-nombre">${esc(bando(s))}${esDeLaIA(s) ? ` <small>${F.computadora}</small>` : ""}</span>` +
+        `<b>${tray.vp[s]} ${G.pv.abrev}</b><span>${F.enPie(r.enPie[s], r.total[s])} · ${F.bajas(r.bajas[s])}</span></div>`;
+      return { titulo: F.titulo, sub: r.motivo === "aniquilado" ? F.aniquilado(TEAMNAME[r.ganador]) : F.trasPI(tray.tp),
+        html: `<div class="pant-fin-ganador">${r.ganador === null ? F.empate : F.gana(esc(bando(r.ganador)), esDeLaIA(r.ganador))}</div>` +
+          fila(0) + fila(1) + `<p class="pant-nota">${F.notaPV}</p>`,
+        principal: `<button class="pant-jugar" id="pantnueva">${F.nueva}</button><button class="pant-secundario" id="pantmesa">${F.verMesa}</button>` };
     }
     case "invitar": {
       const link = location.origin + location.pathname + location.search + "#room=" + net.code;
@@ -253,6 +264,7 @@ function empezar() {
 export function abrirInicio() {
   const el = pantalla();
   if (!el) return;
+  finMostrado = false;
   Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], despliegue: null });
   paso = "modo"; pila.length = 0;
   el.hidden = false;
@@ -262,6 +274,32 @@ export function cerrar() { const el = pantalla(); if (el) el.hidden = true; }
 
 // Al terminar el despliegue: confirmar antes del primer punto de inflexión. Equipo y
 // operaciones aparecen como pasos opcionales (aún no disponibles).
+// Fin de la batalla: tras el último punto de inflexión, o cuando un bando se queda sin agentes.
+let finMostrado = false;
+function resultadoFinal() {
+  const enMesa = s => OPS.filter(o => o.team === s && o.deployed !== false);
+  const enPie = [0, 1].map(s => enMesa(s).filter(o => o.alive).length);
+  const total = [0, 1].map(s => enMesa(s).length);
+  const bajas = [0, 1].map(s => enMesa(1 - s).filter(o => !o.alive).length);   // enemigos que incapacitó
+  let ganador, motivo = "pi";
+  if (enPie[0] === 0 || enPie[1] === 0) { motivo = "aniquilado"; ganador = enPie[0] === 0 ? (enPie[1] === 0 ? null : 1) : 0; }
+  else ganador = tray.vp[0] > tray.vp[1] ? 0 : tray.vp[1] > tray.vp[0] ? 1 : null;
+  return { enPie, total, bajas, ganador, motivo };
+}
+export function abrirFin() {
+  const el = pantalla();
+  if (!el) return;
+  finMostrado = true;
+  paso = "fin"; pila.length = 0;
+  el.hidden = false;
+  render();
+}
+function comprobarFin() {
+  if (finMostrado || despliegueActivo() || !OPS.some(o => o.deployed !== false)) return;
+  const r = resultadoFinal();
+  if (r.motivo === "aniquilado") { logLine(T.fin.logAniquilado); abrirFin(); }
+}
+
 export function abrirListo() {
   const el = pantalla();
   if (!el) return;
@@ -286,6 +324,7 @@ export function wireInicio() {
     if (b.id === "pantatras") return atras();
     if (b.id === "pantjugar") return empezar();
     if (b.id === "pantmesa") return cerrar();
+    if (b.id === "pantnueva") return abrirInicio();
     if (b.id === "pantempezar") {                  // confirmado: empieza el primer punto de inflexión
       logLine(T.despliegue.termina); abrirFaseEstrategia(); return;
     }
@@ -303,6 +342,8 @@ export function wireInicio() {
     if (b.dataset.v !== undefined) elegir(b.dataset.v);
   });
   setAlTerminarDespliegue(abrirListo);
+  control.alFinBatalla = () => abrirFin();
+  control.alComprobarFin = comprobarFin;
   // en cada punto de inflexión, la fase de estrategia (los tests la omiten: PM automáticos)
   let omitir = false;
   try { omitir = localStorage.getItem(KEY) === "omitir"; } catch (e) {}

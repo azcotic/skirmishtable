@@ -11,6 +11,7 @@ import { HINT0, hint, logEl, logLine, svg } from './dom.js';
 import { T } from '../i18n/es.js';
 import { reiniciarVista } from './vista2d.js';
 import { PM_INICIALES, pmDelPI } from '../game/fases.js';
+import { control } from './control.js';
 
 // Qué pasa al empezar un punto de inflexión. Por defecto, reparte los PM según las reglas sin
 // preguntar; inicio.js pone sus pantallas de fase de estrategia (iniciativa y ardides).
@@ -138,7 +139,7 @@ export function wireControls() {
   document.getElementById("endtp").onclick = () => {
     if (playOnly()) return;
     snapshot();
-    if (tray.tp >= 4) { logLine(T.partida.finBatalla); return; }
+    if (tray.tp >= 4) { logLine(T.partida.finBatalla); control.alFinBatalla("pi"); return; }
     tray.tp += 1; tray.ardides = [[], []]; reiniciarActivaciones();
     OPS.forEach(o => { o.ready = true; o.ap = o.apl; o.used = []; });
     logLine(T.partida.nuevoPI(tray.tp));

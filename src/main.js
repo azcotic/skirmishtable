@@ -9,6 +9,8 @@ import * as movement from './engine/movement.js';
 import * as sight from './engine/sight.js';
 import { state } from './state.js';
 import { renderAll } from './ui/board.js';
+import { tray } from './ui/panels.js';
+import { control } from './ui/control.js';
 import { loadMap, useRuleset, wireControls } from './ui/controls.js';
 import { logLine } from './ui/dom.js';
 import { renderMinis } from './ui/minis.js';
@@ -80,4 +82,4 @@ if (window.THREE && THREE.OrbitControls) table3d.setView(!despliegueActivo());
 
 // Debug/test handle: live views of the engine modules and UI state, for the browser
 // console and the Playwright tests (e.g. skirmishtable.movement.findPath(...)).
-window.skirmishtable = { world, grid, movement, sight, rules, table3d, state, loadMap, useRuleset, renderAll, diceTrays, minis, teams: TTS_TEAMS };
+window.skirmishtable = { world, grid, movement, sight, rules, table3d, state, loadMap, useRuleset, renderAll, diceTrays, minis, teams: TTS_TEAMS, tray, control };

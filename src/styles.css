@@ -627,4 +627,13 @@ dialog.ficha::backdrop { background: rgba(10, 8, 6, .7); }
 .pant-dados .eq0 b { color: #f08a4b; } .pant-dados .eq1 b { color: #7fb6c9; }
 .pant-marca-eq { position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 3px 3px 0; }
 .pant-marca-eq.eq0 { background: #e0672f; } .pant-marca-eq.eq1 { background: #5b93a6; }
+.pant-fin-ganador { font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 30px; text-transform: uppercase;
+  text-align: center; padding: 18px 12px; border-radius: 14px; background: #2a1f17; border: 1px solid #e0672f; color: #f3ece2; }
+.pant-fin-bando { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 14px; border-radius: 12px;
+  background: #1d1914; border: 1px solid #3a332a; border-left: 4px solid var(--eq, #3a332a); }
+.pant-fin-bando.eq0 { --eq: #e0672f; } .pant-fin-bando.eq1 { --eq: #5b93a6; }
+.pant-fin-bando.gana { background: #231a12; }
+.pant-fin-bando b { font-family: "Big Shoulders", sans-serif; font-size: 26px; grid-row: span 2; align-self: center; color: #f3ece2; }
+.pant-fin-nombre { font-weight: 600; } .pant-fin-nombre small { color: #9a9184; font-weight: 400; }
+.pant-fin-bando span:last-child { font-size: 11px; color: #9a9184; }
 .pant-nota { margin: 4px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #a89a80; }

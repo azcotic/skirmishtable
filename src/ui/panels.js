@@ -108,6 +108,7 @@ function rolled(n, done) {
   done();
   if (n != null) undoStack.length = 0;
   cancelMode(); renderAll();
+  control.alComprobarFin();        // ¿un bando se quedó sin agentes?
 }
 export function doFight() {
   if (!state.sel || !state.target) return;

@@ -15,5 +15,7 @@ export const control = {
   alTerminarActivacion: () => {},
   alEmpezarTiroteo: () => {},
   alCambiarDespliegue: () => {},
+  alComprobarFin: () => {},   // tras cada tirada o baja: ¿un bando se quedó sin agentes? (inicio.js)
+  alFinBatalla: () => {},     // "Fin del PI" tras el último punto de inflexión (inicio.js)
 };
 export const esDeLaIA = team => control.ia !== null && team === control.ia;
