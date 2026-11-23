@@ -271,7 +271,8 @@ export const T = {
       `<small>cambiar a ${T.orden.icono[orden === 'conceal' ? 'engage' : 'conceal']} ${T.orden.nombre[orden === 'conceal' ? 'engage' : 'conceal'].toLowerCase()}</small>`,
     botonFijo: orden => `<span class="oico">${T.orden.icono[orden]}</span><b>${T.orden.nombre[orden]}</b><small>orden fijada</small>`,
     titulo: orden => `Orden actual: ${T.orden.nombre[orden].toLowerCase()}. Tócalo para cambiarla a ${T.orden.nombre[orden === 'conceal' ? 'engage' : 'conceal'].toLowerCase()}. Se elige al empezar la activación: puedes cambiarla hasta que el agente haga su primera acción.`,
-    fijada: 'La orden se elige al empezar la activación: este agente ya hizo una acción, así que su orden queda fijada hasta su próxima activación.',
+    fijada: 'La orden se elige al empezar la activación: este agente ya hizo una acción, así que su orden queda fijada hasta su próxima activación. Si te equivocaste, deshaz su última acción (doble toque en Reposicionarse/Correr o Deshacer) y vuelve a elegirla.',
+    eligeAntes: n => `${n} tiene orden de ocultarse 🕵️: con ella no puede disparar ni cargar. Si quieres hacerlo, cámbiala a 💀 trabarse ANTES de moverlo; después de su primera acción queda fijada.`,
     log: (n, orden) => `<b>${n}</b> pasa a orden de ${orden === 'conceal' ? 'ocultarse 🕵️' : 'trabarse 💀'}.`,
     ayuda: (n, orden) => (orden === 'conceal'
       ? `${n} tiene ahora orden de ocultarse 🕵️: a salvo a cubierto, pero no puede ${G.disparar.es} ni ${G.cargar.es}.`
@@ -578,7 +579,7 @@ export const T = {
       armaPesada: 'su arma Pesada no se lo permite',
       sinEnemigoEnZona: `no hay ningún enemigo en su ${G.zonaControl.es}`,
       yaSeMovio: 'ya se movió en esta activación',
-      ocultarse: 'tu agente tiene orden de ocultarse 🕵️ (con esa orden no puede disparar ni cargar; la orden se elige al empezar su activación)',
+      ocultarse: 'tu agente tiene orden de ocultarse 🕵️ (con esa orden no puede disparar ni cargar; la orden se elige al empezar su activación: si ya actuó, deshaz su última acción para volver a elegirla)',
       yaEnZona: `ya está en la ${G.zonaControl.es} de un enemigo`,
       sinArmaDistancia: 'el arma elegida no es a distancia',
       sinBlanco: `no hay ningún ${G.blancoValido.es}`,

@@ -468,6 +468,10 @@ body { overflow: hidden; overscroll-behavior: none; }
 #ordbtn.orden.engage, .acciones .accion.orden.engage { border-color: #c0392b; background: #3a1714; color: #ffd8d2; }
 #ordbtn.orden.conceal, .acciones .accion.orden.conceal { border-color: #5b7f99; background: #18242e; color: #d6e6f2; }
 #ordbtn.orden.fijada, .acciones .accion.orden.fijada { opacity: .75; }
+/* oculto y sin haber actuado: elige la orden antes de moverte */
+#ordbtn.orden.elegir, .acciones .accion.orden.elegir { animation: elegirOrden 1.4s ease-in-out infinite; }
+@keyframes elegirOrden { 50% { box-shadow: 0 0 0 3px rgba(91, 127, 153, .6); } }
+@media (prefers-reduced-motion: reduce) { #ordbtn.orden.elegir, .acciones .accion.orden.elegir { animation: none; } }
 .acciones .accion.orden { flex-direction: row; gap: 4px; flex-wrap: wrap; }
 .acciones .accion.orden b { display: inline; }
 .acciones .accion.orden small { flex-basis: 100%; }

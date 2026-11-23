@@ -22,6 +22,7 @@ import { conectarTurno, pistaDeTurno, porQueNoActua, puedeActuar, todosUsados } 
 import { control } from './control.js';
 // el agente al que ya se le sugirió terminar su activación por quedarse sin PA
 let avisadoSinPA = null;
+let avisadoOrden = null;
 
 /* ---------- state / undo / log ---------- */
 // ini: bando con la iniciativa (null antes de decidirla); ardides: los usados en este PI
@@ -199,7 +200,9 @@ export function renderCard() {
     <div class="btnrow">
       ${RULES.orders ? (() => {   // la orden actual, y qué hará el botón (o por qué ya no se puede cambiar)
         const fija = !puedeCambiarOrden(state.sel).ok, o = state.sel.order;
-        return `<button id="ordbtn" class="orden ${o}${fija ? " fijada" : ""}" title="${fija ? T.orden.fijada : T.orden.titulo(o)}"${fija ? " disabled" : ""}>` +
+        // oculto y sin haber actuado: se resalta, para elegir la orden antes de moverse
+        const elegir = !fija && o === "conceal" && state.sel.ready && mayControl(state.sel) && !porQueNoActua(state.sel);
+        return `<button id="ordbtn" class="orden ${o}${fija ? " fijada" : ""}${elegir ? " elegir" : ""}" title="${fija ? T.orden.fijada : T.orden.titulo(o)}"${fija ? " disabled" : ""}>` +
           `${fija ? T.orden.botonFijo(o) : T.orden.boton(o)}</button>`;
       })() : ""}
       <button id="endact"${state.sel.ready && state.sel.ap <= 0 ? ' class="sugerido"' : ""}>${T.ficha.terminar}</button>
@@ -254,6 +257,11 @@ export function renderCard() {
   if (!mayControl(state.sel) || noActua)
     c.querySelectorAll("button:not(#tgtbtn):not(#verficha), input").forEach(b => { b.disabled = true; });
   if (noActua) c.insertAdjacentHTML("afterbegin", `<div class="turnoaviso">${noActua}</div>`);
+  // oculto al empezar su activación: avisar que se elige la orden antes de actuar (una vez por agente)
+  if (RULES.orders && state.sel.order === "conceal" && state.sel.ready && puedeCambiarOrden(state.sel).ok
+      && mayControl(state.sel) && !noActua) {
+    if (avisadoOrden !== state.sel.id) { avisadoOrden = state.sel.id; hint(T.orden.eligeAntes(state.sel.name)); }
+  } else if (avisadoOrden === state.sel.id && !puedeCambiarOrden(state.sel).ok) avisadoOrden = null;
   // sin PA: sugerir "Terminar activación" (una vez por agente)
   if (state.sel.ready && state.sel.ap <= 0 && mayControl(state.sel)) {
     if (avisadoSinPA !== state.sel.id) { avisadoSinPA = state.sel.id; hint(T.turno.sinPA(state.sel.name)); }
