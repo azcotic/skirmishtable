@@ -155,6 +155,9 @@ function moveButtons(repoUsed, dashUsed, chargeUsed) {
     `${used ? "✓ " + T.mover.nombre[t] : `${prefix}${T.mover.nombre[t]} ${pulg(spec.allow(op))}`}</button>`;
   out.push(btn("reposition", M.primary, repoUsed, "① ", T.ficha.movTitulo(M.primary.allow(op), M.primary.climb)));
   out.push(btn("dash", M.secondary, dashUsed, "② ", T.ficha.movTitulo(M.secondary.allow(op), M.secondary.climb)));
+  // Retroceder: solo aparece con un enemigo en su zona de control (en la barra, en lugar de Correr)
+  if (OPS.some(o => o.alive && o.team !== op.team && opGap(op, o) <= CTRL + 1e-9))
+    out.push(btn("fallBack", M.primary, op.used.includes("fallBack"), "", T.ficha.retrocederTitulo(M.primary.allow(op))));
   if (M.charge) {
     const restricted = !chargeUsed && (repoUsed || dashUsed);
     out.push(btn("charge", M.charge, chargeUsed, "", restricted
@@ -177,6 +180,9 @@ export function adjustWounds(op, d) {
 }
 function woundClass(op) { const f = op.wounds / op.maxW; return f <= 0.25 ? "crit" : f < 0.5 ? "hurt" : ""; }
 export function defaultMoveType(op) {
+  // trabado (un enemigo en su zona de control): lo que puede hacer es Retroceder
+  if (!op.used.includes("fallBack") && !op.used.includes("reposition") && !op.used.includes("charge")
+      && OPS.some(o => o.alive && o.team !== op.team && opGap(op, o) <= CTRL + 1e-9)) return "fallBack";
   const slot1Used = op.used.includes("reposition") || op.used.includes("charge");
   if (!slot1Used) return "reposition";
   if (!op.used.includes("dash")) return "dash";
@@ -236,8 +242,8 @@ export function renderCard() {
   c.querySelectorAll("input[name=wpn]").forEach(r => r.onchange = () => { state.sel.weapon = r.value; refreshSight(); renderAll(); });
   c.querySelector("#wdn").onclick = () => adjustWounds(state.sel, -1);
   c.querySelector("#wup").onclick = () => adjustWounds(state.sel, +1);
-  for (const t of ["reposition", "dash", "charge"]) {
-    if (!moveSpec(t)) continue;
+  for (const t of ["reposition", "dash", "charge", "fallBack"]) {
+    if (!c.querySelector("#mv-" + t)) continue;
     c.querySelector("#mv-" + t).onclick = () => {
       // doble toque sobre Reposicionarse o Correr: deshace ese movimiento si fue lo último que hizo
       const ahora = performance.now();
@@ -285,7 +291,7 @@ export function renderCard() {
   };
   // lo que las reglas no permiten ahora (src/game/acciones.js): atenuado y con el motivo
   const legal = Object.fromEntries(accionesLegales(state.sel, OPS).map(a => [a.accion, a]));
-  for (const [id, a] of [["mv-reposition", "reposition"], ["mv-dash", "dash"], ["mv-charge", "charge"], ["shootbtn", "shoot"], ["fightbtn", "fight"]]) {
+  for (const [id, a] of [["mv-reposition", "reposition"], ["mv-dash", "dash"], ["mv-charge", "charge"], ["mv-fallBack", "fallBack"], ["shootbtn", "shoot"], ["fightbtn", "fight"]]) {
     const b = c.querySelector("#" + id), r = legal[a];
     if (!b || !r || r.ok || r.motivo === "yaHecha") continue;   // lo ya hecho lleva su ✓
     b.classList.add("restricted");

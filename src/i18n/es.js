@@ -259,6 +259,7 @@ export const T = {
     movTitulo: (pulgadas, trepa) => `1 ${G.pa.abrev} · mueve hasta ${pulg(pulgadas)} · ${trepa ? 'puede trepar' : 'no puede trepar'}`,
     cargaTitulo: pulgadas => `1 ${G.pa.abrev} · mueve hasta ${pulg(pulgadas)}; debe terminar en la ${G.zonaControl.es} de un enemigo`,
     cargaRestringida: `No puedes ${G.cargar.es} en una activación en la que ya te moviste`,
+    retrocederTitulo: pulgadas => `2 ${G.pa.abrev} · mueve hasta ${pulg(pulgadas)}: puede salir de la ${G.zonaControl.es} de los enemigos, pero no terminar en ninguna`,
     reglas: reglas => reglas.map(traducirRegla).join(', '),
   },
 
@@ -283,13 +284,14 @@ export const T = {
 
   // movimiento: botones, etiqueta del arrastre, pistas y registro
   mover: {
-    nombre: { reposition: G.reposicionarse.es, dash: G.correr.es, charge: G.cargar.es },
-    verbo: { reposition: G.reposicionarse.verbo, dash: G.correr.verbo, charge: G.cargar.verbo },
+    nombre: { reposition: G.reposicionarse.es, dash: G.correr.es, charge: G.cargar.es, fallBack: G.retroceder.es },
+    verbo: { reposition: G.reposicionarse.verbo, dash: G.correr.verbo, charge: G.cargar.verbo, fallBack: G.retroceder.verbo },
     motivo: {
       occupied: 'ocupado',
       blocked: 'bloqueado',
       chargeNoFoe: `una carga debe terminar en la ${G.zonaControl.es} de un enemigo`,
       engagedAfterMove: `${G.zonaControl.es} enemiga: no puedes ${G.cargar.es} después de moverte`,
+      fallBackEnZona: `al ${G.retroceder.es.toLowerCase()} no puede terminar en la ${G.zonaControl.es} de un enemigo`,
     },
     bloqueado: 'bloqueado',
     // etiqueta junto al fantasma mientras arrastras

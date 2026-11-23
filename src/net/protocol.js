@@ -118,7 +118,7 @@ export function cleanNotes(list) {
 
 /* ---------- cleaning incoming data ---------- */
 const num = (v, d) => typeof v === "number" && Number.isFinite(v) ? v : d;
-const ACTS = ["reposition", "dash", "charge", "shoot", "fight"];
+const ACTS = ["reposition", "dash", "charge", "fallBack", "shoot", "fight"];
 // Operatives from another browser: only the fields that change in play are taken, and
 // only in their known shapes; names, stats and weapons come from this browser's roster.
 // The incoming list says who is on the table: an operative this browser doesn't have yet

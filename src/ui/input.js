@@ -65,6 +65,8 @@ function plansFor(op, type = state.moveType) {
   };
   const primAvail = !used("reposition") && !used("charge"), secAvail = !used("dash");
   if (type === "charge" && M.charge) return [plan(phase("charge", M.charge), null)];
+  // Retroceder: el movimiento del agente (2 PA); puede salir de la zona de control donde empieza
+  if (type === "fallBack") return [plan(phase("fallBack", M.primary), null)];
   if (type === "dash") return primAvail ? [plan(sec, prim)] : [plan(sec, null)];
   return secAvail ? [plan(prim, sec), plan(sec, prim)] : [plan(prim, null)];
 }
@@ -96,7 +98,8 @@ function planDrag(x, y, hint, up) {
   // routes round it), so dragging there turns the move into a Charge (Move + 2″, 1AP) when
   // one is allowed. A Charge may enter one enemy's control range, then has to stay in it.
   const intoFoes = foesNear(gx, gy, d.op.team, d.op.id, R, layerZ(gl)).length > 0;
-  const charging = state.moveType === "charge" || (intoFoes && mayCharge(d.op));
+  const retroceso = state.moveType === "fallBack";
+  const charging = !retroceso && (state.moveType === "charge" || (intoFoes && mayCharge(d.op)));
   d.autoCharge = charging && state.moveType !== "charge";
   const plans = plansFor(d.op, charging ? "charge" : state.moveType);
   let bestPlan = null;
@@ -125,6 +128,7 @@ function planDrag(x, y, hint, up) {
     d.foes = foesNear(end[0], end[1], d.op.team, d.op.id, R, d.goalZ);
     d.why = placeBlocked(end[0], end[1], d.op.id, d.goalLayer) ? "occupied"
       : charging && !d.foes.length ? "chargeNoFoe"
+      : retroceso && (d.foes.length || intoFoes) ? "fallBackEnZona"
       : !charging && (d.foes.length || intoFoes) && RULES.moves.charge ? "engagedAfterMove"
       : null;
     d.valid = !d.why;
@@ -171,7 +175,7 @@ function landDrag(d) {
     d.op.order = "engage";
     logLine(T.orden.pasaATrabarse(d.op.name));
   }
-  d.op.ap -= chained ? 2 : 1;
+  d.op.ap -= d.p1.type === "fallBack" || chained ? 2 : 1;   // Retroceder cuesta 2 PA
   d.op.used.push(d.p1.type);
   if (chained) d.op.used.push(d.p2.type);
   const TM = T.mover;

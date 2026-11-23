@@ -32,7 +32,9 @@ export function renderAcciones() {
   }
   bar.classList.remove("especial");
   const conAgente = !!(state.sel && state.sel.alive);
-  const botones = (conAgente ? DEL_AGENTE : DE_LA_PARTIDA).map(([id, extra]) => {
+  // trabado no puede correr: en su lugar, Retroceder (si la ficha lo muestra)
+  const lista = conAgente ? DEL_AGENTE.map(([id, x]) => id === "mv-dash" && document.getElementById("mv-fallBack") ? ["mv-fallBack", "mov"] : [id, x]) : DE_LA_PARTIDA;
+  const botones = lista.map(([id, extra]) => {
     const src = document.getElementById(id);
     if (!src) return "";
     const cls = ["accion", extra, ...[...src.classList].filter(c => c !== "mini")].filter(Boolean).join(" ");
