@@ -33,6 +33,10 @@ export function queEs(op) {
 // quién empieza a desplegar: el jugador con la iniciativa (por ahora, siempre el primer bando)
 export const INICIA = 0;
 let elegido = null;   // el agente que el jugador eligió colocar (si no, el primero que falte)
+// qué pasa al colocar el último agente: por defecto, anunciarlo; inicio.js pone su pantalla
+// de confirmación antes del primer punto de inflexión
+let alTerminar = () => logLine(T.despliegue.termina);
+export const setAlTerminarDespliegue = fn => { alTerminar = fn; };
 
 const nombreEquipo = t => TEAMNAME[t];
 export const despliegueActivo = () => enDespliegue(OPS);
@@ -85,9 +89,9 @@ export function colocarEn(x, y) {
   desplegar(op, spot[0], spot[1]);
   elegido = null;
   logLine(T.despliegue.log(op.name, op.id));
-  if (!despliegueActivo()) logLine(T.despliegue.termina);
   renderAll();
   hint(pista());
+  if (!despliegueActivo()) alTerminar();
   return true;
 }
 
@@ -106,9 +110,9 @@ function restoAlAzar() {
     }
   }
   logLine(T.despliegue.restoLog(n));
-  if (!despliegueActivo()) logLine(T.despliegue.termina);
   renderAll();
   hint(pista());
+  if (!despliegueActivo()) alTerminar();
 }
 
 // La barra de acciones durante el despliegue: los agentes que faltan del bando en turno

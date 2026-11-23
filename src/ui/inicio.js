@@ -18,6 +18,9 @@ import { renderMinis } from './minis.js';
 import { setOption } from './options.js';
 import { hostGame, net, online } from '../net/sync.js';
 import { cerrarHoja } from './sidepanel.js';
+import { despliegueActivo, pista, setAlTerminarDespliegue } from './despliegue.js';
+import { doUndo } from './panels.js';
+import { hint, logLine } from './dom.js';
 
 const KEY = "skirmishtable.inicio";
 // los comandos de prueba (ids del catálogo de Steam): Garra Némesis y Aquelarre Disforme
@@ -77,6 +80,12 @@ function contenido() {
       `<dt>${I.rRival}</dt><dd>${esc(nombreComando(eleccion.comando[1]))}</dd>` +
       `<dt>${I.rDespliegue}</dt><dd>${eleccion.despliegue === "azar" ? I.azar : I.turnos}</dd></dl>`,
       principal: `<button class="pant-jugar" id="pantjugar">${I.jugar}</button>` };
+    case "listo": return { titulo: I.listoTitulo, sub: I.listoSub, html:
+      `<p class="pant-nota">${I.opcionales}</p>` +
+      opcion("equipo", I.equipoT, I.equipoD, { deshabilitada: true, extra: `<span class="pant-pronto">${I.pronto}</span>` }) +
+      opcion("operaciones", I.opsT, I.opsD, { deshabilitada: true, extra: `<span class="pant-pronto">${I.pronto}</span>` }),
+      principal: `<button class="pant-jugar" id="pantempezar">${I.empezar}</button>` +
+        `<button class="pant-secundario" id="pantdeshacer">${I.deshacerUltimo}</button>` };
     case "invitar": {
       const link = location.origin + location.pathname + location.search + "#room=" + net.code;
       return { titulo: I.invitarTitulo, sub: I.invitarSub, html:
@@ -141,6 +150,16 @@ export function abrirInicio() {
 }
 export function cerrar() { const el = pantalla(); if (el) el.hidden = true; }
 
+// Al terminar el despliegue: confirmar antes del primer punto de inflexión. Equipo y
+// operaciones aparecen como pasos opcionales (aún no disponibles).
+export function abrirListo() {
+  const el = pantalla();
+  if (!el) return;
+  paso = "listo"; pila.length = 0;
+  el.hidden = false;
+  render();
+}
+
 // ¿Se muestra al abrir la app?
 export function inicioAlAbrir() {
   if (typeof location !== "undefined" && (/#(room|host|game|replay)=/.test(location.hash) || /[?&]deploy=/.test(location.search))) return false;
@@ -157,6 +176,12 @@ export function wireInicio() {
     if (b.id === "pantatras") return atras();
     if (b.id === "pantjugar") return empezar();
     if (b.id === "pantmesa") return cerrar();
+    if (b.id === "pantempezar") {                  // confirmado: empieza el primer punto de inflexión
+      cerrar(); logLine(T.despliegue.termina); hint(T.despliegue.terminaPista); return;
+    }
+    if (b.id === "pantdeshacer") {                 // vuelve al despliegue: se retira el último agente
+      cerrar(); doUndo(); if (despliegueActivo()) hint(pista()); return;
+    }
     if (b.id === "pantcopiar") {
       const inp = document.getElementById("pantlink");
       inp.select();
@@ -166,6 +191,7 @@ export function wireInicio() {
     }
     if (b.dataset.v !== undefined) elegir(b.dataset.v);
   });
+  setAlTerminarDespliegue(abrirListo);
   const nueva = document.getElementById("nuevapartida");
   if (nueva) nueva.onclick = abrirInicio;
   if (inicioAlAbrir()) abrirInicio();

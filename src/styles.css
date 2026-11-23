@@ -556,3 +556,6 @@ button.hsq.reserva { border-style: dashed; background: transparent; opacity: .75
 .pant-jugar { width: 100%; min-height: 60px; border-radius: 14px; border: 0; background: #e0672f; color: #14110e;
   font-family: "Big Shoulders", sans-serif; font-weight: 800; font-size: 26px; text-transform: uppercase; letter-spacing: .04em; }
 .pant-jugar:hover { background: #f08a4b; color: #14110e; }
+.pant-secundario { width: 100%; min-height: 48px; margin-top: 10px; border-radius: 12px; background: transparent;
+  border: 1px solid #3a332a; color: #b8ad9e; font-size: 14px; }
+.pant-nota { margin: 4px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #a89a80; }
