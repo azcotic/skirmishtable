@@ -15,7 +15,7 @@
  */
 
 // la misma lectura de reglas que el motor de dados ("Piercing" no confunde "Piercing Crits 1")
-import { regla } from '../engine/dice.js';
+import { devastadora as devastadoraDe, regla } from '../engine/dice.js';
 
 // probabilidad de [fallo, normal, crítico] de un dado
 function dado(exito, critDesde = 6) {
@@ -95,7 +95,7 @@ export function disparo(arma, blanco, opciones = {}) {
   const R = arma.rules || [];
   const cubierto = !!opciones.cubierto && !regla(R, "Saturate");
   const pen = regla(R, "Piercing") || 0, penCrit = regla(R, "Piercing Crits") || 0;
-  const devastadora = typeof regla(R, "Devastating") === "number" ? regla(R, "Devastating") : 0;
+  const dv = devastadoraDe(R), devastadora = dv ? dv.x : 0;
   const danos = new Map();
   for (const a of ataque(arma, opciones)) {
     const dados = 3 - pen - (a.c > 0 ? penCrit : 0);

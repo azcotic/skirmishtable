@@ -150,6 +150,10 @@ export function cleanOps(incoming, local) {
       // elecciones de facción (Ecos de la Disformidad: si ya lo usó / lo está usando)
       ecosUsado: o.ecosUsado ? true : undefined, ecosActivo: o.ecosActivo ? true : undefined,
       volo: o.volo ? true : undefined,
+      // Aturdidora: 1 LPA menos hasta el final de su siguiente activación
+      aturdido: o.aturdido ? true : undefined,
+      quemarMente: o.quemarMente ? true : undefined, quemarDe: o.quemarDe === 0 || o.quemarDe === 1 ? o.quemarDe : undefined,
+      apl: KINDS[l.kind] ? KINDS[l.kind].apl - (o.aturdido ? 1 : 0) : l.apl,
       disparadas: Array.isArray(o.disparadas) ? o.disparadas.filter(k => typeof k === "string" && Object.hasOwn(WPN, k)).slice(0, 8) : [],
       base: BASE_SIZES.includes(o.base) ? o.base : undefined,
       weapon: l.weapons.includes(o.weapon) ? o.weapon : l.weapon,

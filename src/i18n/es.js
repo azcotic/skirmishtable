@@ -119,6 +119,8 @@ const CLAVES_REGLAS = Object.keys(REGLAS_ARMA).sort((a, b) => b.length - a.lengt
 export function traducirRegla(r) {
   const s = String(r).trim();
   if (REGLAS_ARMA[s]) return REGLAS_ARMA[s];
+  const dv = /^(\d+(?:\.\d+)?)" Devastating (\d+)$/.exec(s);   // Devastadora con distancia
+  if (dv) return `${num(+dv[1])}″ ${REGLAS_ARMA.Devastating} ${dv[2]}`;
   const k = CLAVES_REGLAS.find(c => s.startsWith(c + ' '));
   if (!k) return s;
   let resto = s.slice(k.length + 1).replace(/"/g, '″')
@@ -246,6 +248,8 @@ export const T = {
     apuntar: 'Apuntar',
     usado: G.usado.es,
     lesionado: G.lesionado.es,
+    aturdido: 'aturdido',
+    quemarMente: 'quemar mente',
     stat: { lpa: G.lpa.abrev, mov: 'Mov.', salv: 'Salv.', heridas: G.heridas.es, pa: `${G.pa.abrev} libres`, movs: 'Movs.' },
     dosMovimientos: (prim, carga, sec) => `Dos movimientos por activación: ① ${prim}${carga ? ` (o ${carga})` : ''} y ② ${sec}`,
     menosHerida: '−1 H',
@@ -386,7 +390,7 @@ export const T = {
       if (/^Accurate (\d+)$/.test(s)) return s.replace(/^Accurate/, 'Certera');
       const [k, v] = String(s).split(':');
       return ({
-        'obscured: crits downgraded, one success discarded': 'ofuscado: los críticos pasan a normales y se descarta un éxito',
+        obscured: 'ofuscado: los críticos pasan a normales y se descarta un éxito',
         'cover save banked': 'salvación por cobertura guardada',
         severe: 'Severa: un normal pasa a crítico', punishing: 'Castigadora: un fallo pasa a normal',
         rending: 'Desgarradora: un normal pasa a crítico', relentless: 'Implacable: repite los fallos',
@@ -399,6 +403,14 @@ export const T = {
     fueraDeAlcance: (n, arma, alc, dist) => `<b>${n}</b> está fuera del alcance de ${arma}: ${pulg(dist)} (Alcance ${pulg(alc)}).`,
     agotada: arma => `${arma} ya no se puede usar: su regla Limitada no le deja más usos en esta batalla.`,
     sobrecalentado: (n, d) => ` — <b>${n}</b> se sobrecalienta: ${d} de daño`,
+    secundarios: (tipo, nombres) => `${tipo === 'area' ? 'Área' : 'Ráfaga'}: el disparo también alcanza a ${nombres.join(', ')}.`,
+    secundario: '↳',
+    devArea: (dmg, d, nombres) => ` — Devastadora a ${pulg(d)}: ${dmg} de daño también a ${nombres.join(', ')}`,
+    cae: ' (cae)',
+    aturdido: n => ` — <b>${n}</b> queda aturdido: 1 LPA menos hasta el final de su siguiente activación`,
+    recuperaLPA: n => `<b>${n}</b> ya no está aturdido: recupera su LPA.`,
+    quemaMente: n => ` — <b>${n}</b> recibe una ficha de Quemar mente: Impactar 1 peor hasta el final de su siguiente activación`,
+    sinQuemarMente: n => `<b>${n}</b> pierde su ficha de Quemar mente.`,
   },
 
   combate: {
@@ -635,7 +647,13 @@ export const T = {
     turno: n => `Turno de ${n}: elige qué hacer con uno de tus éxitos.`,
     exitos: (c, dc, n, dn) => `${c} ${c === 1 ? 'crítico' : 'críticos'} (${dc} daño) · ${n} ${n === 1 ? 'normal' : 'normales'} (${dn} daño)`,
     golpe: (con, d) => `💥 Golpear con un ${con === 'crit' ? 'crítico' : 'normal'} (${d} de daño)`,
-    bloqueo: (con, contra) => `🛡 Bloquear su ${contra === 'crit' ? 'crítico' : 'normal'} con tu ${con === 'crit' ? 'crítico' : 'normal'}`,
+    bloqueo: (con, contra) => {
+      const uno = c => c === 'crit' ? 'crítico' : 'normal';
+      const suyos = Array.isArray(contra)
+        ? (contra[0] === contra[1] ? `sus 2 ${contra[0] === 'crit' ? 'críticos' : 'normales'}` : `su crítico y su normal`)
+        : `su ${uno(contra)}`;
+      return `🛡 Bloquear ${suyos} con tu ${uno(con)}${Array.isArray(contra) ? ' (Escudo)' : ''}`;
+    },
     nota: 'Se turnan, empezando por el atacante. Un normal bloquea un normal; un crítico bloquea cualquiera (contra un arma Brutal solo se bloquea con críticos).',
   },
 
@@ -655,9 +673,9 @@ export const T = {
   // Elecciones de facción (src/data/teams: `elecciones`): pantallas de inicio y ficha.
   // Las opciones se resumen con nuestras palabras, por su id.
   faccion: {
-    titulo: { dones: 'Elige un Don de Tzeentch' },
+    titulo: { dones: 'Elige un Don de Tzeentch', armasTirador: 'Elige su arma', armasCampeon: 'Elige su arma', armasTzaangor: 'Elige sus armas' },
     tituloGenerico: 'Regla de facción: elige',
-    sub: (n, i, total, unica) => `Para ${n}${total > 1 ? ` (${i} de ${total})` : ''}.${unica && total > 1 ? ' Cada opción solo puede elegirla un agente.' : ''}`,
+    sub: (n, i, total, unica, cuantos = 1) => `Para ${cuantos > 1 ? `los ${cuantos} ${n}` : n}${total > 1 ? ` (${i} de ${total})` : ''}.${unica && total > 1 ? ' Cada opción solo puede elegirla un agente.' : ''}`,
     pendiente: '(aún no tiene efecto en la app)',
     desc: {
       vision: 'Sus armas a distancia ganan Saturación y sus blancos no cuentan como ofuscados.',
@@ -667,7 +685,14 @@ export const T = {
       apendice: `Puede recoger marcadores y hacer acciones de misión con enemigos cerca, y una vez por activación una de ellas le cuesta 1 ${G.pa.abrev} menos.`,
       vuelo: 'Una vez por punto de inflexión, al cargar o reposicionarse, puede volar: se levanta y se coloca a la distancia de su Movimiento, sin importar el terreno.',
       giro: 'Sus armas psíquicas a distancia ganan Perforante en críticos 1.',
-      bombardeo: 'Una de sus armas psíquicas a distancia gana Devastadora 1 (el Proyectil de condenación, que ya la tiene, alcanzaría también a quien esté a 2″ del blanco: eso aún no se aplica).',
+      bombardeo: 'Una de sus armas psíquicas a distancia gana Devastadora 1; el Proyectil de condenación, que ya la tiene, pasa a Devastadora a 2″ (también daña a quien esté cerca del blanco).',
+      canon: 'Dos modos de disparo (concentrado y barrido) y puños.',
+      lanzallamasD: 'Ráfaga 2″, Saturación y Penetración 1, a corto alcance; y puños.',
+      granHacha: 'Brutal y Letal 5+.',
+      espadon: 'Letal 5+ y Desgarradora.',
+      armasTz: 'Equilibrada.',
+      escudoTz: 'Escudo: Salvación 4+ y cada bloqueo en combate anula dos éxitos.',
+      pistolaEspada: 'Una pistola para disparar y una espada sierra.',
       maestro: '+3″ a la distancia de sus acciones psíquicas.',
     },
   },

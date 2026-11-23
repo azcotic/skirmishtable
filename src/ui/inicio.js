@@ -56,6 +56,8 @@ function porElegir(s) {
 const elegido = (s, { e, i }) => (eleccion.faccion[s][i] || {})[e.id];
 // lo que ya eligieron los demás agentes del bando en esa elección (si es "unica", no se repite)
 const tomadas = (s, { e, i }) => porElegir(s).filter(x => x.e === e && x.i !== i).map(x => elegido(s, x)).filter(Boolean);
+// los que eligen junto con x: él solo si la elección es "unica"; si no, todos los del mismo tipo
+const mismos = (s, x) => x.e.unica ? [x] : porElegir(s).filter(y => y.e === x.e && eleccion.plantilla[s][y.i] === eleccion.plantilla[s][x.i]);
 function elegirOpcion(s, { e, i }, id) { eleccion.faccion[s][i] = { ...(eleccion.faccion[s][i] || {}), [e.id]: id }; }
 // Tras la configuración de un bando: sus elecciones de facción (si las hay), una pantalla por
 // agente, y luego el siguiente paso. La computadora elige al azar entre las que ya hacen algo.
@@ -128,12 +130,14 @@ function contenido() {
     case "faccion0": case "faccion1": {        // elecciones de facción: una pantalla por agente y elección
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = porElegir(s), F = T.faccion;
       const x = lista.find(y => !elegido(s, y)) || lista[lista.length - 1];
-      const deEsta = lista.filter(y => y.e === x.e), ya = x.e.unica ? tomadas(s, x) : [];
+      // sin "unica" (p. ej. las armas), los agentes iguales eligen juntos: una pantalla por tipo
+      const clave = y => eleccion.plantilla[s][y.i], juntos = mismos(s, x);
+      const deEsta = lista.filter(y => y.e === x.e && (x.e.unica || y === mismos(s, y)[0])), ya = x.e.unica ? tomadas(s, x) : [];
       const html = x.e.opciones.map(o => opcion(`op:${lista.indexOf(x)}:${o.id}`, esc(o.nombre),
         `${F.desc[o.id] || ""}${o.pendiente ? ` <em class="pant-pendiente">${F.pendiente}</em>` : ""}`,
         { activa: elegido(s, x) === o.id, deshabilitada: ya.includes(o.id) })).join("");
       return { titulo: F.titulo[x.e.id] || F.tituloGenerico,
-        sub: F.sub(esc(c.agentes[eleccion.plantilla[s][x.i]].nombre), deEsta.indexOf(x) + 1, deEsta.length, !!x.e.unica), html };
+        sub: F.sub(esc(c.agentes[clave(x)].nombre), deEsta.indexOf(juntos[0]) + 1, deEsta.length, !!x.e.unica, juntos.length), html };
     }
     case "elegir0": case "elegir1": {          // armar el comando agente por agente
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = eleccion.plantilla[s] || [];
@@ -284,7 +288,7 @@ function elegir(v) {
     }
     case "faccion0": case "faccion1": {
       const s = +paso.slice(-1), [, n, id] = v.split(":"), lista = porElegir(s);
-      elegirOpcion(s, lista[+n], id);
+      for (const y of mismos(s, lista[+n])) elegirOpcion(s, y, id);
       if (lista.every(y => elegido(s, y))) return ir(s === 0 ? "comando1" : "despliegue");
       return render();
     }

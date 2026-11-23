@@ -59,7 +59,10 @@ function armaConOpcion(w, d) {
     || (e.combate && w.type === "M" && e.combate);
   if (!cambio) return null;
   const nueva = { ...w, rules: [...w.rules] };
-  for (const r of cambio.anadir || []) {
+  // devArea: si ya tiene Devastadora x, pasa a ser con distancia ('2" Devastating x') en lugar de añadir otra
+  const dv = cambio.devArea && nueva.rules.findIndex(r => /^Devastating \d+$/.test(r));
+  if (cambio.devArea && dv >= 0) nueva.rules[dv] = `${cambio.devArea}" ${nueva.rules[dv]}`;
+  for (const r of (cambio.devArea && dv >= 0 ? [] : cambio.anadir) || []) {
     const base = r.replace(/ \d+$/, "");
     if (!nueva.rules.some(x => x === r || x.startsWith(base + " ") || x === base)) nueva.rules.push(r);
   }
@@ -76,7 +79,9 @@ export function aplicarOpciones(op) {
   const base = KINDS[op.kind];
   if (!base || !base.comando) return op;
   const ops = opcionesDe(op), yaUna = new Set();   // unaPsiquica: solo la primera arma psíquica
-  const armas = base.weapons.map(k => {
+  const c = comandoPorId(base.comando), conEquipo = ops.find(d => d.equipo);
+  const deFicha = conEquipo ? conEquipo.equipo.map(w => `${c.prefijo}.${w}`) : base.weapons;
+  const armas = deFicha.map(k => {
     let w = WPN[k], ids = [];
     for (const d of ops) {
       if (d.armas && d.armas.unaPsiquica && yaUna.has(d.id)) continue;
@@ -90,10 +95,12 @@ export function aplicarOpciones(op) {
     if (!WPN[clave]) WPN[clave] = w;
     return clave;
   });
-  const enMano = op.weapon ? sinOpcion(op.weapon) : base.weapons[0];
+  const enMano = op.weapon ? sinOpcion(op.weapon) : deFicha[0];
   op.weapons = armas;
   op.weapon = armas.find(k => sinOpcion(k) === enMano) || armas[0];
   op.move = base.move + ops.reduce((a, d) => a + (d.move || 0), 0);
+  // un arma que da Salvación (Escudo: 4+) mejora la de su ficha
+  op.save = Math.min(base.save, ...armas.map(k => (WPN[k] && WPN[k].salvacion) || 7));
   return op;
 }
 // el don (o null) de un agente, y si es Astartes Herejes (regla Astartes)

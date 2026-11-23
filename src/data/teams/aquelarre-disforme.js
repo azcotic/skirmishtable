@@ -30,7 +30,7 @@ export default {
     espadon:              M("Espadón", 4, 3, 4, 5, ["Lethal 5+", "Rending"]),
     daga:                 M("Daga", 4, 4, 3, 5),
     espadaSierra:         M("Espada sierra", 4, 4, 4, 5),
-    armaEscudo:           M("Arma y escudo de Tzaangor", 4, 4, 3, 4, ["Shield*"]),
+    armaEscudo:           { ...M("Arma y escudo de Tzaangor", 4, 4, 3, 4, ["Shield*"]), salvacion: 4 },   // Escudo: Salvación 4+
     armasTzaangor:        M("Armas de Tzaangor", 4, 4, 4, 5, ["Balanced"]),
   },
   // Astartes (regla de facción): el segundo disparo de la activación con estas armas cuesta 1 PA más
@@ -49,8 +49,28 @@ export default {
     { id: "apendice",  nombre: "Apéndice mutante",       pendiente: true },
     { id: "vuelo",     nombre: "Vuelo inmaterial",       vuelo: true },
     { id: "giro",      nombre: "Giro del destino",       armas: { psiquicas: { anadir: ["Piercing Crits 1"] } } },
-    { id: "bombardeo", nombre: "Bombardeo astral",       armas: { unaPsiquica: { anadir: ["Devastating 1"] } } },
+    { id: "bombardeo", nombre: "Bombardeo astral",       armas: { unaPsiquica: { anadir: ["Devastating 1"], devArea: 2 } } },
     { id: "maestro",   nombre: "Maestro del Immaterium", pendiente: true },
+    ],
+  }, {
+    // opciones de arma de la hoja de equipo (equipo: las armas que lleva en lugar de las de su ficha)
+    id: "armasTirador", agentes: ["tiradorRubrica"],
+    opciones: [
+      { id: "canon",        nombre: "Cañón cosechaalmas",   equipo: ["canonConcentrado", "canonBarrido", "punos"] },
+      { id: "lanzallamasD", nombre: "Lanzallamas disforme", equipo: ["lanzallamasDisforme", "punos"] },
+    ],
+  }, {
+    id: "armasCampeon", agentes: ["campeonTzaangor"],
+    opciones: [
+      { id: "granHacha", nombre: "Gran hacha", equipo: ["granHacha"] },
+      { id: "espadon",   nombre: "Espadón",    equipo: ["espadon"] },
+    ],
+  }, {
+    id: "armasTzaangor", agentes: ["combatienteTzaangor"],
+    opciones: [
+      { id: "armasTz",       nombre: "Armas de Tzaangor",                  equipo: ["armasTzaangor"] },
+      { id: "escudoTz",      nombre: "Arma y escudo de Tzaangor",          equipo: ["armaEscudo"] },
+      { id: "pistolaEspada", nombre: "Pistola automática y espada sierra", equipo: ["pistolaAutomatica", "espadaSierra"] },
     ],
   }],
   agentes: {

@@ -143,3 +143,58 @@ describe('combate', () => {
     expect(e.pools[1].crit).toBe(0);
   });
 });
+
+describe('Área, Ráfaga, Devastadora con distancia, Aturdidora, Escudo y Quemar mente', () => {
+  it('Devastadora con distancia: daña al blanco y avisa del daño a los cercanos', async () => {
+    const { devastadora, distanciaRegla } = await import('../../src/engine/dice.js');
+    expect(devastadora(['2" Devastating 2'])).toEqual({ x: 2, dist: 2 });
+    expect(devastadora(['Devastating 3'])).toEqual({ x: 3, dist: null });
+    expect(distanciaRegla(['Blast 2"'], 'Blast')).toBe(2);
+    expect(distanciaRegla(['Torrent 1"'], 'Torrent')).toBe(1);
+    const r = disparo(arma(['2" Devastating 2']), [6, 2, 2, 2, 6, 2, 2]);
+    expect(r).toMatchObject({ dev: 2, devArea: { dist: 2, dmg: 2 } });
+    expect(disparo(arma(['Devastating 2']), [6, 2, 2, 2, 6, 2, 2]).devArea).toBe(null);
+  });
+  it('un blanco secundario no vuelve a tirar Sobrecalentamiento', () => {
+    const k = arma(['Hot']);
+    const r = shootRoll({ w: k, acc: 0, obsc: false, cover: false, sec: 'B1' }, tirador(k), blanco(), dados(2, 2, 2, 2, 2, 2, 2));
+    expect(r.selfDmg).toBe(0);
+  });
+  it('Aturdidora: con un crítico, 1 LPA menos (sin acumular) hasta terminar su siguiente activación', async () => {
+    const { aturdir, quitarAturdido } = await import('../../src/engine/efectos.js');
+    const op = { alive: true, ready: true, apl: 3, ap: 3, used: [] };
+    expect(aturdir(op, ['Stun'], 0)).toBe(false);
+    expect(aturdir(op, ['Stun'], 1)).toBe(true);
+    expect(op).toMatchObject({ apl: 2, ap: 2, aturdido: true });
+    expect(aturdir(op, ['Stun'], 2)).toBe(false);
+    expect(quitarAturdido(op)).toBe(true);
+    expect(op.apl).toBe(3);
+  });
+  it('Quemar mente: con daño de un crítico, ficha e Impactar 1 peor (sin sumarse a lesionado)', async () => {
+    const { quemarMente } = await import('../../src/engine/efectos.js');
+    const { effHit } = await import('../../src/engine/dice.js');
+    const a = { team: 0 }, b = { team: 1, alive: true, wounds: 14, maxW: 14 }, c = { team: 1, alive: true, wounds: 3, maxW: 14 };
+    expect(quemarMente([a, b], a, b, ['Mindburn*'], { critDano: false })).toBe(false);
+    expect(quemarMente([a, b], a, b, ['Mindburn*'], { critDano: true })).toBe(true);
+    expect(effHit(b, { hit: 3 })).toBe(4);
+    c.quemarMente = false;
+    expect(effHit(c, { hit: 3 })).toBe(4);                 // lesionado
+    // el mismo bando vuelve a usar el arma: la ficha anterior se retira
+    expect(quemarMente([a, b, c], a, c, ['Mindburn*'], { critDano: false })).toBe(false);
+    expect(b.quemarMente).toBe(false);
+  });
+  it('critDano: solo si algún crítico hace daño', () => {
+    expect(disparo(arma(), [6, 2, 2, 2, 2, 2, 2]).critDano).toBe(true);
+    expect(disparo(arma(), [6, 2, 2, 2, 6, 2, 2]).critDano).toBe(false);   // bloqueado con un crítico
+  });
+  it('Escudo: cada bloqueo anula dos éxitos', () => {
+    const w = (rules = []) => ({ dmgN: 3, dmgC: 4, rules });
+    const e = { pools: [{ crit: 1, norm: 1, w: w(['Shield*']), shock: false }, { crit: 1, norm: 2, w: w(), shock: false }],
+      vida: [{ wounds: 9, alive: true }, { wounds: 9, alive: true }], turno: 0, pasos: [], fin: false };
+    const ops = opcionesCombate(e);
+    expect(ops).toContainEqual({ tipo: 'bloqueo', con: 'crit', contra: ['crit', 'norm'] });
+    expect(ops).toContainEqual({ tipo: 'bloqueo', con: 'norm', contra: ['norm', 'norm'] });
+    aplicarCombate(e, { tipo: 'bloqueo', con: 'norm', contra: ['norm', 'norm'] });
+    expect(e.pools[1]).toMatchObject({ crit: 1, norm: 0 });
+  });
+});

@@ -59,6 +59,7 @@ function checkRoll(what, s) {
   if (what.k === "shoot") {
     const w = WPN[what.w];
     if (!w || w.type !== "R") return "it isn't a ranged weapon";
+    if (what.sec) return null;           // blanco secundario (Área / Ráfaga): no es un disparo elegido
     const eye = { x: a.x, y: a.y, team: a.team, op: a };
     if (cannotShoot(eye)) return `this table shows ${a.name} can't shoot`;
     const j = judgeShot(eye, b);

@@ -24,6 +24,7 @@
  * Plain JS, no DOM: the unit tests wire two of these together in Node.
  */
 import { fightRoll, shootRoll } from '../engine/dice.js';
+import { aturdir, danoDevastadoraArea, quemarMente } from '../engine/efectos.js';
 import { cleanDiceTrays } from './protocol.js';
 
 const SIDE = ["Ash", "Slate"];
@@ -93,7 +94,8 @@ export function applyRoll(what, s, st, die, touched, sides) {
   if (!what || typeof what !== "object") return "a roll for nothing";
   if (what.k === "shoot" || what.k === "fight") {
     const a = st.ops.find(o => o.id === what.by), b = st.ops.find(o => o.id === what.at);
-    if (!a || !b || a.team !== s || b.team === s || !a.alive || !b.alive) return "a roll for the wrong operatives";
+    // Área: un blanco secundario puede ser del mismo bando que el tirador
+    if (!a || !b || a.team !== s || (b.team === s && !what.sec) || !a.alive || !b.alive) return "a roll for the wrong operatives";
     if (what.k === "shoot") {
       const r = shootRoll(what, a, b, die);
       if (!r) return `a shot with a weapon ${a.name} doesn't carry`;
@@ -102,6 +104,9 @@ export function applyRoll(what, s, st, die, touched, sides) {
       b.wounds = Math.max(0, b.wounds - r.dmg);
       if (b.wounds === 0) b.alive = false;
       touched.add(b.id);
+      for (const o of danoDevastadoraArea(st.ops, b, r)) touched.add(o.id);   // Devastadora con distancia
+      if (aturdir(b, r.w.rules, r.atkC)) touched.add(b.id);                     // Aturdidora
+      if (quemarMente(st.ops, a, b, r.w.rules, r)) touched.add(b.id);          // Quemar mente
       if (r.selfDmg) {                   // Sobrecalentamiento: el tirador se daña
         a.wounds = Math.max(0, a.wounds - r.selfDmg);
         if (a.wounds === 0) a.alive = false;
@@ -113,6 +118,7 @@ export function applyRoll(what, s, st, die, touched, sides) {
       st.trays[a.team] = { ...st.trays[a.team], dice: r.ra.dice, hit: r.hitA, rerolled: [] };
       st.trays[b.team] = { ...st.trays[b.team], dice: r.rb.dice, hit: r.hitB, rerolled: [] };
       Object.assign(a, r.a); Object.assign(b, r.b);
+      aturdir(b, r.wa.rules, r.ra.crit); aturdir(a, r.wb.rules, r.rb.crit);   // Aturdidora
       touched.add(a.id); touched.add(b.id);
     }
     sides.add(0); sides.add(1);

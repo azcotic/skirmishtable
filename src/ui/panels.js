@@ -4,12 +4,13 @@
 import { state } from '../state.js';
 import { CTRL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
 import { aplicarCombate, bloquear, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
-  isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
+  distanciaRegla, isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
 import { elegirCombate, elegirRepeticion } from './tirada.js';
 import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
 import { SHOT_KINDS, cannotShoot, judgeShot, shotsFrom } from '../engine/shots.js';
 import { KINDS, OPS } from '../engine/world.js';
+import { aturdir, danoDevastadoraArea, quemarMente, quitarAturdido, quitarQuemarMente } from '../engine/efectos.js';
 import { SHOT_COL, renderAll } from './board.js';
 import { HINT0, fmtDice, hint, logLine } from './dom.js';
 import { RULES, fmtIn, moveSpec } from '../rules/index.js';
@@ -88,6 +89,66 @@ export function doUndo() {
 }
 
 /* ---------- combat ---------- */
+// Área x y Ráfaga x: los blancos secundarios de un disparo de `a` a `b` (shot: cómo se juzgó b),
+// como [{id, acc, obsc, cover}].
+//  - Área: todo agente (de cualquier bando, salvo el tirador) a x″ o menos del blanco y visible
+//    para él; son blancos válidos aunque estén ocultos, y a cubierto si el principal lo estaba.
+//  - Ráfaga: los demás blancos válidos a x″ o menos del blanco, que no estén en la zona de
+//    control de un agente amigo del tirador; cada uno juzgado desde el tirador.
+export function blancosSecundarios(a, b, w, shot) {
+  const area = distanciaRegla(w.rules, "Blast"), rafaga = distanciaRegla(w.rules, "Torrent");
+  const cerca = (o, d) => o.alive && o.deployed !== false && o.id !== a.id && o.id !== b.id && opGap(o, b) <= d + 1e-9;
+  if (area) {
+    const ojo = { x: b.x, y: b.y, z: b.z || 0, team: b.team, op: b };
+    return OPS.filter(o => cerca(o, area) && judgeShot(ojo, o).kind !== "hidden")
+      .map(o => ({ id: o.id, acc: 0, obsc: false, cover: !!shot.save }));
+  }
+  if (rafaga) {
+    const amigos = OPS.filter(o => o.alive && o.team === a.team);
+    return shotsFrom({ x: a.x, y: a.y, z: a.z || 0, team: a.team, op: a })
+      .filter(s => cerca(s.target, rafaga) && (SHOT_KINDS[s.kind].valid || buscadoraAplica(w, s)) && blancoValidoCon(w, s)
+        && !amigos.some(f => opGap(f, s.target) <= CTRL + 1e-9))
+      .map(s => ({ id: s.target.id, acc: Math.min(s.accurate || 0, w.atk), obsc: !!s.obscured, cover: !!s.save }));
+  }
+  return [];
+}
+// Lo que pasa después de una tirada de disparo además del daño al blanco: Devastadora con
+// distancia y Aturdidora. Devuelve el texto para el registro.
+function efectosDisparo(a, b, r) {
+  let extra = "";
+  if (quemarMente(OPS, a, b, r.w.rules, r)) extra += T.disparo.quemaMente(b.name);
+  const area = danoDevastadoraArea(OPS, b, r);
+  if (area.length) extra += T.disparo.devArea(r.devArea.dmg, r.devArea.dist,
+    area.map(o => o.name + (o.alive ? "" : T.disparo.cae)));
+  if (aturdir(b, r.w.rules, r.atkC)) extra += T.disparo.aturdido(b.name);
+  return extra;
+}
+// Cada blanco secundario, uno tras otro: su propia tirada (sin decisiones a mitad), sin gastar
+// PA ni usos; Sobrecalentamiento solo se tiró en el principal.
+async function disparosSecundarios(a, what, lista) {
+  for (const s of lista) {
+    const b = OPS.find(o => o.id === s.id);
+    if (!a.alive || !b || !b.alive) continue;
+    const w2 = { k: "shoot", by: a.id, at: b.id, w: what.w, acc: s.acc, obsc: s.obsc, cover: s.cover, sec: what.at };
+    await new Promise(fin => {
+      const why = rollFor(w2, (die, done, n) => {
+        const r = shootRoll(w2, a, b, die);
+        if (!r) { fin(); return; }
+        showRoll(r.atk.dice, r.hit, a.team, T.disparo.tiradaAtq(a.name));
+        showRoll(r.dfn.dice, b.save, b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
+        b.wounds = Math.max(0, b.wounds - r.dmg);
+        let line = `${T.disparo.secundario} ` + T.disparo.log(a.name, b.name, r.w.name, fmtDice(r.atk.dice), fmtDice(r.dfn.dice), r.dfn.cover, r.dmg, r.notes);
+        if (b.wounds === 0) { b.alive = false; line += T.heridas.incapacitado; }
+        else if (isInjured(b)) line += T.heridas.lesionado;
+        line += efectosDisparo(a, b, r);
+        logLine(line + fairNote(n), r.dmg > 0, true);
+        rolled(n, done);
+        fin();
+      });
+      if (why) fin();
+    });
+  }
+}
 export function doShoot() {
   if (!state.sel || !state.target) return;
   const w = WPN[state.sel.weapon];
@@ -112,6 +173,10 @@ export function doShoot() {
   // what is rolled for: the shot as this table judges it, fixed before the dice are known
   const what = {k: "shoot", by: state.sel.id, at: state.target.id, w: state.sel.weapon,
                 acc: Math.min(shot.accurate, w.atk), obsc: !!shot.obscured, cover: !!shot.save};
+  // Área / Ráfaga: quiénes más reciben el disparo, decidido al apuntar
+  const secundarios = blancosSecundarios(state.sel, state.target, w, shot);
+  if (secundarios.length) logLine(T.disparo.secundarios(distanciaRegla(w.rules, "Blast") ? "area" : "rafaga",
+    secundarios.map(s => OPS.find(o => o.id === s.id).name)));
   // la tirada puede esperar decisiones del jugador: la promesa se cumple al resolverse (la IA la espera)
   let terminar;
   const hecho = new Promise(r => { terminar = r; });
@@ -156,8 +221,10 @@ export function doShoot() {
       line += T.disparo.sobrecalentado(a.name, r.selfDmg);
       if (a.wounds === 0) { a.alive = false; line += T.heridas.incapacitado; }
     }
+    line += efectosDisparo(a, b, r);     // Devastadora con distancia, Aturdidora
     logLine(line + fairNote(n), r.dmg > 0, true);   // también en un aviso en pantalla
     rolled(n, done);
+    if (secundarios.length) await disparosSecundarios(a, what, secundarios);
     terminar();
   });
   if (why) { hint(T.disparo.aunNo(why)); terminar(); }
@@ -225,9 +292,11 @@ export function doFight() {
     showRoll(r.rb.dice, r.hitB, b.team, T.combate.tiradaDef(b.name));
     Object.assign(a, r.a); Object.assign(b, r.b);
     a.ap -= 1; a.used.push("fight");
+    const aturdidos = [aturdir(b, r.wa.rules, r.ra.crit) && b, aturdir(a, r.wb.rules, r.rb.crit) && a].filter(Boolean);
     let line = T.combate.log(a.name, b.name, fmtDice(r.ra.dice), fmtDice(r.rb.dice), a.wounds, b.wounds);
     if (!b.alive) line += T.combate.cae(b.name);
     if (!a.alive) line += T.combate.cae(a.name);
+    for (const o of aturdidos) line += T.disparo.aturdido(o.name);
     logLine(line + fairNote(n), true, true);
     rolled(n, done);
     terminar();
@@ -288,7 +357,7 @@ export function renderCard() {
   const slot1Used = repoUsed || chargeUsed;
   c.innerHTML = `
     <div class="opname" style="color:${TEAMCOL_LT[state.sel.team]}">${state.sel.id} · ${state.sel.name} ${KINDS[state.sel.kind] && KINDS[state.sel.kind].comando ? (KINDS[state.sel.kind].lider ? `<span class="tag">${T.fichaDatos.lider}</span>` : "") : `<span class="tag">${T.tipos[state.sel.kind] || state.sel.kind}</span>`}
-      ${inj ? `<span class="tag warn">${T.ficha.lesionado}</span>` : ''} ${state.sel.ready ? '' : `<span class="tag">${T.ficha.usado}</span>`}</div>
+      ${inj ? `<span class="tag warn">${T.ficha.lesionado}</span>` : ''}${state.sel.aturdido ? ` <span class="tag warn">${T.ficha.aturdido}</span>` : ''}${state.sel.quemarMente ? ` <span class="tag warn">${T.ficha.quemarMente}</span>` : ''} ${state.sel.ready ? '' : `<span class="tag">${T.ficha.usado}</span>`}</div>
     <div class="stats">
       <div><div class="v">${state.sel.apl}</div><div class="k">${T.ficha.stat.lpa}</div></div>
       <div><div class="v">${pulg(RULES.moves.primary.allow(state.sel))}</div><div class="k">${T.ficha.stat.mov}</div></div>
@@ -485,7 +554,11 @@ conectarTurno({ tray, ultimo: () => ultimoBando });   // turno.js consulta el ma
 export function endActivation(op) {
   if (!op || !op.alive || !op.ready || !mayControl(op) || !puedeActuar(op)) return;
   ultimoBando = op.team;
-  snapshot(); op.ready = false; op.ap = op.apl; op.used = []; op.reaccion = false; op.disparadas = []; op.ecosActivo = false;
+  snapshot();
+  // Aturdidora: termina su siguiente activación (una reacción no cuenta como activación)
+  if (!op.reaccion && quitarAturdido(op)) logLine(T.disparo.recuperaLPA(op.name));
+  if (!op.reaccion && quitarQuemarMente(op)) logLine(T.disparo.sinQuemarMente(op.name));
+  op.ready = false; op.ap = op.apl; op.used = []; op.reaccion = false; op.disparadas = []; op.ecosActivo = false;
   if (state.sel === op) state.moveType = "reposition";
   logLine(T.activacion.termina(op.name)); cancelMode(); renderAll();
   const p = pistaDeTurno();          // activaciones alternas: a quién le toca ahora

@@ -104,7 +104,8 @@ export function bloquear(aN, aC, dN, dC, dmgN, dmgC) {
   return mejor;
 }
 
-export function effHit(op, w) { return Math.min(6, w.hit + (isInjured(op) ? 1 : 0)); }
+// Impactar: 1 peor si está lesionado o tiene una ficha de Quemar mente (no se acumulan)
+export function effHit(op, w) { return Math.min(6, w.hit + (isInjured(op) || op.quemarMente ? 1 : 0)); }
 export function isInjured(op) { return op.wounds < op.maxW/2; }
 export function effMove(op) { return isInjured(op) ? Math.max(4, op.move-2) : op.move; }
 
@@ -118,11 +119,26 @@ export function shootRoll(what, a, b, die = d6) {
   if (!w || w.type !== "R" || !a.weapons.includes(what.w)) return null;
   const hit = effHit(a, w);
   const atk = rollAttack(Math.max(0, w.atk - certera(what, w)), hit, w.rules, die);
-  return resolverDisparo(what, w, hit, atk, b, die);
+  // un blanco secundario (Área / Ráfaga: what.sec): Sobrecalentamiento ya se tiró en el principal
+  return resolverDisparo(what, w, hit, atk, b, die, null, what.sec ? false : null);
 }
 // Dados de Certera: los del terreno aventajado y los de la regla del arma, guardados como
 // éxitos normales sin tirarlos.
 export const certera = (what, w) => Math.max(0, Math.min((what.acc | 0) + numero(w.rules, "Accurate"), w.atk));
+// Devastadora x, o con distancia ('2" Devastating 2'): {x, dist} (dist: null si no tiene), o null
+export function devastadora(rules) {
+  for (const r of rules || []) {
+    const m = /^(?:(\d+(?:\.\d+)?)" )?Devastating (\d+)$/.exec(r);
+    if (m) return { x: +m[2], dist: m[1] ? +m[1] : null };
+  }
+  return null;
+}
+// Área x / Ráfaga x: la distancia en pulgadas ('Blast 2"' -> 2), o null
+export const distanciaRegla = (rules, nombre) => {
+  const r = (rules || []).find(x => x.startsWith(nombre + " "));
+  const v = r && parseFloat(r.slice(nombre.length + 1));
+  return Number.isFinite(v) ? v : null;
+};
 
 // Del ataque ya tirado (y quizá repetido con Repetición de mando) al daño: ofuscado,
 // Devastadora, Penetración, Saturación, la defensa (tirada aquí con `die`, o `dfnDados` si ya
@@ -135,9 +151,12 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
   if (what.obsc && !w.sinOfuscar) {   // crits become normal, then discard one success (Visión incorpórea: no)
     aNorm += aCrit; aCrit = 0;
     if (aNorm > 0) aNorm--;
-    notes.push("obscured: crits downgraded, one success discarded");
+    notes.push("obscured");
   }
-  const dev = numero(R, "Devastating") * aCrit;   // cada crítico guardado: daño inmediato
+  // cada crítico guardado: daño inmediato (no se descarta: luego aún se resuelve). Con distancia,
+  // ese daño también lo reciben los agentes cercanos al blanco (devArea: la interfaz lo aplica)
+  const dv = devastadora(R), dev = dv ? dv.x * aCrit : 0;
+  const devArea = dv && dv.dist && dev ? { dist: dv.dist, dmg: dev } : null;
   if (dev) notes.push("devastating:" + dev);
   const saturacion = !!regla(R, "Saturate");
   const cover = !!what.cover && !saturacion;
@@ -150,12 +169,14 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
   if (dfn.cover) notes.push("cover save banked");
   const rest = bloquear(aNorm, aCrit, dfn.norm, dfn.crit, w.dmgN, w.dmgC);
   let selfDmg = 0, hotV = null;
-  if (regla(R, "Hot")) {   // tras disparar: 1D6; si sale menos que Impactar, el tirador recibe el doble
-    hotV = hotDado ?? die();
+  if (regla(R, "Hot") && hotDado !== false) {   // tras disparar: 1D6; si sale menos que Impactar, el tirador recibe el doble
+    hotV = hotDado ?? die();                    // (false: blanco secundario, ya se tiró en el principal)
     if (hotV < hit) { selfDmg = hotV * 2; notes.push("hot:" + selfDmg); }
   }
   // atkN/atkC: los éxitos del ataque que llegan a la defensa (para explicar decisiones)
-  return { w, hit, atk, dfn, dmg: dev + rest.dmg, notes, selfDmg, pen, cover, hotDado: hotV, atkN: aNorm, atkC: aCrit, dev };
+  // critDano: algún crítico hizo daño (Devastadora o sin bloquear): Quemar mente
+  return { w, hit, atk, dfn, dmg: dev + rest.dmg, notes, selfDmg, pen, cover, hotDado: hotV, atkN: aNorm, atkC: aCrit, dev, devArea,
+    critDano: dev > 0 || rest.c > 0 };
 }
 
 /* ---------- Fight ---------- */
@@ -167,7 +188,8 @@ export const meleeKey = op => WPN[op.weapon] && WPN[op.weapon].type === "M" ? op
 // El combate paso a paso. Los dos tiran; luego, empezando por el atacante, se turnan para
 // resolver un dado: golpear (hace su daño) o bloquear un dado del rival (normal con normal,
 // crítico con normal o crítico; contra un arma Brutal solo se bloquea con críticos). Choque: la
-// primera vez que se golpea con un crítico, se descarta también un éxito del rival.
+// primera vez que se golpea con un crítico, se descarta también un éxito del rival. Escudo: cada
+// bloqueo anula dos éxitos sin resolver del rival (contra: una lista de dos).
 export function iniciarCombate(what, a, b, die = d6) {
   const ok = (op, k) => WPN[k] && WPN[k].type === "M" && (k === "knife" || op.weapons.includes(k));
   if (!ok(a, what.wa) || !ok(b, what.wb)) return null;
@@ -188,6 +210,12 @@ export function opcionesCombate(est) {
   if (p.crit > 0 && q.crit > 0) out.push({ tipo: "bloqueo", con: "crit", contra: "crit" });
   if (p.crit > 0 && q.norm > 0) out.push({ tipo: "bloqueo", con: "crit", contra: "norm" });
   if (p.norm > 0 && q.norm > 0 && !soloCriticos) out.push({ tipo: "bloqueo", con: "norm", contra: "norm" });
+  if (regla(p.w.rules, "Shield*")) {
+    if (p.crit > 0 && q.crit >= 2) out.push({ tipo: "bloqueo", con: "crit", contra: ["crit", "crit"] });
+    if (p.crit > 0 && q.crit >= 1 && q.norm >= 1) out.push({ tipo: "bloqueo", con: "crit", contra: ["crit", "norm"] });
+    if (p.crit > 0 && q.norm >= 2) out.push({ tipo: "bloqueo", con: "crit", contra: ["norm", "norm"] });
+    if (p.norm > 0 && q.norm >= 2 && !soloCriticos) out.push({ tipo: "bloqueo", con: "norm", contra: ["norm", "norm"] });
+  }
   return out;
 }
 export function aplicarCombate(est, op) {
@@ -204,7 +232,7 @@ export function aplicarCombate(est, op) {
     }
     est.pasos.push({ quien: i, ...op, dmg, choque });
   } else {
-    q[op.contra]--;
+    for (const c of [].concat(op.contra)) q[c]--;
     est.pasos.push({ quien: i, ...op });
   }
   const quedan = k => est.pools[k].crit + est.pools[k].norm > 0;
@@ -216,7 +244,7 @@ export function aplicarCombate(est, op) {
 export function decisionCombate(est) {
   const i = est.turno, p = est.pools[i], q = est.pools[1 - i], yo = est.vida[i], rival = est.vida[1 - i];
   const ops = opcionesCombate(est);
-  const dano = (pool, con) => con === "crit" ? pool.w.dmgC : pool.w.dmgN;
+  const dano = (pool, con) => [].concat(con).reduce((s, c) => s + (c === "crit" ? pool.w.dmgC : pool.w.dmgN), 0);
   const mata = ops.filter(o => o.tipo === "golpe" && dano(p, o.con) >= rival.wounds);
   if (mata.length) return mata.find(o => o.con === "norm") || mata[0];
   const peligro = q.crit * q.w.dmgC + q.norm * q.w.dmgN >= yo.wounds;
