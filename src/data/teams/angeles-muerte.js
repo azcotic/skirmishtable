@@ -17,6 +17,19 @@ const COMBATE_SARGENTO = [["armaEnergia", "Arma de energía"], ["espadaSierra", 
 // el Sargento Intercesor: las mismas armas de combate con 4 ataques en lugar de 5
 const COMBATE_INTERCESOR = COMBATE_SARGENTO.map(([k, n]) => [k + "4", n]);
 
+// Tácticas de capítulo (regla de facción): se elige una primaria y una secundaria para el comando.
+// ids solo con letras (viajan en las partidas en línea); sus efectos están en src/ui/ardides.js.
+export const TACTICAS = [
+  { id: "agresivos",  nombre: "Agresivos" },
+  { id: "duelistas",  nombre: "Duelistas" },
+  { id: "resueltos",  nombre: "Resueltos" },
+  { id: "sigilosos",  nombre: "Sigilosos" },
+  { id: "moviles",    nombre: "Móviles" },
+  { id: "robustos",   nombre: "Robustos" },
+  { id: "tiradores",  nombre: "Tiradores certeros" },
+  { id: "asedios",    nombre: "Especialistas en asedios" },
+];
+
 export default {
   id: "2272196183",                 // modelos azules (Ultramarines) del catálogo de Steam
   nombre: "Ángeles de la Muerte",
@@ -56,8 +69,13 @@ export default {
   // con estas armas, el segundo disparo con la misma cuesta 1 PA más
   astartesBolter: true,
   armasPesadasAstartes: ["francoEjecutor", "francoHiperfrag", "francoMortis", "bolterPesadoC", "bolterPesadoB"],
+  tacticas: TACTICAS,
   // Opciones de arma de la hoja del comando (equipo: las armas que lleva en lugar de las de su ficha)
   elecciones: [{
+    // Veterano del Capítulo (Sargentos): una táctica de capítulo adicional solo para este agente
+    id: "veterano", agentes: ["sargentoAsalto", "sargentoIntercesor"],
+    opciones: TACTICAS.map(t => ({ id: t.id, nombre: t.nombre, tactica: t.id })),
+  }, {
     id: "armasSargentoAsalto", agentes: ["sargentoAsalto"],
     opciones: [
       ...combinar([["pistolaBolterPesada", "Pistola bólter pesada"], ["pistolaLanzallamas", "Pistola lanzallamas"]], COMBATE_SARGENTO),

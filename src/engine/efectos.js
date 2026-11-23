@@ -62,8 +62,10 @@ export function veneno(op, d6) {
   return d;
 }
 // Aturdidora: true si el agente quedó aturdido ahora (una vez a la vez: no se acumula)
+// Reglas que hacen ignorar los cambios de LPA (p. ej. la táctica Resueltos): (op) => true
+export const ignoraAturdir = [];
 export function aturdir(op, rules, criticos) {
-  if (!regla(rules, "Stun") || !(criticos > 0) || !op.alive || op.aturdido) return false;
+  if (!regla(rules, "Stun") || !(criticos > 0) || !op.alive || op.aturdido || ignoraAturdir.some(f => f(op))) return false;
   op.aturdido = true;
   op.apl = Math.max(1, op.apl - 1);
   if (op.ready && !(op.used || []).length && op.ap > op.apl) op.ap = op.apl;   // aún no activó

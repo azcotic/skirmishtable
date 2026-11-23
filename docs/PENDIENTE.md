@@ -11,11 +11,12 @@ Pasa a ser el equipo principal de la app. Modelos: los azules (Ultramarines, mod
 - [x] Opciones de arma de los Sargentos, el Tirador Intercesor y el Combatiente Intercesor.
 - [x] Arma bólter y regla Astartes (dos Disparar con al menos un arma bólter; +1 PA con la misma arma pesada).
 - [x] Ardides de estrategia: Doctrina de combate, Y no conocerán el miedo e Indomitus.
-- [ ] Tácticas de capítulo (primaria y secundaria, 8 opciones) y el ardid Tácticas flexibles, que depende de ellas.
+- [x] Tácticas de capítulo (primaria y secundaria, las 8) y Tácticas flexibles. Veterano del Capítulo de los Sargentos.
+- [x] Reglas de ficha: Aura de hierro (se aplica sola con el primer dado normal), Guerra según las doctrinas, Capa de camuflaje.
+- [ ] Reglas de ficha sin efecto aún: Líder heroico (Capitán), Granadero (faltan las granadas del equipo universal) y la acción Óptica del Francotirador.
+- [ ] Móviles: la acción Cargar ya se permite en zona de control, pero la ruta no sale de esa zona (movimiento).
+- [ ] Sigilosos y Aura de hierro eligen solas la mejor opción / el primer dado: sin ventana de decisión.
 - [ ] Ardides de tiroteo. Faltan las fotos.
-- [ ] Reglas de cada ficha: Líder heroico y Aura de hierro (Capitán), Guerra según las doctrinas y
-      Veterano del Capítulo (sargentos), Granadero (granadas con +1 a Impactar), Capa de camuflaje y
-      Óptica (Francotirador).
 - [ ] Color del capítulo: que cada jugador elija el color, girando el tono azul de las texturas.
 - [ ] Validar en el teléfono que los modelos azules se vean bien.
 

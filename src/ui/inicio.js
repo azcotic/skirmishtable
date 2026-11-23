@@ -33,7 +33,7 @@ import { OPS, rosterInit } from '../engine/world.js';
 import { agenteDeMuestra, comandoPorId, eleccionesDe, modelosPara, pesoAgente, plantillaDefs, puedeAnadir, seleccionesMax,
   validarComando } from '../data/teams/index.js';
 import { abrirFicha } from './ficha.js';
-import { ARDID, DOCTRINAS, dadosGuardados, doctrina, elegirDoctrina, guardarDestino, quitarDestino } from './ardides.js';
+import { ARDID, DOCTRINAS, dadosGuardados, doctrina, elegirDoctrina, elegirFlexible, guardarDestino, guerraDoctrinas, quitarDestino, tacticasDeBando } from './ardides.js';
 import { d6 } from '../engine/dice.js';
 import { gradoActual, puntuarKillOp, reiniciarPuntos } from './ops.js';
 import { setPick } from '../view3d/units.js';
@@ -48,7 +48,7 @@ const ORDEN = ["modo", "mapa", "comando0", "plantilla0", "comando1", "plantilla1
 // plantilla: los agentes elegidos de cada bando (claves); config: el nombre de la configuración
 // faccion: por bando, lo elegido en las elecciones de facción de su comando (src/data/teams):
 // { [índice del agente en la plantilla]: { [id de la elección]: id de la opción } }
-const eleccion = { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], despliegue: null };
+const eleccion = { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], tacticas: [[null, null], [null, null]], despliegue: null };
 // Lo que falta o hay que elegir en un bando: una entrada por agente y elección que le toca
 function porElegir(s) {
   if (!eleccion.plantilla[s]) return [];
@@ -63,17 +63,29 @@ const mismos = (s, x) => x.e.unica ? [x] : porElegir(s).filter(y => y.e === x.e 
 function elegirOpcion(s, { e, i }, id) { eleccion.faccion[s][i] = { ...(eleccion.faccion[s][i] || {}), [e.id]: id }; }
 // Tras la configuración de un bando: sus elecciones de facción (si las hay), una pantalla por
 // agente, y luego el siguiente paso. La computadora elige al azar entre las que ya hacen algo.
+// Tras las elecciones de facción: las tácticas de capítulo si el comando las tiene; luego, el siguiente paso
+function trasFaccion(s) {
+  const c = comandoPorId(eleccion.comando[s]), despues = s === 0 ? "comando1" : "despliegue";
+  eleccion.tacticas[s] = [null, null];
+  if (!c || !c.tacticas) return ir(despues);
+  if (s === 1 && eleccion.modo === "ia") {   // la computadora elige dos distintas al azar
+    const ids = c.tacticas.map(t => t.id), p = ids[Math.floor(Math.random() * ids.length)];
+    const resto = ids.filter(x => x !== p);
+    eleccion.tacticas[1] = [p, resto[Math.floor(Math.random() * resto.length)]];
+    return ir(despues);
+  }
+  return ir("tacticas" + s);
+}
 function trasConfig(s) {
-  const despues = s === 0 ? "comando1" : "despliegue";
   eleccion.faccion[s] = {};
   const lista = porElegir(s);
-  if (!lista.length) return ir(despues);
+  if (!lista.length) return trasFaccion(s);
   if (s === 1 && eleccion.modo === "ia") {
     for (const x of lista) {
       const libres = x.e.opciones.filter(o => !o.pendiente && !(x.e.unica && tomadas(1, x).includes(o.id)));
       if (libres.length) elegirOpcion(1, x, libres[Math.floor(Math.random() * libres.length)].id);
     }
-    return ir(despues);
+    return trasFaccion(1);
   }
   return ir("faccion" + s);
 }
@@ -141,6 +153,14 @@ function contenido() {
       return { titulo: F.titulo[x.e.id] || F.tituloGenerico,
         sub: F.sub(esc(c.agentes[clave(x)].nombre), deEsta.indexOf(juntos[0]) + 1, deEsta.length, !!x.e.unica, juntos.length), html };
     }
+    case "tacticas0": case "tacticas1": {      // tácticas de capítulo: primaria y luego secundaria (distintas)
+      const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), t = eleccion.tacticas[s], F = T.tacticas;
+      const segunda = !!t[0];
+      const html = c.tacticas.map(x => opcion("t:" + x.id, esc(x.nombre), esc(F.desc[x.id] || ""),
+        { activa: false, deshabilitada: segunda && x.id === t[0] })).join("");
+      return { titulo: segunda ? F.tituloSecundaria : F.tituloPrimaria,
+        sub: segunda ? F.subSecundaria(esc(c.tacticas.find(x => x.id === t[0]).nombre)) : F.subPrimaria, html };
+    }
     case "elegir0": case "elegir1": {          // armar el comando agente por agente
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = eleccion.plantilla[s] || [];
       const v = validarComando(c, lista), comp = c.composicion || {};
@@ -177,6 +197,8 @@ function contenido() {
       `<dt>${I.rMapa}</dt><dd>${esc(nombreMapa(eleccion.mapa))}</dd>` +
       `<dt>${I.rComando}</dt><dd>${esc(nombreComando(eleccion.comando[0]))}${eleccion.config[0] ? ` · ${esc(eleccion.config[0])}` : ""}</dd>` +
       `<dt>${I.rRival}</dt><dd>${esc(nombreComando(eleccion.comando[1]))}${eleccion.config[1] ? ` · ${esc(eleccion.config[1])}` : ""}</dd>` +
+      [0, 1].map(s => { const c = comandoPorId(eleccion.comando[s]), t = eleccion.tacticas[s];
+        return c && c.tacticas && t[0] && t[1] ? `<dt>${T.tacticas.resumen(s)}</dt><dd>${esc(c.tacticas.find(x => x.id === t[0]).nombre)} · ${esc(c.tacticas.find(x => x.id === t[1]).nombre)}</dd>` : ""; }).join("") +
       `<dt>${I.rDespliegue}</dt><dd>${eleccion.despliegue === "azar" ? I.azar : I.turnos}</dd></dl>`,
       principal: `<button class="pant-jugar" id="pantjugar">${I.jugar}</button>` };
     case "listo": return { titulo: I.listoTitulo, sub: I.listoSub, html:
@@ -221,6 +243,12 @@ function contenido() {
         const op = opcion("ardid:" + n, esc(n), desc,
           { activa: usado, deshabilitada: !mio || (!usado && !puedeUsarArdid(tray.cp, tray.ardides || [[], []], lado, n)) });
         // Doctrina de combate: una vez usado, se elige la doctrina
+        if (usado && n === ARDID.flexibles) {
+          const c = comandoPorId(teamOf(lado) && teamOf(lado).id), prim = (tray.tacticas && tray.tacticas[lado] || [])[0];
+          const ahora = tacticasDeBando(lado)[1];
+          return op + (c && c.tacticas ? `<div class="pant-grupo"><h3>${T.tacticas.flexTitulo}</h3>` +
+            c.tacticas.filter(x => x.id !== prim).map(x => opcion("flex:" + x.id, esc(x.nombre), "", { activa: ahora === x.id, deshabilitada: !mio })).join("") + "</div>" : "");
+        }
         if (!(usado && n === ARDID.doctrina)) return op;
         return op + `<div class="pant-grupo"><h3>${T.doctrinas.titulo}</h3>` +
           DOCTRINAS.map(d => opcion("doc:" + d, esc(T.doctrinas[d]), "", { activa: doctrina(lado) === d, deshabilitada: !mio })).join("") + "</div>";
@@ -255,7 +283,7 @@ function render() {
   const el = pantalla();
   if (!el) return;
   // armar el comando cuenta como el paso de su configuración, para los puntos de progreso
-  const c = contenido(), i = ORDEN.indexOf(/^(elegir|faccion)/.test(paso) ? "plantilla" + paso.slice(-1) : paso);
+  const c = contenido(), i = ORDEN.indexOf(/^(elegir|faccion|tacticas)/.test(paso) ? "plantilla" + paso.slice(-1) : paso);
   const puntos = i < 0 ? "" : ORDEN.map((_, k) => `<i class="${k < i ? "hecho" : k === i ? "ahora" : ""}"></i>`).join("");
   el.innerHTML = `<div class="pant" data-paso="${paso}">
     <div class="pant-cab">
@@ -298,8 +326,16 @@ function elegir(v) {
     case "faccion0": case "faccion1": {
       const s = +paso.slice(-1), [, n, id] = v.split(":"), lista = porElegir(s);
       for (const y of mismos(s, lista[+n])) elegirOpcion(s, y, id);
-      if (lista.every(y => elegido(s, y))) return ir(s === 0 ? "comando1" : "despliegue");
+      if (lista.every(y => elegido(s, y))) return trasFaccion(s);
       return render();
+    }
+    case "tacticas0": case "tacticas1": {      // primero la primaria, luego la secundaria
+      const s = +paso.slice(-1), t = eleccion.tacticas[s], c = comandoPorId(eleccion.comando[s]), id = v.slice(2);
+      if (!c.tacticas.some(x => x.id === id)) return;
+      if (!t[0]) { t[0] = id; return render(); }
+      if (id === t[0]) return;
+      t[1] = id;
+      return ir(s === 0 ? "comando1" : "despliegue");
     }
     case "elegir0": case "elegir1": {
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = eleccion.plantilla[s] = eleccion.plantilla[s] || [];
@@ -319,10 +355,18 @@ function elegir(v) {
       return fijarIniciativa(+v.slice(3));
     case "ardidesA": case "ardidesB":
       if (v.startsWith("ardid:")) return alternarArdid(ordenArdides[paso === "ardidesA" ? 0 : 1], v.slice(6));
+      if (v.startsWith("flex:")) {          // Tácticas flexibles: la nueva secundaria
+        const lado = ordenArdides[paso === "ardidesA" ? 0 : 1];
+        if (!mayControl({ team: lado })) return;
+        snapshot(); elegirFlexible(lado, v.slice(5));
+        logLine(T.tacticas.logFlex(TEAMNAME[lado], v.slice(5)));
+        renderAll(); return render();
+      }
       if (v.startsWith("doc:")) {
         const lado = ordenArdides[paso === "ardidesA" ? 0 : 1];
         if (!mayControl({ team: lado })) return;
         snapshot(); elegirDoctrina(lado, v.slice(4));
+        if (guerraDoctrinas(lado, v.slice(4))) logLine(T.doctrinas.guerra(TEAMNAME[lado]));
         logLine(T.doctrinas.log(TEAMNAME[lado], T.doctrinas[v.slice(4)].split(":")[0].toLowerCase()));
         renderAll(); return render();
       }
@@ -338,7 +382,7 @@ export function abrirFaseEstrategia() {
   if (!el) return;
   tirada = null;
   tray.ardides = [[], []];
-  tray.doctrina = [null, null];
+  tray.doctrina = [null, null]; tray.flex = [null, null]; tray.guerraPI = [null, null];
   paso = "iniciativa"; pila.length = 0;
   el.hidden = false;
   render();
@@ -369,10 +413,13 @@ function alternarArdid(lado, n, clave = "ardides") {
   snapshot();
   if (usados.includes(n)) {
     usados.splice(usados.indexOf(n), 1); tray.cp[lado] += COSTE_ARDID;
+    if (n === ARDID.doctrina) { guerraDoctrinas(lado, null); elegirDoctrina(lado, null); }
+    if (n === ARDID.flexibles) elegirFlexible(lado, null);
     logLine(T.estrategia.logDevuelto(TEAMNAME[lado], n));
     if (n === ARDID.destino) quitarDestino(lado);
   } else if (puedeUsarArdid(tray.cp, tray[clave], lado, n)) {
     usados.push(n); tray.cp[lado] -= COSTE_ARDID;
+    if (n === ARDID.doctrina) { elegirDoctrina(lado, "devastadora"); if (guerraDoctrinas(lado, "devastadora")) logLine(T.doctrinas.guerra(TEAMNAME[lado])); }
     logLine(T.estrategia.logArdid(TEAMNAME[lado], n));
     if (n === ARDID.destino) {          // tira 2D6 y los guarda para el tiroteo
       const [x, y] = guardarDestino(lado, d6);
@@ -408,6 +455,8 @@ function empezar() {
   setTeam(1, eleccion.comando[1] || null);
   // los agentes de cada bando: el comando de prueba con sus fichas reales (o fichas simples)
   // con sus elecciones de facción (5.º dato de cada agente)
+  tray.tacticas = [0, 1].map(s => eleccion.tacticas[s][0] && eleccion.tacticas[s][1] ? [...eleccion.tacticas[s]] : null);
+  tray.flex = [null, null]; tray.guerra = [[], []]; tray.guerraPI = [null, null];
   rosterInit([0, 1].flatMap(s => plantillaDefs(s, eleccion.comando[s], eleccion.plantilla[s])
     .map((d, i) => eleccion.faccion[s][i] ? [...d, eleccion.faccion[s][i]] : d)));
   loadMap(eleccion.mapa);
@@ -428,7 +477,7 @@ export function abrirInicio() {
   const el = pantalla();
   if (!el) return;
   finMostrado = false;
-  Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], despliegue: null });
+  Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], tacticas: [[null, null], [null, null]], despliegue: null });
   paso = "modo"; pila.length = 0;
   el.hidden = false;
   render();

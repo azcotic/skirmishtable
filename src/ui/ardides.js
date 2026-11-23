@@ -25,7 +25,10 @@
  * tirada: solo fuera de línea, como la Repetición de mando.
  */
 import { CTRL } from '../config.js';
-import { ajustesArma, ajustesDefensa, ignoraLesion } from '../engine/dice.js';
+import { ajustesArma, ajustesDefensa, bloquear, ignoraLesion, ignoraSaturacion, reglasOp } from '../engine/dice.js';
+import { ignoraAturdir } from '../engine/efectos.js';
+import { ajustesCoste, cargarTrabado } from '../game/acciones.js';
+import { esArmaBolter, opcionesDe } from '../data/teams/index.js';
 import { KINDS, OPS } from '../engine/world.js';
 import { opGap } from '../engine/geometry.js';
 import { sightAnalysis } from '../engine/sight.js';
@@ -67,6 +70,15 @@ ajustesArma.push((w, a, b, modo) => {
     const otro = amigos(a).some(o => es(o, 'hechicero') && opGap(o, a) <= 9 + 1e-9);
     anadir(otro ? 'Ceaseless' : 'Balanced');
   }
+  if (a && angeles(a) && tacticasDe(a).length) {   // tácticas de capítulo que cambian el arma
+    const t = tacticasDe(a);
+    if (modo === 'combate' && w.type === 'M' && t.includes('agresivos')) anadir('Rending');
+    if (modo === 'disparo' && w.type === 'R') {
+      if (t.includes('asedios')) anadir('Saturate');
+      const movio = (a.used || []).some(u => u === 'reposition' || u === 'charge' || u === 'fallBack');
+      if (t.includes('tiradores') && !movio && esArmaBolter(w)) anadir('Severe');
+    }
+  }
   if (a && angeles(a) && activo(a.team, ARDID.doctrina)) {
     const d = doctrina(a.team), lejos = b && opGap(a, b) > 6 + 1e-9;
     if ((modo === 'disparo' && b && (d === 'devastadora' ? lejos : d === 'tactica' ? !lejos : false))
@@ -82,9 +94,81 @@ ajustesArma.push((w, a, b, modo) => {
   return x || w;
 });
 
+/* ---------- Tácticas de capítulo (regla de facción de los Ángeles de la Muerte) ----------
+ * tray.tacticas[bando] = [primaria, secundaria]; el ardid Tácticas flexibles cambia la secundaria
+ * hasta el final del punto de inflexión (tray.flex[bando]). Los Sargentos suman la suya (Veterano
+ * del Capítulo) y el Francotirador Eliminador siempre tiene Sigilosos (Capa de camuflaje). Los
+ * efectos de la misma táctica no se acumulan.
+ * 1 Agresivos: armas de combate con Desgarradora. 2 Duelistas: un éxito normal bloquea un crítico
+ * sin resolver. 3 Resueltos: ignora los cambios de LPA. 4 Sigilosos: contra sus disparos, una
+ * salvación por cobertura más o una guardada como crítico. 5 Móviles: Retroceder por 1 PA menos y
+ * Cargar en zona de control. 6 Robustos: 5+ en defensa son críticos y el primer daño normal de 3 o
+ * más al contraatacar baja en 1. 7 Tiradores certeros: sin Cargar, Reposicionarse ni Retroceder,
+ * sus armas bólter tienen Severa. 8 Especialistas en asedios: armas a distancia con Saturación. */
+export function tacticasDeBando(s) {
+  const t = tray && tray.tacticas && tray.tacticas[s];
+  if (!t) return [];
+  const sec = (tray.flex && tray.flex[s]) || t[1];
+  return [t[0], sec].filter(Boolean);
+}
+export function tacticasDe(op) {
+  if (!angeles(op)) return [];
+  const v = opcionesDe(op).map(o => o.tactica).filter(Boolean);
+  const f = perfil(op).clave === 'francotirador' ? ['sigilosos'] : [];
+  return [...new Set([...tacticasDeBando(op.team), ...v, ...f])];
+}
+const tiene_ = (op, t) => tacticasDe(op).includes(t);
+export const elegirTacticas = (s, p, sec) => { tray.tacticas = tray.tacticas || [null, null]; tray.tacticas[s] = [p, sec]; };
+export function elegirFlexible(s, t) { tray.flex = tray.flex || [null, null]; tray.flex[s] = t; }
+
+reglasOp.push(op => {
+  if (!angeles(op)) return null;
+  return { duelista: tiene_(op, 'duelistas'), robusto: tiene_(op, 'robustos'), aura: perfil(op).clave === 'capitan' && !op.auraUsada };
+});
+ignoraAturdir.push(op => tiene_(op, 'resueltos'));
+ignoraSaturacion.push(op => angeles(op) && perfil(op).clave === 'francotirador');   // Capa de camuflaje
+ajustesCoste.push((op, accion) => accion === 'fallBack' && tiene_(op, 'moviles') ? 1 : undefined);
+cargarTrabado.push(op => tiene_(op, 'moviles'));
+ajustesDefensa.push((dfn, b, w, ctx) => {
+  if (!b || !angeles(b) || !w || w.type !== 'R') return null;
+  let { crit, norm } = dfn;
+  const notas = [];
+  if (tiene_(b, 'robustos')) {      // Robustos: 5+ son críticos
+    const cincos = (dfn.dice || []).filter(v => v === 5 && v >= b.save).length;
+    const sube = (dfn.dice || []).filter(v => v === 5).length;
+    crit += sube; norm -= cincos; notas.push('robustos');
+  }
+  if (dfn.cover && tiene_(b, 'sigilosos')) {   // Sigilosos: la mejor de sus opciones
+    const ambas = perfil(b).clave === 'francotirador' && tacticasDeBando(b.team).includes('sigilosos');
+    const dano = (n, c) => bloquear(ctx.aN, ctx.aC, n, c, w.dmgN, w.dmgC).dmg;
+    const opts = [[norm + 1, crit], [norm - 1, crit + 1]];
+    if (ambas) opts.push([norm, crit + 1]);
+    opts.sort((x, y) => dano(x[0], x[1]) - dano(y[0], y[1]));
+    [norm, crit] = opts[0]; notas.push('sigilosos');
+  }
+  return notas.length ? { norm, crit, nota: notas.join('+') } : null;
+});
+
 // Doctrina de combate: la elegida por el bando (devastadora por defecto)
 export const doctrina = s => (tray && tray.doctrina && tray.doctrina[s]) || 'devastadora';
 export function elegirDoctrina(s, d) { tray.doctrina = tray.doctrina || [null, null]; tray.doctrina[s] = d; }
+
+// Guerra según las doctrinas (Sargentos): cada uno, una vez por batalla, usa Doctrina de combate gratis
+// con su doctrina (Asalto y Táctica el Sargento Intercesor de Asalto; Devastadora y Táctica el
+// Sargento Intercesor). Se devuelve el PM al elegirla; d = null deshace el descuento de este PI.
+const GUERRA = { sargentoAsalto: ['asalto', 'tactica'], sargentoIntercesor: ['devastadora', 'tactica'] };
+export function guerraDoctrinas(s, d) {
+  tray.guerra = tray.guerra || [[], []]; tray.guerraPI = tray.guerraPI || [null, null];
+  const prev = tray.guerraPI[s];
+  if (prev) { tray.cp[s] -= 1; tray.guerra[s] = tray.guerra[s].filter(k => k !== prev); tray.guerraPI[s] = null; }
+  if (!d) return false;
+  const quien = OPS.find(o => o.alive && o.deployed !== false && o.team === s && angeles(o)
+    && (GUERRA[perfil(o).clave] || []).includes(d) && !tray.guerra[s].includes(o.id + ':' + d));
+  if (!quien) return false;
+  const k = quien.id + ':' + d;
+  tray.guerra[s].push(k); tray.guerraPI[s] = k; tray.cp[s] += 1;
+  return true;
+}
 
 // Y no conocerán el miedo
 ignoraLesion.push(op => angeles(op) && activo(op.team, ARDID.miedo));

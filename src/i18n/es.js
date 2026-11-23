@@ -691,7 +691,28 @@ export const T = {
     'Tácticas flexibles': 'Cambia tu táctica de capítulo secundaria hasta el final del punto de inflexión. (Aún no tiene efecto en la app: faltan las tácticas de capítulo.)',
     'Indomitus': 'Si disparan a uno de tus agentes y sacas dos fallos o más en defensa, uno cuenta como éxito normal.',
   },
+  tacticas: {
+    tituloPrimaria: 'Táctica de capítulo primaria',
+    tituloSecundaria: 'Táctica de capítulo secundaria',
+    subPrimaria: 'Tus agentes la tienen durante toda la batalla. Después eliges la secundaria.',
+    subSecundaria: p => `Primaria: ${p}. Elige una secundaria distinta.`,
+    resumen: s => `Tácticas (${s === 0 ? 'tú' : 'rival'})`,
+    flexTitulo: 'Nueva táctica secundaria (hasta el final del punto de inflexión)',
+    logFlex: (equipo, id) => `${equipo} cambia su táctica secundaria hasta el final del punto de inflexión (${id}).`,
+    ficha: 'Tácticas de capítulo',
+    desc: {
+      agresivos: 'Las armas de combate de tus agentes tienen Desgarradora.',
+      duelistas: 'Al combatir o contraatacar, cada éxito normal puede bloquear un éxito crítico sin resolver (salvo contra armas Brutales).',
+      resueltos: 'Tus agentes ignoran cualquier cambio a su LPA.',
+      sigilosos: 'Al dispararles, si pueden guardar una salvación por cobertura, guardan otra adicional o, en su lugar, una como éxito crítico.',
+      moviles: `Retroceder cuesta 1 ${G.pa.abrev} menos y pueden Cargar estando en la ${G.zonaControl.es} de un enemigo.`,
+      robustos: 'Los 5+ en sus dados de defensa son éxitos críticos; al contraatacar, la primera vez que un dado normal les inflige 3 o más de daño, baja en 1.',
+      tiradores: 'Si no hicieron Cargar, Reposicionarse ni Retroceder en la activación, sus armas bólter tienen Severa.',
+      asedios: 'Las armas a distancia de tus agentes tienen Saturación.',
+    },
+  },
   doctrinas: {
+    guerra: equipo => `${equipo}: Guerra según las doctrinas — el Sargento usa la doctrina gratis (0 PM).`,
     titulo: 'Doctrina elegida',
     devastadora: 'Devastadora: disparar a más de 6″',
     tactica: 'Táctica: disparar a 6″ o menos',
@@ -713,7 +734,7 @@ export const T = {
   // Elecciones de facción (src/data/teams: `elecciones`): pantallas de inicio y ficha.
   // Las opciones se resumen con nuestras palabras, por su id.
   faccion: {
-    titulo: { dones: 'Elige un Don de Tzeentch', armasTirador: 'Elige su arma', armasCampeon: 'Elige su arma', armasTzaangor: 'Elige sus armas',
+    titulo: { veterano: 'Veterano del Capítulo: elige una táctica adicional', dones: 'Elige un Don de Tzeentch', armasTirador: 'Elige su arma', armasCampeon: 'Elige su arma', armasTzaangor: 'Elige sus armas',
       armasSargentoAsalto: 'Elige sus armas', armasSargento: 'Elige sus armas', armasTiradorIntercesor: 'Elige su rifle bólter', armasCombatienteIntercesor: 'Elige su arma' },
     tituloGenerico: 'Regla de facción: elige',
     sub: (n, i, total, unica, cuantos = 1) => `Para ${cuantos > 1 ? `los ${cuantos} ${n}` : n}${total > 1 ? ` (${i} de ${total})` : ''}.${unica && total > 1 ? ' Cada opción solo puede elegirla un agente.' : ''}`,
@@ -735,6 +756,14 @@ export const T = {
       escudoTz: 'Escudo: Salvación 4+ y cada bloqueo en combate anula dos éxitos.',
       pistolaEspada: 'Una pistola para disparar y una espada sierra.',
       maestro: '+3″ a la distancia de sus acciones psíquicas.',
+      agresivos: 'Solo para este agente: sus armas de combate tienen Desgarradora.',
+      duelistas: 'Solo para este agente: cada éxito normal puede bloquear un crítico sin resolver al combatir.',
+      resueltos: 'Solo para este agente: ignora cualquier cambio a su LPA.',
+      sigilosos: 'Solo para este agente: al dispararle, cobertura adicional o una guardada como crítico.',
+      moviles: `Solo para este agente: Retroceder cuesta 1 ${G.pa.abrev} menos y puede Cargar en zona de control.`,
+      robustos: 'Solo para este agente: 5+ en defensa son críticos y rebaja el primer daño normal de 3 o más al contraatacar.',
+      tiradores: 'Solo para este agente: sin moverse, sus armas bólter tienen Severa.',
+      asedios: 'Solo para este agente: sus armas a distancia tienen Saturación.',
     },
   },
 
@@ -817,6 +846,29 @@ export const T = {
     astartesDesc: `En su activación puede Disparar dos veces o Combatir dos veces (el segundo disparo con un cañón cosechaalmas o un lanzallamas disforme cuesta 1 ${G.pa.abrev} más; no repite arma psíquica). Puede reaccionar con cualquier orden.`,
     astartesBolterDesc: `En su activación puede Disparar dos veces o Combatir dos veces. Si dispara dos veces, al menos una con un arma bólter; si las dos son con el rifle bólter de francotirador o con el bólter pesado, la segunda cuesta 1 ${G.pa.abrev} más. Puede reaccionar con cualquier orden.`,
     ver: 'Ver ficha',
+    noImplementada: '(aún sin efecto en la app)',
+    // reglas propias de cada ficha, por "<id del comando>:<clave del agente>": [nombre, texto con nuestras palabras, ¿falta implementarla?]
+    reglasAgente: {
+      '2272196183:capitan': [
+        ['Líder heroico', `Una vez por punto de inflexión: usar un ardid de tiroteo gratis, o usar Doctrina de combate o Ajustar doctrina sin gastar PM, si está en la zona de aniquilación y fuera de la zona de control enemiga.`, 'pendiente'],
+        ['Aura de hierro', 'Una vez por batalla, cuando un dado de ataque le inflige daño normal, puede ignorarlo (se aplica solo con el primero).'],
+      ],
+      '2272196183:sargentoAsalto': [
+        ['Guerra según las doctrinas', 'Una vez por batalla cada una: Doctrina de combate con Asalto o con Táctica le cuesta 0 PM.'],
+        ['Veterano del Capítulo', 'Al elegir agentes, elige una táctica de capítulo adicional solo para este agente.'],
+      ],
+      '2272196183:sargentoIntercesor': [
+        ['Guerra según las doctrinas', 'Una vez por batalla cada una: Doctrina de combate con Devastadora o con Táctica le cuesta 0 PM.'],
+        ['Veterano del Capítulo', 'Al elegir agentes, elige una táctica de capítulo adicional solo para este agente.'],
+      ],
+      '2272196183:granaderoAsalto': [
+        ['Granadero', 'Puede usar granadas frag y perforantes del equipo universal sin gastar sus usos limitados, con +1 a Impactar.', 'pendiente'],
+      ],
+      '2272196183:francotirador': [
+        ['Capa de camuflaje', 'Al dispararle ignora Saturación; siempre tiene la táctica Sigilosos (si ya la tenías, usa sus dos opciones).'],
+        ['Óptica (1 PA)', 'Hasta el inicio de su siguiente activación, al disparar los enemigos no pueden estar ofuscados. No puede hacerla en la zona de control enemiga.', 'pendiente'],
+      ],
+    },
   },
 
   // estado de un agente (marcador flotante y menú)

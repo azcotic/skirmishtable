@@ -245,6 +245,7 @@ export function doShoot() {
     showRoll(r.atk.dice, r.hit, a.team, T.disparo.tiradaAtq(a.name));
     showRoll(r.dfn.dice, b.save, b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
     b.wounds = Math.max(0, b.wounds - r.dmg);
+    if (r.aura) b.auraUsada = true;       // Aura de hierro: ya la gastó
     a.ap -= costeAccion(a, "shoot", what.w); a.used.push("shoot");
     a.disparadas = [...(a.disparadas || []), what.w.split("~")[0]];   // Astartes: armas psíquicas ya usadas
     a.usos = { ...(a.usos || {}), [what.w]: ((a.usos || {})[what.w] || 0) + 1 };   // Limitada
@@ -334,6 +335,7 @@ export function doFight() {
     showRoll(r.ra.dice, r.hitA, a.team, T.combate.tiradaAtq(a.name));
     showRoll(r.rb.dice, r.hitB, b.team, T.combate.tiradaDef(b.name));
     Object.assign(a, r.a); Object.assign(b, r.b);
+    for (const p of r.pasos || []) if (p.aura) (p.quien === 0 ? b : a).auraUsada = true;   // Aura de hierro
     a.ap -= 1; a.used.push("fight");
     const aturdidos = [aturdir(b, r.wa.rules, r.ra.crit) && b, aturdir(a, r.wb.rules, r.rb.crit) && a].filter(Boolean);
     const envenenados = [terrotoxinas(a, b, r.wa.rules, critDanoCombate(r.pasos, 0)) && b,

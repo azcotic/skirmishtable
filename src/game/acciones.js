@@ -49,8 +49,13 @@ const primerDisparo = op => WPN[(op.disparadas || [])[0]];
 const veces = (op, a) => (op.used || []).filter(x => x === a).length;
 const sinDon = k => (k || "").split("~")[0];
 // Lo que cuesta la acción ahora (con el arma en mano, o `wk`)
+// Reglas que cambian lo que cuesta una acción (p. ej. Móviles): (op, accion, coste) => coste nuevo | undefined
+export const ajustesCoste = [];
+// Reglas que dejan Cargar estando en la zona de control de un enemigo: (op) => true
+export const cargarTrabado = [];
 export function costeAccion(op, accion, wk = op && op.weapon) {
   const w = WPN[wk];
+  for (const f of ajustesCoste) { const c = f(op, accion, COSTE[accion]); if (c !== undefined) return c; }
   if (accion === "shoot" && esAstartes(op) && veces(op, "shoot") >= 1 && w && w.recargaAstartes
     && (!conBolter(op) || armaBase(primerDisparo(op)) === armaBase(w))) return COSTE.shoot + 1;
   return COSTE[accion];
@@ -102,7 +107,7 @@ export function puede(op, accion, ops) {
       return { ok: true };
     case "charge":
       if (op.order === "conceal") return no("ocultarse");
-      if (trabado) return no("yaEnZona");
+      if (trabado && !cargarTrabado.some(f => f(op))) return no("yaEnZona");
       if (usado("reposition") || usado("dash") || usado("fallBack")) return no("yaSeMovio");
       if (pesadaUsada) return no("armaPesada");
       return { ok: true };

@@ -118,6 +118,11 @@ export const ignoraLesion = [];
 export const penalizaLesion = op => isInjured(op) && !ignoraLesion.some(f => f(op));
 // Reglas que cambian la defensa ya tirada (p. ej. un ardid): (dfn, defensor, w) => dfn nueva o null
 export const ajustesDefensa = [];
+// Rasgos de un agente en combate y defensa que dan sus reglas (tácticas, fichas): (op) => { duelista, robusto, aura }
+export const reglasOp = [];
+export const rasgos = op => reglasOp.reduce((r, f) => Object.assign(r, f(op) || {}), {});
+// Reglas que hacen ignorar Saturación al disparar contra un agente: (blanco) => true
+export const ignoraSaturacion = [];
 
 /* ---------- Shoot ---------- */
 // One shot, `what` = {by, at, w: weapon key, acc: Accurate dice, obsc: obscured, cover}:
@@ -168,7 +173,7 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
   const dv = devastadora(R), dev = dv ? dv.x * aCrit : 0;
   const devArea = dv && dv.dist && dev ? { dist: dv.dist, dmg: dev } : null;
   if (dev) notes.push("devastating:" + dev);
-  const saturacion = !!regla(R, "Saturate");
+  const saturacion = !!regla(R, "Saturate") && !ignoraSaturacion.some(f => f(b));
   const cover = !!what.cover && !saturacion;
   if (saturacion && what.cover) notes.push("saturate");
   const pen = numero(R, "Piercing") + (aCrit > 0 ? numero(R, "Piercing Crits") : 0);
@@ -177,8 +182,11 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
     ? { ...clasificarDefensa(dfnDados, b.save, cover), dice: dfnDados, cover }
     : rollDefence(b.save, cover, die, Math.max(0, 3 - pen));
   if (dfn.cover) notes.push("cover save banked");
-  for (const f of ajustesDefensa) { const d = f(dfn, b, w); if (d) { Object.assign(dfn, d); if (d.nota) notes.push(d.nota); } }
+  for (const f of ajustesDefensa) { const d = f(dfn, b, w, { aN: aNorm, aC: aCrit }); if (d) { Object.assign(dfn, d); if (d.nota) notes.push(d.nota); } }
   const rest = bloquear(aNorm, aCrit, dfn.norm, dfn.crit, w.dmgN, w.dmgC);
+  // Aura de hierro (una vez por batalla): ignora el daño de un dado de ataque normal
+  const aura = rasgos(b).aura && rest.n > 0 ? w.dmgN : 0;
+  if (aura) { rest.dmg -= aura; notes.push("aura"); }
   let selfDmg = 0, hotV = null;
   if (regla(R, "Hot") && hotDado !== false) {   // tras disparar: 1D6; si sale menos que Impactar, el tirador recibe el doble
     hotV = hotDado ?? die();                    // (false: blanco secundario, ya se tiró en el principal)
@@ -186,7 +194,7 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
   }
   // atkN/atkC: los éxitos del ataque que llegan a la defensa (para explicar decisiones)
   // critDano: algún crítico hizo daño (Devastadora o sin bloquear): Quemar mente
-  return { w, hit, atk, dfn, dmg: dev + rest.dmg, notes, selfDmg, pen, cover, hotDado: hotV, atkN: aNorm, atkC: aCrit, dev, devArea,
+  return { w, hit, atk, dfn, dmg: dev + rest.dmg, notes, selfDmg, pen, cover, hotDado: hotV, atkN: aNorm, atkC: aCrit, dev, devArea, aura: !!aura,
     critDano: dev > 0 || rest.c > 0 };
 }
 
@@ -209,7 +217,7 @@ export function iniciarCombate(what, a, b, die = d6) {
   // Certera x: x dados guardados como éxitos normales sin tirarlos (acc)
   const acc = [wa, wb].map(w => Math.min(numero(w.rules, "Accurate"), w.atk));
   const ra = rollAttack(wa.atk - acc[0], hitA, wa.rules, die), rb = rollAttack(wb.atk - acc[1], hitB, wb.rules, die);
-  return { wa, wb, hitA, hitB, ra, rb, acc,
+  return { wa, wb, hitA, hitB, ra, rb, acc, rasgos: [rasgos(a), rasgos(b)], usado: {},
     vida: [{ wounds: a.wounds, alive: a.alive }, { wounds: b.wounds, alive: b.alive }],
     pools: [{ crit: ra.crit, norm: ra.norm + acc[0], w: wa, shock: false }, { crit: rb.crit, norm: rb.norm + acc[1], w: wb, shock: false }],
     turno: 0, pasos: [], fin: ra.crit + ra.norm + acc[0] + rb.crit + rb.norm + acc[1] === 0 };
@@ -222,6 +230,8 @@ export function opcionesCombate(est) {
   if (p.norm > 0) out.push({ tipo: "golpe", con: "norm" });
   if (p.crit > 0 && q.crit > 0) out.push({ tipo: "bloqueo", con: "crit", contra: "crit" });
   if (p.crit > 0 && q.norm > 0) out.push({ tipo: "bloqueo", con: "crit", contra: "norm" });
+  // Duelistas: un éxito normal puede bloquear un crítico sin resolver (salvo contra Brutal)
+  if (est.rasgos && est.rasgos[est.turno].duelista && p.norm > 0 && q.crit > 0 && !soloCriticos) out.push({ tipo: "bloqueo", con: "norm", contra: "crit" });
   if (p.norm > 0 && q.norm > 0 && !soloCriticos) out.push({ tipo: "bloqueo", con: "norm", contra: "norm" });
   if (regla(p.w.rules, "Shield*")) {
     if (p.crit > 0 && q.crit >= 2) out.push({ tipo: "bloqueo", con: "crit", contra: ["crit", "crit"] });
@@ -235,7 +245,12 @@ export function aplicarCombate(est, op) {
   const i = est.turno, p = est.pools[i], q = est.pools[1 - i], rival = est.vida[1 - i];
   p[op.con]--;
   if (op.tipo === "golpe") {
-    const dmg = op.con === "crit" ? p.w.dmgC : p.w.dmgN;
+    let dmg = op.con === "crit" ? p.w.dmgC : p.w.dmgN, aura = false;
+    const rr = est.rasgos ? est.rasgos[1 - i] : {}, u = est.usado || (est.usado = {});
+    // Robustos: al contraatacar (el defensor), el primer daño normal de 3 o más baja en 1
+    if (rr.robusto && 1 - i === 1 && op.con === "norm" && dmg >= 3 && !u.robusto) { u.robusto = true; dmg -= 1; }
+    // Aura de hierro: ignora el daño de un dado normal, una vez por batalla
+    if (rr.aura && op.con === "norm" && dmg > 0 && !u["aura" + (1 - i)]) { u["aura" + (1 - i)] = true; dmg = 0; aura = true; }
     rival.wounds = Math.max(0, rival.wounds - dmg);
     if (rival.wounds === 0) rival.alive = false;
     let choque = false;
@@ -243,7 +258,7 @@ export function aplicarCombate(est, op) {
       p.shock = true; choque = true;
       if (q.norm > 0) q.norm--; else if (q.crit > 0) q.crit--;
     }
-    est.pasos.push({ quien: i, ...op, dmg, choque });
+    est.pasos.push({ quien: i, ...op, dmg, choque, aura });
   } else {
     for (const c of [].concat(op.contra)) q[c]--;
     est.pasos.push({ quien: i, ...op });

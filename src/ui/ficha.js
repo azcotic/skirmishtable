@@ -15,10 +15,19 @@ import { teamOf } from '../view3d/units.js';
 import { queEs } from './despliegue.js';
 import { KINDS } from '../engine/world.js';
 import { state } from '../state.js';
-import { opcionesDe } from '../data/teams/index.js';
+import { comandoPorId, opcionesDe } from '../data/teams/index.js';
+import { tacticasDe } from './ardides.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
+// Las tácticas de capítulo que tiene el agente (solo comandos que las tienen)
+function tacticasLinea(op, perfil) {
+  const c = perfil.comando && comandoPorId(perfil.comando);
+  if (!c || !c.tacticas) return '';
+  const t = tacticasDe(op);
+  if (!t.length) return '';
+  return `<p class="fregla"><b>${T.tacticas.ficha}</b> · ${t.map(id => esc(c.tacticas.find(x => x.id === id).nombre)).join(' · ')}</p>`;
+}
 export function abrirFicha(op) {
   const dlg = document.getElementById("ficha");
   if (!dlg || !op) return;
@@ -46,6 +55,8 @@ export function abrirFicha(op) {
     <table class="farmas"><thead><tr><th>${F.nombre}</th><th>${G.ataques.abrev}</th><th>${G.impactar.abrev}</th><th>${G.dano.abrev}</th><th>${F.reglasArmas}</th></tr></thead>
       <tbody>${armas}</tbody></table>
     ${opcionesDe(op).map(d => `<p class="fregla"><b>${esc(d.nombre)}</b> · ${T.faccion.desc[d.id] || ""}${d.pendiente ? ` <em>${T.faccion.pendiente}</em>` : ""}</p>`).join("")}
+    ${tacticasLinea(op, perfil)}
+    ${(F.reglasAgente[perfil.comando + ':' + perfil.clave] || []).map(r => `<p class="fregla"><b>${esc(r[0])}</b> · ${esc(r[1])}${r[2] ? ` <em>${F.noImplementada}</em>` : ''}</p>`).join('')}
     ${perfil.astartes ? `<p class="fregla"><b>${F.astartes}</b> · ${perfil.astartesBolter ? F.astartesBolterDesc : F.astartesDesc}</p>` : ""}
     <p class="fnota">${perfil.comando ? F.oficial : F.provisional}</p>
     <button class="ffin" data-cerrar="1">${F.cerrar}</button>`;

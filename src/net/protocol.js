@@ -149,7 +149,7 @@ export function cleanOps(incoming, local) {
       reacciono: o.reacciono ? true : undefined, reaccion: o.reaccion ? true : undefined,
       // elecciones de facción (Ecos de la Disformidad: si ya lo usó / lo está usando)
       ecosUsado: o.ecosUsado ? true : undefined, ecosActivo: o.ecosActivo ? true : undefined,
-      volo: o.volo ? true : undefined,
+      volo: o.volo ? true : undefined, auraUsada: o.auraUsada ? true : undefined,
       // Aturdidora: 1 LPA menos hasta el final de su siguiente activación
       aturdido: o.aturdido ? true : undefined,
       terrotoxinas: o.terrotoxinas ? true : undefined, terroDe: o.terroDe === 0 || o.terroDe === 1 ? o.terroDe : undefined,
@@ -185,6 +185,13 @@ export function cleanTray(t, d) {
     const x = t.destino[i];
     return x && Array.isArray(x.dados) ? { dados: x.dados.filter(v => Number.isInteger(v) && v >= 1 && v <= 6).slice(0, 2), bajo: !!x.bajo } : null;
   });
+  // Tácticas de capítulo (Ángeles de la Muerte): [primaria, secundaria] de cada bando, la secundaria
+  // de Tácticas flexibles y los usos de Guerra según las doctrinas
+  const idT = x => typeof x === "string" && /^[a-z]{1,16}$/.test(x) ? x : null;
+  if (Array.isArray(t.tacticas)) out.tacticas = [0, 1].map(i => Array.isArray(t.tacticas[i]) ? [idT(t.tacticas[i][0]), idT(t.tacticas[i][1])] : null);
+  if (Array.isArray(t.flex)) out.flex = [0, 1].map(i => idT(t.flex[i]));
+  if (Array.isArray(t.guerra)) out.guerra = [0, 1].map(i => Array.isArray(t.guerra[i]) ? t.guerra[i].filter(x => typeof x === "string").slice(0, 8).map(x => x.slice(0, 40)) : []);
+  if (Array.isArray(t.guerraPI)) out.guerraPI = [0, 1].map(i => typeof t.guerraPI[i] === "string" ? t.guerraPI[i].slice(0, 40) : null);
   // Doctrina de combate (Ángeles de la Muerte): la doctrina elegida por cada bando
   if (Array.isArray(t.doctrina)) out.doctrina = [0, 1].map(i => ["devastadora", "tactica", "asalto"].includes(t.doctrina[i]) ? t.doctrina[i] : null);
   for (const clave of ["ardides", "ardidesT"])   // de estrategia y de tiroteo
