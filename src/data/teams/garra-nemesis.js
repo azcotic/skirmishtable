@@ -29,6 +29,7 @@ export default {
     lanzamisilesP:    R("Lanzamisiles (perforante)", 4, 3, 5, 7, ["Heavy (Reposition only)", "Piercing 1"]),
     bolter:           R("Bólter", 4, 3, 3, 4),
     cuchillaSierra:   M("Cuchilla sierra de Nostramo", 5, 3, 4, 5, ["Rending"]),
+    filoContaminado:  M("Filo contaminado", 5, 3, 3, 5, ["Terrorchem*"]),
     archaSierra:      M("Archa sierra de Nostramo", 5, 3, 4, 6, ["Rending"]),
     punoEnergia:      M("Puño de energía", 5, 4, 5, 7, ["Brutal"]),
     mazaEnergia:      M("Maza de energía", 5, 3, 4, 6, ["Shock"]),
@@ -40,7 +41,7 @@ export default {
   // apl, move (″), save (+), wounds; armas: claves de arriba (la primera es la que lleva en mano)
   agentes: {
     visionario:    { nombre: "Visionario", lider: true, apl: 3, move: 6, save: 3, wounds: 15, armas: ["pistolaBolter", "armaEnergia"] },
-    siembramiedos: { nombre: "Siembramiedos", apl: 3, move: 6, save: 3, wounds: 14, armas: ["mirillaCorto", "mirillaLargo", "vialTerrotoxinas"] },
+    siembramiedos: { nombre: "Siembramiedos", apl: 3, move: 6, save: 3, wounds: 14, armas: ["mirillaCorto", "mirillaLargo", "vialTerrotoxinas", "filoContaminado"] },
     tirador:       { nombre: "Tirador", apl: 3, move: 6, save: 3, wounds: 14, armas: ["riflePlasmaN", "riflePlasmaS", "pistolaBolter", "punos"] },
     tiradorPesado: { nombre: "Tirador pesado", apl: 3, move: 6, save: 3, wounds: 14, armas: ["bolterPesadoC", "bolterPesadoB", "pistolaBolter", "punos"] },
     aullador:      { nombre: "Aullador", apl: 3, move: 6, save: 3, wounds: 14, armas: ["garrasRelampago"] },

@@ -250,6 +250,7 @@ export const T = {
     lesionado: G.lesionado.es,
     aturdido: 'aturdido',
     quemarMente: 'quemar mente',
+    terrotoxinas: 'terrotoxinas',
     stat: { lpa: G.lpa.abrev, mov: 'Mov.', salv: 'Salv.', heridas: G.heridas.es, pa: `${G.pa.abrev} libres`, movs: 'Movs.' },
     dosMovimientos: (prim, carga, sec) => `Dos movimientos por activación: ① ${prim}${carga ? ` (o ${carga})` : ''} y ② ${sec}`,
     menosHerida: '−1 H',
@@ -411,6 +412,8 @@ export const T = {
     recuperaLPA: n => `<b>${n}</b> ya no está aturdido: recupera su LPA.`,
     quemaMente: n => ` — <b>${n}</b> recibe una ficha de Quemar mente: Impactar 1 peor hasta el final de su siguiente activación`,
     sinQuemarMente: n => `<b>${n}</b> pierde su ficha de Quemar mente.`,
+    terrotoxinas: n => ` — <b>${n}</b> recibe una ficha de Terrotoxinas: cada vez que se active recibirá 1D3 de daño`,
+    veneno: (n, d) => `☠ Veneno de terrotoxinas: <b>${n}</b> se activa y recibe ${d} de daño.`,
   },
 
   combate: {

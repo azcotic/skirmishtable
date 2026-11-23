@@ -10,7 +10,8 @@ import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
 import { SHOT_KINDS, cannotShoot, judgeShot, shotsFrom } from '../engine/shots.js';
 import { KINDS, OPS } from '../engine/world.js';
-import { aturdir, danoDevastadoraArea, quemarMente, quitarAturdido, quitarQuemarMente } from '../engine/efectos.js';
+import { aturdir, critDanoCombate, danoDevastadoraArea, quemarMente, quitarAturdido, quitarQuemarMente, terrotoxinas,
+  veneno } from '../engine/efectos.js';
 import { SHOT_COL, renderAll } from './board.js';
 import { HINT0, fmtDice, hint, logLine } from './dom.js';
 import { RULES, fmtIn, moveSpec } from '../rules/index.js';
@@ -117,6 +118,7 @@ export function blancosSecundarios(a, b, w, shot) {
 function efectosDisparo(a, b, r) {
   let extra = "";
   if (quemarMente(OPS, a, b, r.w.rules, r)) extra += T.disparo.quemaMente(b.name);
+  if (terrotoxinas(a, b, r.w.rules, r.critDano)) extra += T.disparo.terrotoxinas(b.name);
   const area = danoDevastadoraArea(OPS, b, r);
   if (area.length) extra += T.disparo.devArea(r.devArea.dmg, r.devArea.dist,
     area.map(o => o.name + (o.alive ? "" : T.disparo.cae)));
@@ -293,10 +295,15 @@ export function doFight() {
     Object.assign(a, r.a); Object.assign(b, r.b);
     a.ap -= 1; a.used.push("fight");
     const aturdidos = [aturdir(b, r.wa.rules, r.ra.crit) && b, aturdir(a, r.wb.rules, r.rb.crit) && a].filter(Boolean);
+    const envenenados = [terrotoxinas(a, b, r.wa.rules, critDanoCombate(r.pasos, 0)) && b,
+      terrotoxinas(b, a, r.wb.rules, critDanoCombate(r.pasos, 1)) && a].filter(Boolean);
+    // quien la recibe en plena activación (el atacante, en el contraataque) sufre el veneno en la siguiente
+    for (const o of envenenados) if (o.ready && ((o.used && o.used.length) || o.ap < o.apl)) o.venenoTP = tray.tp;
     let line = T.combate.log(a.name, b.name, fmtDice(r.ra.dice), fmtDice(r.rb.dice), a.wounds, b.wounds);
     if (!b.alive) line += T.combate.cae(b.name);
     if (!a.alive) line += T.combate.cae(a.name);
     for (const o of aturdidos) line += T.disparo.aturdido(o.name);
+    for (const o of envenenados) line += T.disparo.terrotoxinas(o.name);
     logLine(line + fairNote(n), true, true);
     rolled(n, done);
     terminar();
@@ -345,7 +352,30 @@ export function defaultMoveType(op) {
   if (!op.used.includes("dash")) return "dash";
   return "reposition";
 }
+// Veneno de terrotoxinas: el agente con la ficha que empieza su activación (su primera acción en
+// este punto de inflexión; una reacción no cuenta) recibe 1D3 de daño. Lo tira quien lo controla.
+let tirandoVeneno = false;
+function comprobarVeneno() {
+  if (tirandoVeneno) return;
+  const op = OPS.find(o => o.alive && o.ready && o.terrotoxinas && !o.reaccion && o.venenoTP !== tray.tp
+    && ((o.used && o.used.length) || o.ap < o.apl) && mayControl(o));
+  if (!op) return;
+  tirandoVeneno = true;
+  const what = { k: "veneno", by: op.id, at: op.id, tp: tray.tp };
+  setTimeout(() => {
+    const why = rollFor(what, (die, done, n) => {
+      tirandoVeneno = false;
+      if (!op.alive || op.venenoTP === tray.tp) { done(); return; }
+      op.venenoTP = tray.tp;
+      const d = veneno(op, die());
+      logLine(T.disparo.veneno(op.name, d) + (op.alive ? "" : T.heridas.incapacitado) + fairNote(n), true, true);
+      rolled(n, done);
+    });
+    if (why) tirandoVeneno = false;
+  }, 0);
+}
 export function renderCard() {
+  comprobarVeneno();                 // ¿alguien con terrotoxinas acaba de empezar su activación?
   const c = document.getElementById("opcard");
   // todos los agentes usados: sugerir "Fin del PI" (en el marcador y en la barra de acciones)
   const finPI = document.getElementById("endtp");
@@ -357,7 +387,7 @@ export function renderCard() {
   const slot1Used = repoUsed || chargeUsed;
   c.innerHTML = `
     <div class="opname" style="color:${TEAMCOL_LT[state.sel.team]}">${state.sel.id} · ${state.sel.name} ${KINDS[state.sel.kind] && KINDS[state.sel.kind].comando ? (KINDS[state.sel.kind].lider ? `<span class="tag">${T.fichaDatos.lider}</span>` : "") : `<span class="tag">${T.tipos[state.sel.kind] || state.sel.kind}</span>`}
-      ${inj ? `<span class="tag warn">${T.ficha.lesionado}</span>` : ''}${state.sel.aturdido ? ` <span class="tag warn">${T.ficha.aturdido}</span>` : ''}${state.sel.quemarMente ? ` <span class="tag warn">${T.ficha.quemarMente}</span>` : ''} ${state.sel.ready ? '' : `<span class="tag">${T.ficha.usado}</span>`}</div>
+      ${inj ? `<span class="tag warn">${T.ficha.lesionado}</span>` : ''}${state.sel.terrotoxinas ? ` <span class="tag warn">${T.ficha.terrotoxinas}</span>` : ''}${state.sel.aturdido ? ` <span class="tag warn">${T.ficha.aturdido}</span>` : ''}${state.sel.quemarMente ? ` <span class="tag warn">${T.ficha.quemarMente}</span>` : ''} ${state.sel.ready ? '' : `<span class="tag">${T.ficha.usado}</span>`}</div>
     <div class="stats">
       <div><div class="v">${state.sel.apl}</div><div class="k">${T.ficha.stat.lpa}</div></div>
       <div><div class="v">${pulg(RULES.moves.primary.allow(state.sel))}</div><div class="k">${T.ficha.stat.mov}</div></div>

@@ -44,6 +44,23 @@ export function quitarQuemarMente(op) {
   op.quemarMente = false; delete op.quemarDe;
   return true;
 }
+// Terrotoxinas (Terrorchem*): si algún crítico hace daño (también el de Devastadora), el blanco
+// gana una ficha de Terrotoxinas (si no tiene). Veneno: cada vez que se activa, recibe 1D3 de
+// daño (la interfaz lo tira al empezar su activación). true si la recibe ahora.
+export function terrotoxinas(a, b, rules, critDano) {
+  if (!regla(rules, "Terrorchem*") || !critDano || !b.alive || b.terrotoxinas) return false;
+  b.terrotoxinas = true; b.terroDe = a.team;
+  return true;
+}
+// En un combate: ¿algún golpe crítico de ese bando (0 atacante, 1 defensor) hizo daño?
+export const critDanoCombate = (pasos, quien) => (pasos || []).some(p => p.quien === quien && p.tipo === "golpe" && p.con === "crit" && p.dmg > 0);
+// Veneno de terrotoxinas: 1D3 (con un D6: 1-2 → 1, 3-4 → 2, 5-6 → 3)
+export function veneno(op, d6) {
+  const d = Math.ceil(d6 / 2);
+  op.wounds = Math.max(0, op.wounds - d);
+  if (op.wounds === 0) op.alive = false;
+  return d;
+}
 // Aturdidora: true si el agente quedó aturdido ahora (una vez a la vez: no se acumula)
 export function aturdir(op, rules, criticos) {
   if (!regla(rules, "Stun") || !(criticos > 0) || !op.alive || op.aturdido) return false;

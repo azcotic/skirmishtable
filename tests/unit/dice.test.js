@@ -198,3 +198,21 @@ describe('Área, Ráfaga, Devastadora con distancia, Aturdidora, Escudo y Quemar
     expect(e.pools[1]).toMatchObject({ crit: 1, norm: 0 });
   });
 });
+
+describe('Terrotoxinas', () => {
+  it('ficha con daño de un crítico (también Devastadora), una sola; veneno 1D3', async () => {
+    const { terrotoxinas, critDanoCombate, veneno } = await import('../../src/engine/efectos.js');
+    const a = { team: 0 }, b = { team: 1, alive: true, wounds: 14 };
+    expect(terrotoxinas(a, b, ['Terrorchem*'], false)).toBe(false);
+    expect(terrotoxinas(a, b, ['Rending'], true)).toBe(false);
+    expect(terrotoxinas(a, b, ['Terrorchem*'], true)).toBe(true);
+    expect(terrotoxinas(a, b, ['Terrorchem*'], true)).toBe(false);      // ya la tiene
+    // el vial: 2/0, el daño de su crítico es el de Devastadora 3
+    const r = disparo(arma(['Devastating 3', 'Terrorchem*'], { dmgC: 0 }), [6, 2, 2, 2, 6, 2, 2]);
+    expect(r.critDano).toBe(true);
+    expect(critDanoCombate([{ quien: 0, tipo: 'golpe', con: 'crit', dmg: 5 }], 0)).toBe(true);
+    expect(critDanoCombate([{ quien: 0, tipo: 'golpe', con: 'norm', dmg: 3 }], 0)).toBe(false);
+    expect(critDanoCombate([{ quien: 1, tipo: 'golpe', con: 'crit', dmg: 5 }], 0)).toBe(false);
+    expect([1, 2, 3, 4, 5, 6].map(d => veneno({ wounds: 14, alive: true }, d))).toEqual([1, 1, 2, 2, 3, 3]);
+  });
+});

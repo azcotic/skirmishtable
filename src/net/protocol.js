@@ -152,6 +152,8 @@ export function cleanOps(incoming, local) {
       volo: o.volo ? true : undefined,
       // Aturdidora: 1 LPA menos hasta el final de su siguiente activación
       aturdido: o.aturdido ? true : undefined,
+      terrotoxinas: o.terrotoxinas ? true : undefined, terroDe: o.terroDe === 0 || o.terroDe === 1 ? o.terroDe : undefined,
+      venenoTP: Number.isInteger(o.venenoTP) ? o.venenoTP : undefined,
       quemarMente: o.quemarMente ? true : undefined, quemarDe: o.quemarDe === 0 || o.quemarDe === 1 ? o.quemarDe : undefined,
       apl: KINDS[l.kind] ? KINDS[l.kind].apl - (o.aturdido ? 1 : 0) : l.apl,
       disparadas: Array.isArray(o.disparadas) ? o.disparadas.filter(k => typeof k === "string" && Object.hasOwn(WPN, k)).slice(0, 8) : [],
