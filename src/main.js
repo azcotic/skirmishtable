@@ -26,6 +26,7 @@ import { wireThreatPicker } from './ui/threat.js';
 import { wireOptions } from './ui/options.js';
 import { wireSidePanel } from './ui/sidepanel.js';
 import { wireAcciones } from './ui/acciones.js';
+import { despliegueActivo, wireDespliegue } from './ui/despliegue.js';
 import { cancelMode } from './ui/panels.js';
 import * as table3d from './view3d/table3d.js';
 import * as rules from './rules/index.js';
@@ -45,6 +46,7 @@ table3d.wireViewToggle();
 wireThreatPicker(() => renderAll());
 wireOptions();
 wireSidePanel();
+wireDespliegue();
 // ✕ en la barra de acciones: quitar la selección
 wireAcciones(() => { state.sel = null; state.target = null; state.lastShot = null; cancelMode(); renderAll(); });
 onMinisChange(bases => { if (bases) { renderAll(); renderMinis(); } });   // a model measured: rings, reach and fit follow its base
@@ -63,7 +65,8 @@ wireStatusCards();
 wireNet();                      // host or join if the address says so (#host= / #room=)
 wireShare();                    // or open a shared snapshot (#game=)
 wireReplay();                   // record this game; or open a replay (#replay=)
-if (window.THREE && THREE.OrbitControls) table3d.setView(true);   // the 3D table is the default view
+// la mesa 3D es la vista por defecto, salvo durante el despliegue (se despliega en el mapa 2D)
+if (window.THREE && THREE.OrbitControls) table3d.setView(!despliegueActivo());
 
 // Debug/test handle: live views of the engine modules and UI state, for the browser
 // console and the Playwright tests (e.g. skirmishtable.movement.findPath(...)).

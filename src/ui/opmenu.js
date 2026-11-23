@@ -22,7 +22,7 @@ export function openOpMenu(op, x, y) {
   const mine = mayControl(op);
   // [key, label, enabled, action]: an operative on the table gets the first three, one that's
   // down (only its top-bar circle is left) the last
-  const items = op.alive ? [
+  const items = op.deployed === false ? [] : op.alive ? [
     ["expend", T.menu.usado, mine && op.ready, cur => endActivation(cur)],
     ["undo", T.menu.deshacer, mine && canUndoActivation(op), cur => undoActivation(cur)],
     ["dead", T.menu.incapacitar, mine, cur => setIncapacitated(cur, true)],
@@ -30,7 +30,7 @@ export function openOpMenu(op, x, y) {
     ["revive", T.menu.volver, mine, cur => setIncapacitated(cur, false)],
   ];
   const E = T.estado;
-  const why = !op.alive ? E.dead : !mine ? E.ajeno : !op.ready ? E.spent : op.used.length ? E.active : E.ready;
+  const why = op.deployed === false ? E.reserva : !op.alive ? E.dead : !mine ? E.ajeno : !op.ready ? E.spent : op.used.length ? E.active : E.ready;
   menu = document.createElement("div");
   menu.className = "opmenu"; menu.setAttribute("role", "menu");
   menu.innerHTML = `<div class="omh" style="color:${TEAMCOL_LT[op.team]}">${esc(op.id)} · ${esc(op.name)}<span>${why}</span></div>` +

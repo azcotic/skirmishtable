@@ -9,6 +9,7 @@ import { convertGallowdark, convertVolkusBag, findVolkusBags, parseBSON } from '
 import { buildStatic, renderAll, renderTray } from './board.js';
 import { HINT0, hint, logEl, logLine, svg } from './dom.js';
 import { T } from '../i18n/es.js';
+import { anunciarDespliegue, modoDespliegue, prepararDespliegue } from './despliegue.js';
 import { cancelMode, doUndo, snapshot, tray, undoStack } from './panels.js';
 import { build3DScene, setView, three, view3D } from '../view3d/table3d.js';
 import { syncBases } from '../view3d/units.js';
@@ -21,14 +22,15 @@ const REPLAYING = T.partida.viendoGrabacion;
 const setupOnly = () => { if (maySetUp()) return false; hint(state.replay ? REPLAYING : T.partida.soloAnfitrion); return true; };
 const playOnly = () => { if (mayPlay()) return false; hint(state.replay ? REPLAYING : T.partida.soloJugadores); return true; };
 
-// Demo set-up (for now): most operatives start scattered over the board, mostly near
-// cover, instead of in their drop zones. ?deploy=zones in the address turns it off.
-const demoScatter = typeof location === "undefined" || !/[?&]deploy=zones\b/.test(location.search);
+
 
 export function loadMap(keyOrMap) {
   buildWorld(typeof keyOrMap === "string" ? MAPS[keyOrMap] : keyOrMap, rosterDefs());   // the same operatives, fresh
   syncBases();                    // the new roster stands on its miniatures' bases
-  if (demoScatter) scatterRoster();
+  // cómo empieza la partida (opción "Despliegue" en ⚙; ?deploy=zones|scatter en la dirección)
+  const modo = modoDespliegue();
+  if (modo === "azar") scatterRoster();
+  else if (modo === "turnos") prepararDespliegue();
   svg.setAttribute("viewBox", `0 0 ${px(BW)} ${px(BH)}`);
   state.sel = null; state.target = null; state.lastShot = null; state.drag = null;
   undoStack.length = 0;
@@ -46,6 +48,10 @@ export function loadMap(keyOrMap) {
     ? T.partida.notaFina(MAP.name, BW, BH, deploy, FEATS.length - 1, MAP.source)
     : T.partida.notaMuros(MAP.name, BW, BH, deploy, walls, hatches, MAP.source);
   logLine(T.partida.zonaCargada(MAP.name, MAP.source));
+  if (modo === "turnos") {
+    if (view3D) setView(false);   // se despliega tocando el mapa 2D
+    anunciarDespliegue();
+  }
 }
 // Rules picker: switching rules restarts the current map (base size, climbing costs and
 // movement change the routing data).

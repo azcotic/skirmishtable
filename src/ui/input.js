@@ -14,6 +14,7 @@ import { RULES, fmtIn, moveSpec } from '../rules/index.js';
 import { renderAll, renderOverlay } from './board.js';
 import { hint, logLine, svg } from './dom.js';
 import { T } from '../i18n/es.js';
+import { colocarEn, despliegueActivo } from './despliegue.js';
 import { cancelMode, defaultMoveType, refreshSight, snapshot, toggleOrder } from './panels.js';
 import { mayControl } from '../net/sync.js';
 import { cancelMarker, placeMarkerAt } from './ops.js';
@@ -37,7 +38,7 @@ const measuring = () => T.mover.medida(RULES.increment);
 
 // pointerdown on a token: arm a drag (it activates once the pointer moves a little)
 export function armDrag(op, ev, from3d = false) {
-  if (!op || !op.alive || state.mode === "ruler" || state.mode === "target") return false;
+  if (!op || !op.alive || state.mode === "ruler" || state.mode === "target" || despliegueActivo()) return false;
   state.drag = {op, sx: op.x, sy: op.y, cx0: ev.clientX, cy0: ev.clientY, pid: ev.pointerId, from3d,
                 goal: null, path: null, total: 0, valid: false, active: false};
   return true;
@@ -275,6 +276,7 @@ export function wireInput() {
       return;
     }
     const oid = ev.target.closest && ev.target.closest("[data-oid]") ? ev.target.closest("[data-oid]").getAttribute("data-oid") : null;
+    if (!oid && despliegueActivo() && colocarEn(x, y)) return;   // despliegue: tocar la zona coloca un agente
     if (oid) clickOp(oid);
   });
   // right-click (or long-press) a token: its menu (opmenu.js)

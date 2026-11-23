@@ -31,6 +31,7 @@ export function pickSeat(peers, hostSeat, want) {
 // Why the host refuses a player's update (null = fine). The check stops a browser moving
 // the other side's operatives, changing the map or rules, or a watcher changing anything.
 // Dice, and the wounds they do, are checked against the shared rolls (fairdice.js).
+import { turnoDespliegue } from "../engine/deploy.js";
 const FIXED_FOR_FOES = ["x", "y", "order", "weapon", "name", "kind"];
 export function updateProblem(prev, next, seat) {
   if (seat !== 0 && seat !== 1) return "watchers can't change the game";
@@ -49,6 +50,12 @@ export function updateProblem(prev, next, seat) {
   for (const n of next.ops) {
     if (n && prev.ops.some(p => p.id === n.id)) continue;
     if (!n || opTeam(n.id) !== seat) return "only a side's own player adds its operatives";
+  }
+  // despliegue por turnos: solo en tu turno, y de a un agente
+  const turno = turnoDespliegue(prev.ops);
+  if (turno !== null) {
+    const nuevos = next.ops.filter(n => n && n.deployed !== false && prev.ops.some(p => p.id === n.id && p.deployed === false));
+    if (nuevos.length && (turno !== seat || nuevos.length > 1)) return "it's not your turn to deploy";
   }
   const mine = next.ops.filter(o => opTeam(o && o.id) === seat).length;
   if (mine > MAX_SIDE) return "too many operatives";
@@ -138,7 +145,7 @@ export function cleanOps(incoming, local) {
       x: num(o.x, l.x), y: num(o.y, l.y), z: Math.max(0, Math.min(8, num(o.z, 0))),
       wounds: Math.max(0, Math.min(l.maxW, num(o.wounds, l.wounds))), ap: num(o.ap, l.ap),
       order: o.order === "engage" ? "engage" : "conceal",
-      ready: !!o.ready, alive: !!o.alive,
+      ready: !!o.ready, alive: !!o.alive, deployed: o.deployed === false ? false : undefined,
       base: BASE_SIZES.includes(o.base) ? o.base : undefined,
       weapon: l.weapons.includes(o.weapon) ? o.weapon : l.weapon,
       used: Array.isArray(o.used) ? o.used.filter(u => ACTS.includes(u)).slice(0, 12) : [] });

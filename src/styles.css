@@ -492,3 +492,6 @@ body { overflow: hidden; overscroll-behavior: none; }
   .hojaasa, .hojatabs { display: none; }
   .acciones { grid-template-columns: repeat(auto-fit, minmax(96px, 150px)); justify-content: center; min-height: 44px; }
 }
+
+/* despliegue: los agentes que aún no están en la mesa, en el marcador flotante */
+button.hsq.reserva { border-style: dashed; background: transparent; opacity: .75; }

@@ -34,9 +34,9 @@ const modelName = op => {
 };
 // activating: selected and still ready, or part-way through its actions
 const activating = op => op.alive && op.ready && ((state.sel && state.sel.id === op.id) || op.used.length > 0);
-const status = op => !op.alive ? "dead" : activating(op) ? "active" : op.ready ? "ready" : "spent";
+const status = op => op.deployed === false ? "reserva" : !op.alive ? "dead" : activating(op) ? "active" : op.ready ? "ready" : "spent";
 const STATUS_LABEL = T.estado;
-const kills = s => OPS.filter(o => o.team !== s && !o.alive).length;
+const kills = s => OPS.filter(o => o.team !== s && !o.alive && o.deployed !== false).length;
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
 /* ---------- top ribbon ---------- */

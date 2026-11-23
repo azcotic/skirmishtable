@@ -15,10 +15,21 @@ const DEL_AGENTE = [["mv-reposition", "mov"], ["mv-dash", "mov"], ["mv-charge", 
 const DE_LA_PARTIDA = [["endtp", ""], ["undo", ""], ["rulerbtn", ""]];
 
 let alQuitarSeleccion = () => {};
+// un modo que pone sus propios botones (p. ej. el despliegue): { html() -> string|null, click(boton) }
+let especial = null;
+export const setModoEspecial = m => { especial = m; };
 
 export function renderAcciones() {
   const bar = document.getElementById("acciones");
   if (!bar) return;
+  const propio = especial && especial.html();
+  if (propio != null) {
+    const quitar = document.getElementById("quitarsel");
+    if (quitar) quitar.hidden = true;
+    bar.classList.remove("con-agente");
+    if (bar._html !== propio) { bar.innerHTML = propio; bar._html = propio; }
+    return;
+  }
   const conAgente = !!(state.sel && state.sel.alive);
   const botones = (conAgente ? DEL_AGENTE : DE_LA_PARTIDA).map(([id, extra]) => {
     const src = document.getElementById(id);
@@ -42,6 +53,7 @@ export function wireAcciones(onQuitar) {
   bar.addEventListener("click", ev => {
     const b = ev.target.closest("button");
     if (!b || b.disabled) return;
+    if (b.dataset.esp && especial) { especial.click(b); return; }
     const src = b.dataset.press && document.getElementById(b.dataset.press);
     if (src) src.click();
   });

@@ -17,6 +17,7 @@ import { pump } from '../net/sync.js';
 import { NS, el, svg } from './dom.js';
 import { RULES, fmtIn, moveLabel } from '../rules/index.js';
 import { T, pulg } from '../i18n/es.js';
+import { zonaActiva } from './despliegue.js';
 import { refreshSight, renderCard, renderShots, renderVerdict, tray } from './panels.js';
 import { opsState } from './ops.js';
 import { TTS_OPS } from '../data/tts-ops.js';
@@ -434,6 +435,10 @@ export function renderOverlay(cursor) {
   const eye = shotEye();
   renderShots(eye);
   if (view3D && three) { sync3DOverlay(); return; }   // the 3D table draws its own
+  // despliegue: la zona de descenso del bando en turno, resaltada
+  const dzA = zonaActiva();
+  if (dzA) el("rect", {x:px(dzA.x)+2, y:px(dzA.y)+2, width:px(dzA.w)-4, height:px(dzA.h)-4, fill:TEAMCOL[dzA.team],
+    "fill-opacity":0.14, stroke:TEAMCOL[dzA.team], "stroke-width":3, "stroke-dasharray":"10 6", "data-despliegue":dzA.team}, gOverlay);
   // visibility and valid shots: from the drag ghost while moving, else from the selected operative
   if (eye) renderShadows(eye);
   // where the ready enemies could charge the moving base, or shoot it from inside the cover void

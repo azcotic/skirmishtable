@@ -10,7 +10,7 @@ const KEY = "skirmishtable.options";
 // edges, as "chips" (a tab per card) or a "drawer" (one tab per side); idle: the miniatures
 // breathe and shift their weight on the 3D table (off by default if the system asks for less motion)
 const calm = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-export const options = {panSpeed: 1, cardLayout: "chips", idle: calm ? "off" : "on"};
+export const options = {panSpeed: 1, cardLayout: "chips", idle: calm ? "off" : "on", despliegue: "turnos"};
 // only what the player set is stored, so a default (idle under reduced motion) stays a default
 let stored = {};
 try { stored = JSON.parse(localStorage.getItem(KEY)) || {}; Object.assign(options, stored); } catch (e) {}
@@ -18,6 +18,7 @@ if (typeof stored !== "object" || Array.isArray(stored)) stored = {};   // a han
 if (!(options.panSpeed >= 0.25 && options.panSpeed <= 3)) options.panSpeed = 1;   // a hand-edited or corrupt value must not NaN the camera
 if (!["chips", "drawer"].includes(options.cardLayout)) options.cardLayout = "chips";
 if (!["on", "off"].includes(options.idle)) options.idle = calm ? "off" : "on";
+if (!["turnos", "azar"].includes(options.despliegue)) options.despliegue = "turnos";
 const hooks = [];
 export const onOptionChange = fn => hooks.push(fn);
 function setOption(k, v) {
@@ -27,6 +28,8 @@ function setOption(k, v) {
 }
 
 const OPTION_ROWS = [
+  {key: "despliegue", label: T.opciones.despliegue.label, help: T.opciones.despliegue.help,
+   choices: [["turnos", T.opciones.despliegue.turnos], ["azar", T.opciones.despliegue.azar]]},
   {key: "panSpeed", label: T.opciones.panSpeed.label, help: T.opciones.panSpeed.help,
    min: 0.25, max: 3, step: 0.25, fmt: v => `${v}×`},
   {key: "cardLayout", label: T.opciones.cardLayout.label, help: T.opciones.cardLayout.help,

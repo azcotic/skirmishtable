@@ -421,7 +421,24 @@ export const T = {
   },
 
   // estado de un agente (marcador flotante y menú)
-  estado: { ready: 'Apostado', active: 'Activándose', spent: 'Usado', dead: 'Incapacitado', ajeno: 'No es tuyo' },
+  estado: { ready: 'Apostado', active: 'Activándose', spent: 'Usado', dead: 'Incapacitado', ajeno: 'No es tuyo', reserva: 'Por desplegar' },
+
+  // paso de despliegue antes de jugar (src/ui/despliegue.js)
+  despliegue: {
+    empieza: equipo => `<b>Despliegue.</b> Los jugadores se alternan para colocar a sus agentes, uno a uno, empezando por ${equipo}. Cada agente va completamente dentro de su ${G.zonaDescenso.es}, con orden de ocultarse.`,
+    toca: (equipo, n, id) => `Despliegue · turno de ${equipo}: toca dentro de su ${G.zonaDescenso.es} para colocar a ${n} (${id}).`,
+    esperando: equipo => `Despliegue · turno de ${equipo}: espera a que coloque un agente.`,
+    fueraDeZona: equipo => `Fuera de la ${G.zonaDescenso.es} de ${equipo}: la peana debe quedar completamente dentro.`,
+    noCabe: `No cabe ahí: el terreno lo impide. Toca otro punto de la ${G.zonaDescenso.es}.`,
+    ocupado: 'Ahí ya hay un agente.',
+    log: (n, id) => `<b>${n}</b> (${id}) desplegado.`,
+    termina: `<b>Despliegue terminado.</b> Comienza el ${G.puntoInflexion.es} 1.`,
+    terminaPista: 'Despliegue terminado: ya puedes activar a tus agentes.',
+    elegirTitulo: n => `Colocar a ${n} ahora`,
+    restoAzar: 'Resto al azar',
+    restoAzarTitulo: `Coloca al azar, dentro de su ${G.zonaDescenso.es}, a todos los agentes que faltan`,
+    restoLog: n => `${n} ${n === 1 ? 'agente desplegado' : 'agentes desplegados'} al azar en su ${G.zonaDescenso.es}.`,
+  },
 
   // marcador flotante sobre la mesa y hoja de puntuación (hud.js)
   hud: {
@@ -471,6 +488,8 @@ export const T = {
   },
 
   opciones: {
+    despliegue: { label: 'Despliegue', help: 'Al empezar o reiniciar una partida. Por turnos: los jugadores colocan a sus agentes uno a uno en su zona de descenso, como en las reglas (en solitario los colocas tú todos). Al azar: los agentes aparecen repartidos por la mesa.',
+      turnos: 'Por turnos', azar: 'Al azar' },
     panSpeed: { label: 'Velocidad del teclado', help: 'Qué tan rápido mueven W A S D la vista de la mesa 3D.' },
     cardLayout: { label: 'Tarjetas de estado', help: 'Fichas: una pestaña pequeña por tarjeta en el borde de la mesa; toca una para leerla. Cajón: una pestaña por bando que abre todas sus tarjetas.',
       chips: 'Fichas', drawer: 'Cajón' },
