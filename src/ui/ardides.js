@@ -28,6 +28,7 @@ import { CTRL } from '../config.js';
 import { ajustesArma, ajustesDefensa, bloquear, ignoraLesion, ignoraSaturacion, reglasOp } from '../engine/dice.js';
 import { ignoraAturdir } from '../engine/efectos.js';
 import { ajustesCoste, cargarTrabado } from '../game/acciones.js';
+import { registrarDisparador } from '../game/disparadores.js';
 import { esArmaBolter, opcionesDe } from '../data/teams/index.js';
 import { KINDS, OPS } from '../engine/world.js';
 import { opGap } from '../engine/geometry.js';
@@ -187,6 +188,16 @@ export function guerraDoctrinas(s, d) {
   tray.guerra[s].push(k); tray.guerraPI[s] = k; tray.cp[s] += 1;
   return true;
 }
+
+/* ---------- Ardides de tiroteo con ventana (src/game/disparadores.js) ----------
+ * Todo es polvo (Aquelarre): cuando un dado de ataque normal va a hacer daño a un MARINE RÚBRICA
+ * amigo, ese dado hace 1 menos. ctx = { b: defensor, w: arma, normales: dados normales que pasan }. */
+registrarDisparador({
+  id: 'todoPolvo', ardid: 'Todo es polvo', momento: 'recibirDano',
+  quien: ctx => ctx.b.team,
+  condicion: ctx => aquelarre(ctx.b) && es(ctx.b, 'rubrica') && ctx.normales > 0 && ctx.w.dmgN > 0,
+  efecto: ctx => { ctx.r.dmg = Math.max(0, ctx.r.dmg - 1); ctx.r.notes.push('todoPolvo'); },
+});
 
 // Y no conocerán el miedo
 ignoraLesion.push(op => angeles(op) && activo(op.team, ARDID.miedo));

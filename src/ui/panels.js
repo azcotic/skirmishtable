@@ -6,7 +6,8 @@ import { CTRL, TEAMCOL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
 import { retrato } from '../view3d/units.js';
 import { aplicarCombate, bloquear, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
   armaPara, distanciaRegla, isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
-import { elegirCombate, elegirDestino, elegirRepeticion, elegirSigilosos, preguntarHabilidad } from './tirada.js';
+import { elegirCombate, elegirDestino, elegirRepeticion, elegirSigilosos, ofrecerArdides, preguntarHabilidad } from './tirada.js';
+import { activar, candidatos, silenciar } from '../game/disparadores.js';
 import { conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
 import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
@@ -73,6 +74,24 @@ async function usarDestino(grupos) {
     logLine(T.destino.log(TEAMNAME[s], antes, v, gr.nombre));
   }
   return [...cambiados];
+}
+// Ventana de ardides de tiroteo en un momento de la tirada (solo fuera de línea; la IA no recibe
+// ventanas). Muestra juntos los que se pueden usar, aplica los activados (−1 PM, usado este punto
+// de inflexión) y guarda el silencio. Devuelve los disparadores que se activaron.
+async function ventanaArdides(momento, ctx) {
+  const c = candidatos(tray, momento, ctx).filter(({ bando }) => !esDeLaIA(bando) && mayControl({ team: bando }));
+  if (!c.length) return [];
+  const { activar: si, silenciar: no } = await ofrecerArdides({ pm: tray.cp,
+    lista: c.map(({ d, bando }) => ({ id: d.id, nombre: d.ardid, desc: T.ardidDesc[d.ardid] || '', bando, quien: TEAMNAME[bando] })) });
+  const hechos = [];
+  for (const { d, bando } of c) {
+    if (no.includes(d.id)) silenciar(tray, bando, d.ardid);
+    if (si.includes(d.id) && activar(tray, bando, d.ardid)) {
+      logLine(T.ventanaArdid.log(TEAMNAME[bando], d.ardid));
+      d.efecto(ctx); hechos.push(d);
+    }
+  }
+  return hechos;
 }
 // el agente al que ya se le sugirió terminar su activación por quedarse sin PA
 let avisadoSinPA = null;
@@ -296,6 +315,9 @@ export function doShoot() {
         what.aura = true;
         r = resolverDisparo(what, w, hit, atk, b, die, [...r.dfn.dice], r.hotDado);
       }
+      // Ardides de tiroteo al recibir daño (p. ej. Todo es polvo): cuántos dados normales llegan
+      const normales = r.aura ? 0 : bloquear(r.atkN, r.atkC, r.dfn.norm, r.dfn.crit, w.dmgN, w.dmgC).n;
+      await ventanaArdides('recibirDano', { a, b, w, r, normales });
     }
     showRoll(r.atk.dice, r.hit, a.team, T.disparo.tiradaAtq(a.name));
     showRoll(r.dfn.dice, b.save, b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));

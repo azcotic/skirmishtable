@@ -46,6 +46,42 @@ export function preguntarHabilidad(id, args, quien) {
     <div class="topciones"><button class="topc" data-v="true">${esc(H.si)}</button><button class="topc" data-v="false">${esc(H.no)}</button></div>`, false);
 }
 
+// Ventana de ardides de tiroteo: lista = [{ id, nombre, desc, bando, quien }] (todos los que
+// coinciden en este momento); pm = PM por bando. Devuelve { activar: [id], silenciar: [id] }.
+// Un ardid sin tocar no se activa ni se silencia (se preguntará de nuevo la próxima vez).
+export function ofrecerArdides({ lista, pm }) {
+  const V = T.ventanaArdid;
+  return new Promise(resolve => {
+    const d = dlg();
+    if (!d) { resolve({ activar: [], silenciar: [] }); return; }
+    const fin = r => { d.onclick = null; d.oncancel = null; if (d.open) d.close(); resolve(r); };
+    const tarjeta = a => `<div class="tctx" data-id="${esc(a.id)}"><p><b>${esc(a.nombre)}</b> · ${esc(a.quien)}</p>
+      <p>${esc(a.desc)}</p><p>${esc(V.pm(a.quien, pm[a.bando]))}</p>
+      <div class="topciones">
+        <button class="topc" data-v='${JSON.stringify({ activar: [a.id], silenciar: [] })}'>${esc(V.activar)}</button>
+        <button class="topc" data-v='${JSON.stringify({ activar: [], silenciar: [] })}'>${esc(V.noActivar)}</button>
+        <button class="topc" data-v='${JSON.stringify({ activar: [], silenciar: [a.id] })}'>${esc(V.noAvisar)}</button>
+      </div></div>`;
+    // varios ardides en la misma ventana: se responden uno por uno, sin cerrarla
+    const pendientes = [...lista], acum = { activar: [], silenciar: [] };
+    const pintar = () => {
+      const a = pendientes[0];
+      d.innerHTML = `<h2>${esc(V.titulo)}</h2>${tarjeta(a)}<p class="tnota">${esc(V.nota)}</p>`;
+    };
+    d.onclick = ev => {
+      const b = ev.target.closest && ev.target.closest("[data-v]");
+      if (!b || b.disabled) return;
+      const r = JSON.parse(b.dataset.v);
+      acum.activar.push(...r.activar); acum.silenciar.push(...r.silenciar);
+      pendientes.shift();
+      if (pendientes.length) pintar(); else fin(acum);
+    };
+    d.oncancel = ev => { ev.preventDefault(); fin(acum); };
+    pintar();
+    if (!d.open) d.showModal();
+  });
+}
+
 // Sigilosos: elegir cómo guardar la salvación por cobertura. ids: 'extra' | 'critico' | 'ambas'.
 // ataque: {crit, norm} lo que sacó el atacante. Devuelve el id elegido.
 export function elegirSigilosos({ quien, atacante, ids, ataque }) {

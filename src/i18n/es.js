@@ -692,7 +692,19 @@ export const T = {
     'Doctrina de combate': 'Elige una doctrina: tus agentes tienen Equilibrada al disparar a más de 6″ (devastadora), a 6″ o menos (táctica) o al combatir (asalto).',
     'Y no conocerán el miedo': 'Tus agentes lesionados no empeoran sus atributos ni los de sus armas.',
     'Tácticas flexibles': 'Cambia tu táctica de capítulo secundaria hasta el final del punto de inflexión. (Aún no tiene efecto en la app: faltan las tácticas de capítulo.)',
+    'Todo es polvo': 'Cuando un dado de ataque normal va a hacer daño a uno de tus Marines Rúbrica, ese dado hace 1 de daño menos.',
     'Indomitus': 'Si disparan a uno de tus agentes y sacas dos fallos o más en defensa, uno cuenta como éxito normal.',
+  },
+  // ventana de ardides de tiroteo (src/ui/tirada.js, ofrecerArdides; motor en src/game/disparadores.js)
+  ventanaArdid: {
+    titulo: 'Ardid de tiroteo disponible',
+    pm: (equipo, pm) => `${equipo} tiene ${pm} ${PM}. Activarlo cuesta 1 ${PM}.`,
+    activar: 'Activar (−1 PM)',
+    noActivar: 'No activar',
+    noAvisar: 'No avisar hasta el próximo punto de inflexión',
+    nota: 'Si no lo activas ahora, el ardid sigue disponible; el botón «Ardides» de la barra sirve de respaldo.',
+    log: (equipo, n) => `<b>${equipo}</b> usa el ardid <b>${n}</b> (−1 ${PM}).`,
+    todoPolvo: equipo => `${equipo}: Todo es polvo reduce en 1 el daño de ese dado.`,
   },
   // habilidades que preguntan al jugador (src/ui/ardides.js, habilidadesDe; ventana en tirada.js)
   habilidades: {

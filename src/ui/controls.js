@@ -1,6 +1,7 @@
 /**
  * Map loading (UI side), the map picker, tray buttons and the TTS import button.
  */
+import { limpiarSilencio } from '../game/disparadores.js';
 import { state } from '../state.js';
 import { px } from '../engine/geometry.js';
 import { FEATS } from '../engine/grid.js';
@@ -140,7 +141,7 @@ export function wireControls() {
     if (playOnly()) return;
     snapshot();
     if (tray.tp >= 4) { logLine(T.partida.finBatalla); control.alFinBatalla("pi"); return; }
-    tray.tp += 1; tray.ardides = [[], []]; tray.ardidesT = [[], []]; tray.destino = [null, null]; reiniciarActivaciones();
+    tray.tp += 1; tray.ardides = [[], []]; tray.ardidesT = [[], []]; limpiarSilencio(tray); tray.destino = [null, null]; reiniciarActivaciones();
     OPS.forEach(o => { o.ready = true; o.ap = o.apl; o.used = []; o.disparadas = []; delete o.reacciono; delete o.reaccion; delete o.volo; });
     logLine(T.partida.nuevoPI(tray.tp));
     renderAll();
