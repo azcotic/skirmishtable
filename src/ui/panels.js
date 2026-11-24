@@ -11,7 +11,7 @@ import { activar, candidatos, silenciado, silenciar } from '../game/disparadores
 import './unicas.js';
 import { UNICAS, objetivosUnica, ponerEfecto, puedeUnica, unicasDe } from '../game/unicas.js';
 import { elegirOpcion } from './tirada.js';
-import { ven, quitarPrestadas, conectarRegistro, conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
+import { automataSinHechicero, ven, quitarPrestadas, conectarRegistro, conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
 import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
 import { SHOT_KINDS, cannotShoot, judgeShot, shotsFrom } from '../engine/shots.js';
@@ -739,6 +739,14 @@ async function usarUnica(op, id) {
   if (!op || usandoUnica || !mayControl(op)) return;
   const p = puedeUnica(op, id, OPS, tray);
   if (!p.ok) { hint(T.unicas.motivo[p.motivo] || ""); return; }
+  if (UNICAS[id].sinObjetivo) {      // Cuerno de la manada: sin objetivo
+    snapshot();
+    op.ap -= UNICAS[id].pa; op.used.push("unica:" + id); op.cuernoTP = tray.tp;
+    for (const o of OPS) if (o.alive && o.team === op.team && KINDS[o.kind].palabras.includes("tzaangor") && !o.cuerno) { o.cuerno = true; o.move += 1; }
+    logLine(T.unicas.logCuerno(op.name));
+    renderAll();
+    return;
+  }
   const objetivos = objetivosUnica(op, id, OPS, ven);
   if (!objetivos.length) { hint(T.unicas.sinObjetivos); return; }
   usandoUnica = true;
@@ -788,8 +796,19 @@ export function endActivation(op) {
 // Al empezar su activación (primera vez que se toca a un agente al que le toca), salen los ardides
 // "al empezar la activación" (Cábala psíquica, Rebaño mutante); una sola vez por activación.
 let preguntandoInicio = false;
+// Autómata hechizado: al activarse, el LPA del Marine Rúbrica baja 1 durante la activación (se restaura
+// al terminarla). Solo cuando lo activa su jugador; la computadora aún no lo tiene en cuenta.
+function iniciarActivacion(op) {
+  if (!op || !op.alive || !op.ready || op.reaccion || op.automataTP === tray.tp || online() || esDeLaIA(op.team)
+    || !mayControl(op) || !puedeActuar(op) || (op.used && op.used.length) || op.ap < op.apl) return;
+  op.automataTP = tray.tp;
+  if (!automataSinHechicero(op)) return;
+  op.aplBase = op.apl; op.apl -= 1; op.ap -= 1;
+  logLine(T.habilidadesAD.automata(op.name));
+}
 function comprobarInicio() {
   const op = state.sel;
+  iniciarActivacion(op);
   if (preguntandoInicio || online() || !op || !op.alive || !op.ready || op.reaccion || op.inicioTP === tray.tp
     || esDeLaIA(op.team) || !mayControl(op) || !puedeActuar(op) || (op.used && op.used.length) || op.ap < op.apl) return;
   if (!candidatos(tray, 'inicioActivacion', { op }).length) return;
@@ -804,6 +823,7 @@ function terminarActivacion(op) {
   ultimoBando = op.team;
   if (!op.reaccion) op.activaciones = (op.activaciones || 0) + 1;   // efectos que duran hasta su siguiente activación (unicas.js)
   quitarPrestadas(op); delete op.grupo; delete op.gratisCorrer;
+  if (op.aplBase) { op.apl = op.aplBase; delete op.aplBase; }   // Autómata hechizado
   snapshot();
   // Aturdidora: termina su siguiente activación (una reacción no cuenta como activación)
   if (!op.reaccion && quitarAturdido(op)) logLine(T.disparo.recuperaLPA(op.name));

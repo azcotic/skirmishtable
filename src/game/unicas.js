@@ -11,6 +11,8 @@
  *   inflexión para todo el bando.
  * - prender: un enemigo visible; mientras dure, las armas de los agentes del bando contra él tienen
  *   Incesante.
+ * - cuerno (Cuerno de la manada, 0 PA, no psíquica): +1″ de Movimiento a los Tzaangor amigos hasta el siguiente
+ *   punto de inflexión.
  * - flujoTemporal: pendiente (necesita marcadores en la mesa).
  *
  * Los efectos duran hasta que el agente que los puso empiece su siguiente activación, quede
@@ -26,6 +28,7 @@ export const UNICAS = {
   saboteaDestino: { pa: 1, objetivo: 'enemigo', alcance: 9, duradera: true },
   ritual: { pa: 1, objetivo: 'amigo', alcance: 6, unaPorPI: true },
   prender: { pa: 1, objetivo: 'enemigo', alcance: null, duradera: true },
+  cuerno: { pa: 0, objetivo: null, alcance: null, sinObjetivo: true, unaPorPI: true },
   flujoTemporal: { pa: 1, objetivo: 'amigo', alcance: 6, pendiente: true },
 };
 
@@ -56,7 +59,8 @@ export function puedeUnica(op, id, ops, tray) {
   if ((op.ap ?? op.apl) < u.pa) return no('sinPA');
   if (enZonaDeControl(op, ops).length) return no('enZonaDeControl');
   if ((op.vetadas || []).includes('u:' + id)) return no('vetada');
-  if (u.unaPorPI && tray.ritual && tray.ritual[op.team] === tray.tp) return no('yaEsePI');
+  if (id === 'ritual' && tray.ritual && tray.ritual[op.team] === tray.tp) return no('yaEsePI');
+  if (id === 'cuerno' && op.cuernoTP === tray.tp) return no('yaEsePI');
   return { ok: true };
 }
 

@@ -123,6 +123,9 @@ export const ajustesDefensa = [];
 // Efectos de acciones únicas que hacen repetir dados al tirarlos (src/ui/unicas.js):
 // repiteSeises(atacante) -> los 6 del ataque se repiten; repiteDefensa(defensor) -> los fallos de la defensa se repiten
 export const repiteSeises = [];
+// Reglas que bajan el daño de un dado de ataque normal de 3 o más contra un agente (src/ui/ardides.js): (defensor, daño) -> cuánto
+export const reduceNormal = [];
+export const bajaNormal = (b, dmg) => dmg >= 3 ? reduceNormal.reduce((s, f) => s + (f(b, dmg) || 0), 0) : 0;
 export const repiteDefensa = [];
 // Rasgos de un agente en combate y defensa que dan sus reglas (tácticas, fichas): (op) => { duelista, robusto, aura }
 export const reglasOp = [];
@@ -195,6 +198,8 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
   if (dfn.cover) notes.push("cover save banked");
   for (const f of ajustesDefensa) { const d = f(dfn, b, w, { aN: aNorm, aC: aCrit, what }); if (d) { Object.assign(dfn, d); if (d.nota) notes.push(d.nota); } }
   const rest = bloquear(aNorm, aCrit, dfn.norm, dfn.crit, w.dmgN, w.dmgC);
+  const baja = bajaNormal(b, w.dmgN);     // Estandarte del rebaño
+  if (baja && rest.n > 0) { rest.dmg -= Math.min(baja, w.dmgN) * rest.n; notes.push("estandarte"); }
   // Aura de hierro (una vez por batalla): ignora el daño de un dado de ataque normal
   // (what.aura: la respuesta del jugador a la ventana; sin ella, se aplica sola, p. ej. en línea o la IA)
   const auraPosible = !!rasgos(b).aura && rest.n > 0;
@@ -230,7 +235,7 @@ export function iniciarCombate(what, a, b, die = d6) {
   // Certera x: x dados guardados como éxitos normales sin tirarlos (acc)
   const acc = [wa, wb].map(w => Math.min(numero(w.rules, "Accurate"), w.atk));
   const ra = rollAttack(wa.atk - acc[0], hitA, wa.rules, die, a), rb = rollAttack(wb.atk - acc[1], hitB, wb.rules, die, b);
-  return { wa, wb, hitA, hitB, ra, rb, acc, rasgos: [rasgos(a), rasgos(b)], usado: {},
+  return { wa, wb, hitA, hitB, ra, rb, acc, ops: [a, b], rasgos: [rasgos(a), rasgos(b)], usado: {},
     vida: [{ wounds: a.wounds, alive: a.alive }, { wounds: b.wounds, alive: b.alive }],
     pools: [{ crit: ra.crit, norm: ra.norm + acc[0], w: wa, shock: false }, { crit: rb.crit, norm: rb.norm + acc[1], w: wb, shock: false }],
     turno: 0, pasos: [], fin: ra.crit + ra.norm + acc[0] + rb.crit + rb.norm + acc[1] === 0 };
@@ -259,6 +264,7 @@ export function aplicarCombate(est, op) {
   p[op.con]--;
   if (op.tipo === "golpe") {
     let dmg = op.con === "crit" ? p.w.dmgC : p.w.dmgN, aura = false;
+    if (op.con === "norm" && est.ops) dmg = Math.max(0, dmg - bajaNormal(est.ops[1 - i], dmg));   // Estandarte del rebaño
     const rr = est.rasgos ? est.rasgos[1 - i] : {}, u = est.usado || (est.usado = {});
     // Robustos: al contraatacar (el defensor), el primer daño normal de 3 o más baja en 1
     if (rr.robusto && 1 - i === 1 && op.con === "norm" && dmg >= 3 && !u.robusto) { u.robusto = true; dmg -= 1; }

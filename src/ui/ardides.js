@@ -28,7 +28,7 @@ import { CTRL, WPN } from '../config.js';
 import { T } from '../i18n/es.js';
 import { elegirOpcion } from './tirada.js';
 import { UNICAS, unicasDe } from '../game/unicas.js';
-import { ajustesArma, ajustesDefensa, bloquear, ignoraLesion, ignoraSaturacion, reglasOp } from '../engine/dice.js';
+import { ajustesArma, ajustesDefensa, bloquear, ignoraLesion, ignoraSaturacion, reduceNormal, reglasOp } from '../engine/dice.js';
 import { ignoraAturdir } from '../engine/efectos.js';
 import { ajustesCoste, cargarTrabado } from '../game/acciones.js';
 import { registrarDisparador } from '../game/disparadores.js';
@@ -344,3 +344,21 @@ registrarDisparador({
     registro(T.ardidesAD.tunicas.log(ctx.b.name));
   },
 });
+
+/* ---------- Habilidades de ficha del Aquelarre Disforme ----------
+ * Autómata hechizado (Marines Rúbrica): al activarse, su LPA baja 1 hasta el final de la activación,
+ * salvo que haya un Hechicero amigo a 9″ o menos (panels.js, iniciarActivacion).
+ * Lento y decidido (Combatiente Rúbrica): al disparar sin haber Cargado ni Reposicionado en la
+ * activación, o al reaccionar, sus armas a distancia tienen Incesante.
+ * Estandarte del rebaño (Portaicono Tzaangor): un dado de ataque normal de 3 o más contra un
+ * Tzaangor amigo a 3″ o menos de él y visible para él hace 1 menos. */
+export const automataSinHechicero = op => aquelarre(op) && es(op, 'rubrica')
+  && !amigos(op).some(o => hechicero(o) && opGap(o, op) <= 9 + 1e-9);
+ajustesArma.push((w, a, b, modo) => {
+  if (modo !== 'disparo' || !w || w.type !== 'R' || !a || !aquelarre(a) || perfil(a).clave !== 'combatienteRubrica') return w;
+  const movio = (a.used || []).some(u => u === 'reposition' || u === 'charge');
+  if ((movio && !a.reaccion) || tiene(w, 'Ceaseless')) return w;
+  return { ...w, rules: [...w.rules, 'Ceaseless'] };
+});
+reduceNormal.push(b => !!b && aquelarre(b) && es(b, 'tzaangor')
+  && amigos(b).some(o => aquelarre(o) && perfil(o).clave === 'portaiconoTzaangor' && opGap(o, b) <= 3 + 1e-9 && ven(o, b)) ? 1 : 0);

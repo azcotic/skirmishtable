@@ -82,7 +82,7 @@ export default {
     portaiconoRubrica:  { nombre: "Portaicono Marine Rúbrica", palabras: ["rubrica"], astartes: true, apl: 3, move: 5, save: 2, wounds: 14, armas: ["bolterInfierno", "punos"] },
     combatienteRubrica: { nombre: "Combatiente Marine Rúbrica", palabras: ["rubrica"], astartes: true, apl: 3, move: 5, save: 2, wounds: 14, armas: ["bolterInfierno", "punos"] },
     campeonTzaangor:    { nombre: "Campeón Tzaangor", palabras: ["tzaangor"], apl: 2, move: 6, save: 5, wounds: 10, armas: ["granHacha"] },
-    portacuernoTzaangor: { nombre: "Portacuerno Tzaangor", palabras: ["tzaangor"], apl: 2, move: 6, save: 5, wounds: 9, armas: ["daga"] },
+    portacuernoTzaangor: { nombre: "Portacuerno Tzaangor", palabras: ["tzaangor"], unicas: ["cuerno"], apl: 2, move: 6, save: 5, wounds: 9, armas: ["daga"] },
     portaiconoTzaangor: { nombre: "Portaicono Tzaangor", palabras: ["tzaangor"], apl: 2, move: 6, save: 5, wounds: 9, armas: ["daga"] },
     combatienteTzaangor: { nombre: "Combatiente Tzaangor", palabras: ["tzaangor"], apl: 2, move: 6, save: 5, wounds: 9, armas: ["armasTzaangor"] },
   },

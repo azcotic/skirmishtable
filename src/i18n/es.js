@@ -714,9 +714,15 @@ export const T = {
     logEquipo: (equipo, n) => `<b>${equipo}</b> usa <b>${n}</b> (equipo de facción).`,
     todoPolvo: equipo => `${equipo}: Todo es polvo reduce en 1 el daño de ese dado.`,
   },
+  // habilidades de ficha del Aquelarre Disforme (src/ui/ardides.js)
+  habilidadesAD: {
+    automata: n => `Autómata hechizado: ${n} no tiene un Hechicero a 9″ o menos y resta 1 a su LPA en esta activación.`,
+  },
   // acciones únicas psíquicas de los Hechiceros (reglas en src/game/unicas.js)
   unicas: {
     acc: 'Acción única psíquica',
+    cuerno: { nombre: 'Cuerno de la manada', desc: 'Suma 1″ al Movimiento de los Tzaangor amigos hasta el siguiente punto de inflexión.' },
+    logCuerno: n => `${n} toca el cuerno: los Tzaangor amigos tienen +1″ de Movimiento hasta el siguiente punto de inflexión.`,
     sinObjetivos: 'No hay a quién dirigirla: falta un agente a distancia y visible.',
     motivo: {
       pendiente: 'Aún no está en la app: necesita marcadores en la mesa.',

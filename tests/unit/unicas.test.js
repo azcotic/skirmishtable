@@ -83,3 +83,40 @@ describe('acciones únicas psíquicas', () => {
     expect(r.notes).toContain('proteccionDestino');
   });
 });
+
+describe('habilidades de ficha del Aquelarre', () => {
+  it('Autómata hechizado: solo sin Hechicero a 9″ o menos', async () => {
+    const { automataSinHechicero } = await import('../../src/ui/ardides.js');
+    const r = mkOp('A3', 0, 'r', 'ad.combatienteRubrica', 5, 15 - 5);
+    r.x = 5; r.y = 5; h.x = 12; h.y = 5; OPS.push(r);
+    expect(automataSinHechicero(r)).toBe(false);
+    h.x = 20; h2.x = 22; expect(automataSinHechicero(r)).toBe(true);
+    expect(automataSinHechicero(h)).toBe(false);          // un Hechicero no es Marine Rúbrica
+  });
+  it('Lento y decidido: Incesante al disparar sin Cargar ni Reposicionarse', () => {
+    const r = mkOp('A3', 0, 'r', 'ad.combatienteRubrica', 5, 5); OPS.push(r);
+    const w = WPN['ad.bolterInfierno'];
+    expect(armaPara(w, r, e, 'disparo').rules).toContain('Ceaseless');
+    r.used = ['reposition'];
+    expect(armaPara(w, r, e, 'disparo').rules).not.toContain('Ceaseless');
+    r.reaccion = true; expect(armaPara(w, r, e, 'disparo').rules).toContain('Ceaseless');
+    const t = mkOp('A4', 0, 't', 'ad.tiradorRubrica', 5, 5);
+    expect(armaPara(WPN['ad.bolterInfierno'], t, e, 'disparo').rules).not.toContain('Ceaseless');
+  });
+  it('Estandarte del rebaño: -1 al daño normal de 3 o más a un Tzaangor cercano al Portaicono', async () => {
+    const { bajaNormal } = await import('../../src/engine/dice.js');
+    const p = mkOp('A3', 0, 'p', 'ad.portaiconoTzaangor', 5, 5), t = mkOp('A4', 0, 't', 'ad.combatienteTzaangor', 7, 5);
+    OPS.push(p, t);
+    expect(bajaNormal(t, 3)).toBe(1);
+    expect(bajaNormal(t, 2)).toBe(0);                      // solo daño de 3 o más
+    t.x = 15; expect(bajaNormal(t, 3)).toBe(0);            // lejos
+    expect(bajaNormal(p, 4)).toBe(0);                      // el Portaicono no se protege a sí mismo
+    expect(bajaNormal(h, 4)).toBe(0);                      // solo Tzaangor
+  });
+  it('Cuerno de la manada: acción de 0 PA, una vez por punto de inflexión', () => {
+    const c = mkOp('A3', 0, 'c', 'ad.portacuernoTzaangor', 5, 5); OPS.push(c);
+    expect(unicasDe(c)).toEqual(['cuerno']);
+    expect(puedeUnica(c, 'cuerno', OPS, tray).ok).toBe(true);
+    c.cuernoTP = 1; expect(puedeUnica(c, 'cuerno', OPS, tray).motivo).toBe('yaEsePI');
+  });
+});
