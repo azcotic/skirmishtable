@@ -28,7 +28,10 @@ export const alternasObligatorias = () => options.activaciones !== "libres";
 export const enActivacion = () => OPS.find(o => o.alive && o.ready && ((o.used && o.used.length) || o.ap < o.apl)) || null;
 
 // a qué bando le toca activar (0, 1, o null si todos están usados)
+const enGrupo = () => OPS.find(o => o.alive && o.ready && o.grupo) || null;   // Rebaño mutante: dos agentes activan a la vez
 export const bandoEnTurno = () => {
+  const g = enGrupo();
+  if (g) return g.team;
   const a = enActivacion();
   return a ? a.team : turnoDeActivacion(OPS, fuente.tray.ini ?? 0, fuente.ultimo());
 };
@@ -38,6 +41,8 @@ export function porQueNoActua(op) {
   if (!op || !op.alive) return null;
   if (esDeLaIA(op.team) && !control.jugando) return T.ia.esDeLaIA;      // contra la computadora
   if (!alternasObligatorias() || despliegueActivo() || !op.ready) return null;
+  const g = enGrupo();
+  if (g) return op.grupo === g.grupo ? null : T.turno.terminaPrimero(`${g.id} ${queEs(g)}`);
   const a = enActivacion();
   if (a && a !== op) return T.turno.terminaPrimero(`${a.id} ${queEs(a)}`);
   if (a) return null;

@@ -83,6 +83,8 @@ export function puede(op, accion, ops) {
   if (!op || !op.alive) return no("fuera");
   if (!op.ready) return no("usado");
   if (!(accion in COSTE)) return no("desconocida");
+  // Plan caprichoso: una acción libre de Correr, aunque otra acción lo impidiera (no en zona de control)
+  if (accion === "dash" && op.gratisCorrer && enZonaDeControl(op, ops).length === 0) return { ok: true };
   if (yaHecha(op, accion)) return no("yaHecha");
   if ((op.ap ?? op.apl) < costeAccion(op, accion)) return no("sinPA");
   const usado = a => (op.used || []).includes(a);
@@ -123,6 +125,7 @@ export function puede(op, accion, ops) {
       }
       if (agotada(op, op.weapon)) return no("armaAgotada");
       if (tieneRegla(w, "PSYCHIC") && (op.disparadas || []).includes(sinDon(op.weapon))) return no("psiquicaRepetida");
+      if ((op.vetadas || []).includes(op.weapon)) return no("psiquicaRepetida");   // Cábala psíquica: la usa otro agente
       if (conBolter(op) && !op.reaccion && veces(op, "shoot") === 1 && primerDisparo(op)
         && !esArmaBolter(primerDisparo(op)) && !esArmaBolter(w)) return no("sinBolter");
       const todos = shotsFrom({ x: op.x, y: op.y, z: op.z || 0, team: op.team, op });

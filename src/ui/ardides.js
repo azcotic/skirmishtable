@@ -24,7 +24,9 @@
  * navegadores de una partida en línea los aplican igual. El destino pide una decisión a mitad de
  * tirada: solo fuera de línea, como la Repetición de mando.
  */
-import { CTRL } from '../config.js';
+import { CTRL, WPN } from '../config.js';
+import { T } from '../i18n/es.js';
+import { elegirOpcion } from './tirada.js';
 import { ajustesArma, ajustesDefensa, bloquear, ignoraLesion, ignoraSaturacion, reglasOp } from '../engine/dice.js';
 import { ignoraAturdir } from '../engine/efectos.js';
 import { ajustesCoste, cargarTrabado } from '../game/acciones.js';
@@ -49,6 +51,10 @@ export const DOCTRINAS = ['devastadora', 'tactica', 'asalto'];
 // el marcador (panels.js lo presta al cargar: así no hay ciclo de módulos)
 let tray = null;
 export const conectarArdides = t => { tray = t; };
+// el registro de la partida (panels.js lo presta, igual que el marcador)
+let registro = () => {};
+export const conectarRegistro = f => { registro = f; };
+const logLineAr = t => registro(t);
 
 const activo = (s, nombre) => !!(tray && tray.ardides && (tray.ardides[s] || []).includes(nombre));
 const perfil = op => (op && KINDS[op.kind]) || {};
@@ -60,6 +66,7 @@ const tiene = (w, r) => w.rules.some(x => x === r || x.startsWith(r.replace(/ \d
 
 // El arma de `a` contra `b`, cambiada por los ardides activos (modo: "disparo" o "combate")
 ajustesArma.push((w, a, b, modo) => {
+  if (modo === 'contraataque') modo = 'combate';   // el defensor de un combate (solo lo distinguen las reglas de equipo)
   if (!tray || !w) return w;
   let x = null;
   const copia = () => x || (x = { ...w, rules: [...w.rules] });
@@ -227,3 +234,101 @@ export function gastarDestino(s, g) {
   if (!d.dados.length) tray.destino[s] = null;
   return v;
 }
+
+/* ---------- Ardides de tiroteo del Aquelarre Disforme ---------- */
+const hechicero = op => aquelarre(op) && es(op, 'hechicero');
+const ven = (a, b) => sightAnalysis({ x: a.x, y: a.y, z: a.z || 0, team: a.team, op: a }, b).visible;
+const psiquicas = o => (o.weapons || []).filter(k => WPN[k] && WPN[k].type === 'R' && WPN[k].rules.includes('PSYCHIC'));
+
+// Plan caprichoso: al terminar la activación de un Hechicero, acción libre de Correr o cambio de orden.
+// La activación sigue abierta si da la acción (ctx.seguir); gratisCorrer lo leen puede() e input.js.
+registrarDisparador({
+  id: 'plan', ardid: 'Plan caprichoso', momento: 'finActivacion',
+  quien: ctx => ctx.op.team,
+  condicion: ctx => hechicero(ctx.op) && ctx.op.alive,
+  efecto: async ctx => {
+    const P = T.ardidesAD.plan, op = ctx.op;
+    const id = await elegirOpcion({ titulo: P.titulo, quien: op.name, texto: P.texto(op.name), porDefecto: 'orden', opciones: [
+      { id: 'correr', etiqueta: P.correr, detalle: P.correrDet }, { id: 'orden', etiqueta: P.orden, detalle: P.ordenDet }] });
+    if (id === 'correr') { op.gratisCorrer = true; ctx.seguir = true; registro(P.logCorrer(op.name)); }
+    else { op.order = op.order === 'conceal' ? 'engage' : 'conceal'; registro(P.logOrden(op.name)); }
+  },
+});
+
+// Cábala psíquica: al activarse un Hechicero, toma prestada un arma psíquica a distancia de otro
+// Hechicero a 9″ o menos y visible, hasta el final de su activación. Ese otro no puede usarla en
+// todo el punto de inflexión, ni se puede elegir un arma que ya usó en él.
+const opcionesCabala = op => amigos(op).filter(o => hechicero(o) && opGap(o, op) <= 9 + 1e-9 && ven(op, o))
+  .flatMap(o => psiquicas(o).filter(k => !(o.psiPI || []).includes(k) && !(o.vetadas || []).includes(k)).map(k => ({ o, k })));
+registrarDisparador({
+  id: 'cabala', ardid: 'Cábala psíquica', momento: 'inicioActivacion',
+  quien: ctx => ctx.op.team,
+  condicion: ctx => hechicero(ctx.op) && opcionesCabala(ctx.op).length > 0,
+  efecto: async ctx => {
+    const C = T.ardidesAD.cabala, op = ctx.op, ops = opcionesCabala(op);
+    const id = await elegirOpcion({ titulo: C.titulo, quien: op.name, texto: C.texto(op.name), porDefecto: null,
+      opciones: ops.map(({ o, k }) => ({ id: o.id + '|' + k, etiqueta: `${o.name} · ${WPN[k].name}`, detalle: `${WPN[k].atk}A ${WPN[k].hit}+ ${WPN[k].dmgN}/${WPN[k].dmgC}` })) });
+    const e = ops.find(({ o, k }) => o.id + '|' + k === id);
+    if (!e) return;
+    if (!op.weapons.includes(e.k)) { op.weapons = [...op.weapons, e.k]; op.prestadas = [...(op.prestadas || []), e.k]; }
+    e.o.vetadas = [...(e.o.vetadas || []), e.k];
+    registro(C.log(op.name, e.o.name, WPN[e.k].name));
+  },
+});
+// al terminar la activación, el arma prestada vuelve (el otro agente sigue sin poder usarla)
+export function quitarPrestadas(op) {
+  if (!op.prestadas || !op.prestadas.length) return;
+  op.weapons = op.weapons.filter(k => !op.prestadas.includes(k));
+  if (!op.weapons.includes(op.weapon)) op.weapon = op.weapons[0];
+  delete op.prestadas;
+}
+
+// Rebaño mutante: al activar un Tzaangor, otro Tzaangor apostado a 2″ o menos y visible se activa a
+// la vez (comparten `grupo`; src/ui/turno.js deja actuar a los dos).
+const opcionesRebano = op => amigos(op).filter(o => aquelarre(o) && es(o, 'tzaangor') && o.ready && !o.grupo
+  && !(o.used && o.used.length) && opGap(o, op) <= 2 + 1e-9 && ven(op, o));
+registrarDisparador({
+  id: 'rebano', ardid: 'Rebaño mutante', momento: 'inicioActivacion',
+  quien: ctx => ctx.op.team,
+  condicion: ctx => aquelarre(ctx.op) && es(ctx.op, 'tzaangor') && !ctx.op.grupo && opcionesRebano(ctx.op).length > 0,
+  efecto: async ctx => {
+    const R = T.ardidesAD.rebano, op = ctx.op, ops = opcionesRebano(op);
+    const id = await elegirOpcion({ titulo: R.titulo, quien: op.name, texto: R.texto(op.name), porDefecto: null,
+      opciones: ops.map(o => ({ id: o.id, etiqueta: o.name })) });
+    const otro = ops.find(o => o.id === id);
+    if (!otro) return;
+    op.grupo = otro.grupo = `r${tray.tp}-${op.id}`;
+    registro(R.log(op.name, otro.name));
+  },
+});
+
+/* ---------- Equipo de facción del Aquelarre Disforme ----------
+ * tray.equipoFaccion[bando] = ids elegidos al armar el comando: 'balas', 'faucesdaemonicas', 'tunicas'
+ * ('pergaminos' queda pendiente: depende de los Dones de Tzeentch).
+ * Balas hechizadas: bólteres infierno, pistolas bólter infierno y pistolas automáticas, Devastadora 1.
+ * Armas faucesdaemónicas: armas de combate de los Marines Rúbrica, +1 Ataque; al contraatacar, Certera 1.
+ * Túnicas arcanas: una vez por PI y agente, un dado de ataque que va a hacer daño crítico a un
+ * Hechicero hace daño normal. */
+const equipo = (s, id) => !!(tray && tray.equipoFaccion && (tray.equipoFaccion[s] || []).includes(id));
+const BALAS = ['Bólter infierno', 'Pistola bólter infierno', 'Pistola automática'];
+ajustesArma.push((w, a, b, modo) => {
+  if (!w || !a || !aquelarre(a)) return w;
+  if (modo === 'disparo' && w.type === 'R' && BALAS.includes(w.name) && equipo(a.team, 'balas') && !tiene(w, 'Devastating'))
+    return { ...w, rules: [...w.rules, 'Devastating 1'] };
+  if ((modo === 'combate' || modo === 'contraataque') && w.type === 'M' && es(a, 'rubrica') && equipo(a.team, 'faucesdaemonicas')) {
+    const x = { ...w, rules: [...w.rules], atk: w.atk + 1 };
+    if (modo === 'contraataque' && !tiene(x, 'Accurate')) x.rules.push('Accurate 1');
+    return x;
+  }
+  return w;
+});
+registrarDisparador({
+  id: 'tunicas', ardid: 'Túnicas arcanas', momento: 'recibirDano', gratis: true,
+  quien: ctx => ctx.b.team,
+  condicion: ctx => hechicero(ctx.b) && equipo(ctx.b.team, 'tunicas') && ctx.b.tunicaTP !== tray.tp && (ctx.criticos || 0) > 0 && ctx.w.dmgC > ctx.w.dmgN,
+  efecto: ctx => {
+    ctx.b.tunicaTP = tray.tp;
+    ctx.r.dmg = Math.max(0, ctx.r.dmg - (ctx.w.dmgC - ctx.w.dmgN)); ctx.r.notes.push('tunicas');
+    registro(T.ardidesAD.tunicas.log(ctx.b.name));
+  },
+});

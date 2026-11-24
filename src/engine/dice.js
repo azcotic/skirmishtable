@@ -214,7 +214,7 @@ export const meleeKey = op => WPN[op.weapon] && WPN[op.weapon].type === "M" ? op
 export function iniciarCombate(what, a, b, die = d6) {
   const ok = (op, k) => WPN[k] && WPN[k].type === "M" && (k === "knife" || op.weapons.includes(k));
   if (!ok(a, what.wa) || !ok(b, what.wb)) return null;
-  const wa = armaPara(WPN[what.wa], a, b, "combate"), wb = armaPara(WPN[what.wb], b, a, "combate");
+  const wa = armaPara(WPN[what.wa], a, b, "combate"), wb = armaPara(WPN[what.wb], b, a, "contraataque");
   const hitA = effHit(a, wa), hitB = effHit(b, wb);
   // Certera x: x dados guardados como éxitos normales sin tirarlos (acc)
   const acc = [wa, wb].map(w => Math.min(numero(w.rules, "Accurate"), w.atk));
@@ -253,6 +253,7 @@ export function aplicarCombate(est, op) {
     if (rr.robusto && 1 - i === 1 && op.con === "norm" && dmg >= 3 && !u.robusto) { u.robusto = true; dmg -= 1; }
     // Aura de hierro: ignora el daño de un dado normal, una vez por batalla
     if (rr.aura && op.aura !== false && op.con === "norm" && dmg > 0 && !u["aura" + (1 - i)]) { u["aura" + (1 - i)] = true; dmg = 0; aura = true; }
+    if (op.menos && op.con === "norm") dmg = Math.max(0, dmg - op.menos);   // un ardid (Todo es polvo) baja el daño de este dado
     rival.wounds = Math.max(0, rival.wounds - dmg);
     if (rival.wounds === 0) rival.alive = false;
     let choque = false;

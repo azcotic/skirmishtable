@@ -34,7 +34,8 @@ export function elegirRepeticion({ titulo, quien, dados, exito, pm, contexto = [
     ` aria-label="${esc(R.dadoAria(v, exito[i]))}">${v}</button>`).join("");
   return preguntar(`<h2>${esc(titulo)}</h2><p class="tquien">${esc(quien)}</p>${ctx}
     <p>${esc(R.explica(pm))}</p><div class="tdados">${caras}</div>
-    <button class="tno" data-v="null">${R.noUsar}</button>`, null);
+    <button class="tno" data-v="null">${R.noUsar}</button>
+    <button class="tno" data-v='"silencio"'>${R.noAvisar}</button>`, null);
 }
 
 // Habilidad con ventana de sí o no: un texto de pregunta y dos botones. Devuelve true (sí) o false (no / Esc).
@@ -56,9 +57,9 @@ export function ofrecerArdides({ lista, pm }) {
     if (!d) { resolve({ activar: [], silenciar: [] }); return; }
     const fin = r => { d.onclick = null; d.oncancel = null; if (d.open) d.close(); resolve(r); };
     const tarjeta = a => `<div class="tctx" data-id="${esc(a.id)}"><p><b>${esc(a.nombre)}</b> · ${esc(a.quien)}</p>
-      <p>${esc(a.desc)}</p><p>${esc(V.pm(a.quien, pm[a.bando]))}</p>
+      <p>${esc(a.desc)}</p><p>${esc(a.gratis ? V.pmEquipo(a.quien) : V.pm(a.quien, pm[a.bando]))}</p>
       <div class="topciones">
-        <button class="topc" data-v='${JSON.stringify({ activar: [a.id], silenciar: [] })}'>${esc(V.activar)}</button>
+        <button class="topc" data-v='${JSON.stringify({ activar: [a.id], silenciar: [] })}'>${esc(a.gratis ? V.usar : V.activar)}</button>
         <button class="topc" data-v='${JSON.stringify({ activar: [], silenciar: [] })}'>${esc(V.noActivar)}</button>
         <button class="topc" data-v='${JSON.stringify({ activar: [], silenciar: [a.id] })}'>${esc(V.noAvisar)}</button>
       </div></div>`;
@@ -80,6 +81,13 @@ export function ofrecerArdides({ lista, pm }) {
     pintar();
     if (!d.open) d.showModal();
   });
+}
+
+// Elegir una opción de una lista: opciones = [{ id, etiqueta, detalle? }]. Devuelve el id o `porDefecto` (Esc).
+export function elegirOpcion({ titulo, quien, texto, opciones, porDefecto = null }) {
+  const botones = opciones.map(o => `<button class="topc" data-v='${JSON.stringify(o.id)}'>${esc(o.etiqueta)}${o.detalle ? `<small>${esc(o.detalle)}</small>` : ""}</button>`).join("");
+  return preguntar(`<h2>${esc(titulo)}</h2><p class="tquien">${esc(quien)}</p>
+    <div class="tctx"><p>${esc(texto)}</p></div><div class="topciones">${botones}</div>`, porDefecto);
 }
 
 // Sigilosos: elegir cómo guardar la salvación por cobertura. ids: 'extra' | 'critico' | 'ambas'.

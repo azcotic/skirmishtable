@@ -142,7 +142,7 @@ export function wireControls() {
     snapshot();
     if (tray.tp >= 4) { logLine(T.partida.finBatalla); control.alFinBatalla("pi"); return; }
     tray.tp += 1; tray.ardides = [[], []]; tray.ardidesT = [[], []]; limpiarSilencio(tray); tray.destino = [null, null]; reiniciarActivaciones();
-    OPS.forEach(o => { o.ready = true; o.ap = o.apl; o.used = []; o.disparadas = []; delete o.reacciono; delete o.reaccion; delete o.volo; });
+    OPS.forEach(o => { o.ready = true; o.ap = o.apl; o.used = []; o.disparadas = []; delete o.reacciono; delete o.reaccion; delete o.volo; delete o.psiPI; delete o.vetadas; delete o.grupo; delete o.gratisCorrer; delete o.tunicaTP; });
     logLine(T.partida.nuevoPI(tray.tp));
     renderAll();
     alNuevoPI();                  // fase de estrategia: iniciativa, PM y ardides (inicio.js)

@@ -250,7 +250,8 @@ function landDrag(d) {
     d.op.order = "engage";
     logLine(T.orden.pasaATrabarse(d.op.name));
   }
-  d.op.ap -= d.p1.type === "fallBack" || chained ? 2 : 1;   // Retroceder cuesta 2 PA
+  const libre = d.p1.type === "dash" && d.op.gratisCorrer && !chained;   // Plan caprichoso
+  if (libre) delete d.op.gratisCorrer; else d.op.ap -= d.p1.type === "fallBack" || chained ? 2 : 1;   // Retroceder cuesta 2 PA
   if (d.vuelo) { d.op.volo = true; state.volar = null; logLine(T.mover.vuela(d.op.name)); }
   d.op.used.push(d.p1.type);
   if (chained) d.op.used.push(d.p2.type);

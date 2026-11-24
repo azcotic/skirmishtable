@@ -33,17 +33,19 @@ export function silenciar(tray, s, ardid) {
 export const limpiarSilencio = tray => { tray.silencio = [[], []]; };
 
 // Los ardides que se pueden ofrecer ahora, agrupados en una sola ventana: [{ d, bando }]
+// gratis: reglas de equipo, sin PM ni registro de ardid usado; su condicion decide cuándo están disponibles.
 export function candidatos(tray, momento, ctx) {
   const usados = tray.ardidesT || [[], []];
   return DISPARADORES.filter(d => d.momento === momento).map(d => ({ d, bando: d.quien(ctx) }))
     .filter(({ d, bando }) => (bando === 0 || bando === 1)
-      && puedeUsarArdid(tray.cp, usados, bando, d.ardid)
+      && (d.gratis || puedeUsarArdid(tray.cp, usados, bando, d.ardid))
       && !silenciado(tray, bando, d.ardid)
       && d.condicion(ctx));
 }
 
 // Activa un ardid: −1 PM y queda usado este punto de inflexión. Devuelve false si no se podía.
-export function activar(tray, bando, ardid) {
+export function activar(tray, bando, ardid, gratis = false) {
+  if (gratis) return true;
   tray.ardidesT = tray.ardidesT || [[], []];
   if (!puedeUsarArdid(tray.cp, tray.ardidesT, bando, ardid)) return false;
   tray.ardidesT[bando].push(ardid);

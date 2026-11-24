@@ -7,8 +7,8 @@ import { retrato } from '../view3d/units.js';
 import { aplicarCombate, bloquear, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
   armaPara, distanciaRegla, isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
 import { elegirCombate, elegirDestino, elegirRepeticion, elegirSigilosos, ofrecerArdides, preguntarHabilidad } from './tirada.js';
-import { activar, candidatos, silenciar } from '../game/disparadores.js';
-import { conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
+import { activar, candidatos, silenciado, silenciar } from '../game/disparadores.js';
+import { quitarPrestadas, conectarRegistro, conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
 import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
 import { SHOT_KINDS, cannotShoot, judgeShot, shotsFrom } from '../engine/shots.js';
@@ -33,7 +33,7 @@ import { control, esDeLaIA } from './control.js';
 // en el lugar y devuelve true si se usó.
 // fijos: índices de dados que no se pueden repetir (los puestos con El destino es mi arma)
 async function repeticionDeMando(team, dados, exito, die, titulo, quien, contexto = [], inutil = false, fijos = null) {
-  if (tray.cp[team] < 1) return false;
+  if (tray.cp[team] < 1 || (!esDeLaIA(team) && silenciado(tray, team, T.repeticion.nombre))) return false;
   const ok = dados.map((v, k) => exito(v) || !!(fijos && fijos.has(k)));
   if (ok.every(Boolean)) return false;
   let i;
@@ -41,6 +41,7 @@ async function repeticionDeMando(team, dados, exito, die, titulo, quien, context
     if (inutil) return false;          // la IA no gasta PM si repetir no puede cambiar el resultado
     i = dados.map((v, k) => [v, k]).filter(([, k]) => !ok[k]).sort((x, y) => x[0] - y[0])[0][1];
   } else i = await elegirRepeticion({ titulo, quien, dados, exito: ok, pm: tray.cp[team], contexto });
+  if (i === 'silencio') { silenciar(tray, team, T.repeticion.nombre); return false; }   // No avisar hasta el próximo PI
   if (i === null || i === undefined) return false;
   const antes = dados[i];
   dados[i] = die();
@@ -82,13 +83,13 @@ async function ventanaArdides(momento, ctx) {
   const c = candidatos(tray, momento, ctx).filter(({ bando }) => !esDeLaIA(bando) && mayControl({ team: bando }));
   if (!c.length) return [];
   const { activar: si, silenciar: no } = await ofrecerArdides({ pm: tray.cp,
-    lista: c.map(({ d, bando }) => ({ id: d.id, nombre: d.ardid, desc: T.ardidDesc[d.ardid] || '', bando, quien: TEAMNAME[bando] })) });
+    lista: c.map(({ d, bando }) => ({ id: d.id, nombre: d.ardid, desc: T.ardidDesc[d.ardid] || '', gratis: !!d.gratis, bando, quien: TEAMNAME[bando] })) });
   const hechos = [];
   for (const { d, bando } of c) {
     if (no.includes(d.id)) silenciar(tray, bando, d.ardid);
-    if (si.includes(d.id) && activar(tray, bando, d.ardid)) {
-      logLine(T.ventanaArdid.log(TEAMNAME[bando], d.ardid));
-      d.efecto(ctx); hechos.push(d);
+    if (si.includes(d.id) && activar(tray, bando, d.ardid, !!d.gratis)) {
+      logLine(d.gratis ? T.ventanaArdid.logEquipo(TEAMNAME[bando], d.ardid) : T.ventanaArdid.log(TEAMNAME[bando], d.ardid));
+      await d.efecto(ctx); hechos.push(d);
     }
   }
   return hechos;
@@ -100,7 +101,7 @@ let avisadoOrden = null;
 /* ---------- state / undo / log ---------- */
 // ini: bando con la iniciativa (null antes de decidirla); ardides: los usados en este PI
 export let tray = {tp:1, cp:[2,2], vp:[0,0], ini:null, ardides:[[],[]]};
-conectarArdides(tray);                // los ardides leen qué se usó en este punto de inflexión
+conectarArdides(tray); conectarRegistro(logLine);                // los ardides leen qué se usó en este punto de inflexión
 export const undoStack = [];
 // other modules' state that undo restores too ({get, set}; the ops & score panel)
 export const undoExtras = [];
@@ -316,14 +317,15 @@ export function doShoot() {
         r = resolverDisparo(what, w, hit, atk, b, die, [...r.dfn.dice], r.hotDado);
       }
       // Ardides de tiroteo al recibir daño (p. ej. Todo es polvo): cuántos dados normales llegan
-      const normales = r.aura ? 0 : bloquear(r.atkN, r.atkC, r.dfn.norm, r.dfn.crit, w.dmgN, w.dmgC).n;
-      await ventanaArdides('recibirDano', { a, b, w, r, normales });
+      const resto = r.aura ? { n: 0, c: 0 } : bloquear(r.atkN, r.atkC, r.dfn.norm, r.dfn.crit, w.dmgN, w.dmgC);
+      await ventanaArdides('recibirDano', { a, b, w, r, normales: resto.n, criticos: resto.c });
     }
     showRoll(r.atk.dice, r.hit, a.team, T.disparo.tiradaAtq(a.name));
     showRoll(r.dfn.dice, b.save, b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
     b.wounds = Math.max(0, b.wounds - r.dmg);
     if (r.aura) gastarHabilidad(b, "aura");       // Aura de hierro: ya la gastó
     a.ap -= costeAccion(a, "shoot", what.w); a.used.push("shoot");
+    a.psiPI = [...(a.psiPI || []), what.w];   // armas ya usadas en este punto de inflexión (Cábala psíquica)
     a.disparadas = [...(a.disparadas || []), what.w.split("~")[0]];   // Astartes: armas psíquicas ya usadas
     a.usos = { ...(a.usos || {}), [what.w]: ((a.usos || {})[what.w] || 0) + 1 };   // Limitada
     let line = T.disparo.log(a.name, b.name, r.w.name, fmtDice(r.atk.dice), fmtDice(r.dfn.dice), r.dfn.cover, r.dmg, r.notes);
@@ -410,6 +412,13 @@ export function doFight() {
         if (op.tipo === "golpe" && op.con === "norm" && est.pools[est.turno].w.dmgN > 0 && est.rasgos[ri].aura
             && !est.usado["aura" + ri] && !esDeLaIA(riv.team))
           op = { ...op, aura: await preguntarHabilidad("aura", [lado.name, est.pools[est.turno].w.dmgN], riv.name) };
+        // Ardides de tiroteo al recibir daño normal (Todo es polvo): baja el daño de este dado
+        const dN = est.pools[est.turno].w.dmgN;
+        if (op.tipo === "golpe" && op.con === "norm" && !op.aura && dN > 0) {
+          const c = { a: lado, b: riv, w: est.pools[est.turno].w, r: { dmg: dN, notes: [] }, normales: 1 };
+          await ventanaArdides('recibirDano', c);
+          if (c.r.dmg < dN) op = { ...op, menos: dN - c.r.dmg };
+        }
         aplicarCombate(est, op);
       }
       r = { wa: est.wa, wb: est.wb, hitA: est.hitA, hitB: est.hitB, ra: est.ra, rb: est.rb, a: est.vida[0], b: est.vida[1], pasos: est.pasos };
@@ -503,6 +512,7 @@ function comprobarVeneno() {
 const retratoHtml = op => { const u = retrato(op); return u ? `<img class="opretrato" src="${u}" alt="" style="border-color:${TEAMCOL[op.team]}">` : ""; };
 export function renderCard() {
   comprobarVeneno();                 // ¿alguien con terrotoxinas acaba de empezar su activación?
+  comprobarInicio();                 // ¿ardides al empezar la activación?
   const c = document.getElementById("opcard");
   // todos los agentes usados: sugerir "Fin del PI" (en el marcador y en la barra de acciones)
   const finPI = document.getElementById("endtp");
@@ -709,9 +719,41 @@ export const reiniciarActivaciones = () => { ultimoBando = null; };
 export const pasarTurno = team => { ultimoBando = team; };
 conectarTurno({ tray, ultimo: () => ultimoBando });   // turno.js consulta el marcador sin importar este módulo
 // Mark an operative expended: its activation is over for this turning point.
+let cerrando = false;
+// Terminar la activación. Fuera de línea, antes puede salir la ventana de los ardides "al terminar la
+// activación" (Plan caprichoso): si dan una acción libre de Correr, la activación sigue abierta.
 export function endActivation(op) {
   if (!op || !op.alive || !op.ready || !mayControl(op) || !puedeActuar(op)) return;
+  if (!online() && !cerrando && !esDeLaIA(op.team) && candidatos(tray, 'finActivacion', { op }).length) {
+    cerrando = true;
+    (async () => {
+      const ctx = { op, seguir: false };
+      try { await ventanaArdides('finActivacion', ctx); } finally { cerrando = false; }
+      if (ctx.seguir) { renderAll(); return; }
+      terminarActivacion(op);
+    })();
+    return;
+  }
+  terminarActivacion(op);
+}
+// Al empezar su activación (primera vez que se toca a un agente al que le toca), salen los ardides
+// "al empezar la activación" (Cábala psíquica, Rebaño mutante); una sola vez por activación.
+let preguntandoInicio = false;
+function comprobarInicio() {
+  const op = state.sel;
+  if (preguntandoInicio || online() || !op || !op.alive || !op.ready || op.reaccion || op.inicioTP === tray.tp
+    || esDeLaIA(op.team) || !mayControl(op) || !puedeActuar(op) || (op.used && op.used.length) || op.ap < op.apl) return;
+  if (!candidatos(tray, 'inicioActivacion', { op }).length) return;
+  op.inicioTP = tray.tp; preguntandoInicio = true;
+  setTimeout(async () => {
+    try { await ventanaArdides('inicioActivacion', { op }); } finally { preguntandoInicio = false; }
+    renderAll();
+  }, 0);
+}
+function terminarActivacion(op) {
+  if (!op || !op.alive || !op.ready) return;
   ultimoBando = op.team;
+  quitarPrestadas(op); delete op.grupo; delete op.gratisCorrer;
   snapshot();
   // Aturdidora: termina su siguiente activación (una reacción no cuenta como activación)
   if (!op.reaccion && quitarAturdido(op)) logLine(T.disparo.recuperaLPA(op.name));
