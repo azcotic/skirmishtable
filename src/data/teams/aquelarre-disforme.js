@@ -50,7 +50,7 @@ export default {
     { id: "vuelo",     nombre: "Vuelo inmaterial",       vuelo: true },
     { id: "giro",      nombre: "Giro del destino",       armas: { psiquicas: { anadir: ["Piercing Crits 1"] } } },
     { id: "bombardeo", nombre: "Bombardeo astral",       armas: { unaPsiquica: { anadir: ["Devastating 1"], devArea: 2 } } },
-    { id: "maestro",   nombre: "Maestro del Immaterium", distanciaPsiquica: 3, pendiente: true }   /* sin efecto hasta que haya acciones únicas psíquicas */,
+    { id: "maestro",   nombre: "Maestro del Immaterium", distanciaPsiquica: 3 },
     ],
   }, {
     // opciones de arma de la hoja de equipo (equipo: las armas que lleva en lugar de las de su ficha)
@@ -74,9 +74,9 @@ export default {
     ],
   }],
   agentes: {
-    hechiceroDestino:   { nombre: "Hechicero del Destino", lider: true, astartes: true, palabras: ["hechicero"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["proyectilCondenacion", "pistolaBolterInfierno", "bastonPsicofuerza"] },
-    hechiceroTempireo:  { nombre: "Hechicero Tempíreo", lider: true, astartes: true, palabras: ["hechicero"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["descargaFlujo", "pistolaBolterInfierno", "bastonPsicofuerza"] },
-    hechiceroFuego:     { nombre: "Hechicero del Fuego Disforme", lider: true, astartes: true, palabras: ["hechicero"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["tormentaFuego", "quemarMente", "pistolaBolterInfierno", "bastonPsicofuerza"] },
+    hechiceroDestino:   { nombre: "Hechicero del Destino", lider: true, astartes: true, palabras: ["hechicero"], unicas: ["proteccionDestino", "saboteaDestino"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["proyectilCondenacion", "pistolaBolterInfierno", "bastonPsicofuerza"] },
+    hechiceroTempireo:  { nombre: "Hechicero Tempíreo", lider: true, astartes: true, palabras: ["hechicero"], unicas: ["ritual", "flujoTemporal"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["descargaFlujo", "pistolaBolterInfierno", "bastonPsicofuerza"] },
+    hechiceroFuego:     { nombre: "Hechicero del Fuego Disforme", lider: true, astartes: true, palabras: ["hechicero"], unicas: ["prender"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["tormentaFuego", "quemarMente", "pistolaBolterInfierno", "bastonPsicofuerza"] },
     tiradorRubrica:     { nombre: "Tirador Marine Rúbrica", palabras: ["rubrica"], astartes: true, apl: 3, move: 5, save: 2, wounds: 14, armas: ["canonConcentrado", "canonBarrido", "punos"] },
     portaiconoRubrica:  { nombre: "Portaicono Marine Rúbrica", palabras: ["rubrica"], astartes: true, apl: 3, move: 5, save: 2, wounds: 14, armas: ["bolterInfierno", "punos"] },
     combatienteRubrica: { nombre: "Combatiente Marine Rúbrica", palabras: ["rubrica"], astartes: true, apl: 3, move: 5, save: 2, wounds: 14, armas: ["bolterInfierno", "punos"] },

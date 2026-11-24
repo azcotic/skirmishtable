@@ -26,7 +26,7 @@ export function registrarComandos() {
     for (const [k, a] of Object.entries(c.agentes))
       KINDS[`${c.prefijo}.${k}`] = { apl: a.apl, move: a.move, save: a.save, wounds: a.wounds,
         weapons: a.armas.map(w => `${c.prefijo}.${w}`), nombre: a.nombre, lider: !!a.lider, comando: c.id,
-        habilidades: a.habilidades || [], astartes: !!a.astartes, astartesBolter: !!(a.astartes && c.astartesBolter), clave: k, palabras: a.palabras || [] };   // palabras: HECHICERO, TZAANGOR…
+        habilidades: a.habilidades || [], astartes: !!a.astartes, astartesBolter: !!(a.astartes && c.astartesBolter), clave: k, palabras: a.palabras || [], unicas: a.unicas || [] };   // palabras: HECHICERO, TZAANGOR…
   }
   ajustesAgente.push(aplicarOpciones);
 }

@@ -57,11 +57,13 @@ export function clasificarAtaque(dice, hit, rules) {
 
 // n dados de ataque, con las repeticiones del arma (Implacable: todos los fallos; Incesante:
 // todos los de un mismo resultado fallado, el más repetido; Equilibrada: un fallo).
-export function rollAttack(n, hit, rules, die = d6) {
+export function rollAttack(n, hit, rules, die = d6, op = null) {
   const cd = critDesde(rules);
   const exito = v => v !== 1 && (v >= cd || v >= hit);
   let dice = Array.from({length: n}, () => die());
   const rerolled = [], notes = [];
+  // Sabotear destino: los dados que saquen 6 se repiten (una sola vez)
+  if (op && repiteSeises.some(f => f(op)) && dice.includes(6)) { dice = dice.map(v => v === 6 ? die() : v); notes.push("sabotaje"); }
   if (regla(rules, "Relentless")) {
     dice = dice.map((v, i) => { if (exito(v)) return v; rerolled.push(i); return die(); });
     if (rerolled.length) notes.push("relentless");
@@ -118,6 +120,10 @@ export const ignoraLesion = [];
 export const penalizaLesion = op => isInjured(op) && !ignoraLesion.some(f => f(op));
 // Reglas que cambian la defensa ya tirada (p. ej. un ardid): (dfn, defensor, w) => dfn nueva o null
 export const ajustesDefensa = [];
+// Efectos de acciones únicas que hacen repetir dados al tirarlos (src/ui/unicas.js):
+// repiteSeises(atacante) -> los 6 del ataque se repiten; repiteDefensa(defensor) -> los fallos de la defensa se repiten
+export const repiteSeises = [];
+export const repiteDefensa = [];
 // Rasgos de un agente en combate y defensa que dan sus reglas (tácticas, fichas): (op) => { duelista, robusto, aura }
 export const reglasOp = [];
 export const rasgos = op => reglasOp.reduce((r, f) => Object.assign(r, f(op) || {}), {});
@@ -133,7 +139,7 @@ export function shootRoll(what, a, b, die = d6) {
   const w = WPN[what.w] && armaPara(WPN[what.w], a, b, "disparo");
   if (!w || w.type !== "R" || !a.weapons.includes(what.w)) return null;
   const hit = effHit(a, w);
-  const atk = rollAttack(Math.max(0, w.atk - certera(what, w)), hit, w.rules, die);
+  const atk = rollAttack(Math.max(0, w.atk - certera(what, w)), hit, w.rules, die, a);
   // un blanco secundario (Área / Ráfaga: what.sec): Sobrecalentamiento ya se tiró en el principal
   return resolverDisparo(what, w, hit, atk, b, die, null, what.sec ? false : null);
 }
@@ -178,9 +184,14 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
   if (saturacion && what.cover) notes.push("saturate");
   const pen = numero(R, "Piercing") + (aCrit > 0 ? numero(R, "Piercing Crits") : 0);
   if (pen) notes.push("piercing:" + pen);
-  const dfn = dfnDados
+  let dfn = dfnDados
     ? { ...clasificarDefensa(dfnDados, b.save, cover), dice: dfnDados, cover }
     : rollDefence(b.save, cover, die, Math.max(0, 3 - pen));
+  // Protección del destino: todos los dados de defensa fallados se repiten (nunca empeora)
+  if (!dfnDados && repiteDefensa.some(f => f(b))) {
+    const dice = dfn.dice.map(v => (v === 6 || (v !== 1 && v >= b.save)) ? v : die());
+    dfn = { ...clasificarDefensa(dice, b.save, cover), dice, cover }; notes.push("proteccionDestino");
+  }
   if (dfn.cover) notes.push("cover save banked");
   for (const f of ajustesDefensa) { const d = f(dfn, b, w, { aN: aNorm, aC: aCrit, what }); if (d) { Object.assign(dfn, d); if (d.nota) notes.push(d.nota); } }
   const rest = bloquear(aNorm, aCrit, dfn.norm, dfn.crit, w.dmgN, w.dmgC);
@@ -218,7 +229,7 @@ export function iniciarCombate(what, a, b, die = d6) {
   const hitA = effHit(a, wa), hitB = effHit(b, wb);
   // Certera x: x dados guardados como éxitos normales sin tirarlos (acc)
   const acc = [wa, wb].map(w => Math.min(numero(w.rules, "Accurate"), w.atk));
-  const ra = rollAttack(wa.atk - acc[0], hitA, wa.rules, die), rb = rollAttack(wb.atk - acc[1], hitB, wb.rules, die);
+  const ra = rollAttack(wa.atk - acc[0], hitA, wa.rules, die, a), rb = rollAttack(wb.atk - acc[1], hitB, wb.rules, die, b);
   return { wa, wb, hitA, hitB, ra, rb, acc, rasgos: [rasgos(a), rasgos(b)], usado: {},
     vida: [{ wounds: a.wounds, alive: a.alive }, { wounds: b.wounds, alive: b.alive }],
     pools: [{ crit: ra.crit, norm: ra.norm + acc[0], w: wa, shock: false }, { crit: rb.crit, norm: rb.norm + acc[1], w: wb, shock: false }],

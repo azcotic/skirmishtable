@@ -8,7 +8,10 @@ import { aplicarCombate, bloquear, certera, clasificarAtaque, critDesde, decisio
   armaPara, distanciaRegla, isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
 import { elegirCombate, elegirDestino, elegirRepeticion, elegirSigilosos, ofrecerArdides, preguntarHabilidad } from './tirada.js';
 import { activar, candidatos, silenciado, silenciar } from '../game/disparadores.js';
-import { quitarPrestadas, conectarRegistro, conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
+import './unicas.js';
+import { UNICAS, objetivosUnica, ponerEfecto, puedeUnica, unicasDe } from '../game/unicas.js';
+import { elegirOpcion } from './tirada.js';
+import { ven, quitarPrestadas, conectarRegistro, conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
 import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
 import { SHOT_KINDS, cannotShoot, judgeShot, shotsFrom } from '../engine/shots.js';
@@ -22,7 +25,7 @@ import { mayControl, online } from '../net/sync.js';
 import { showRoll } from './dicetray.js';
 import { fairNote, rollFor } from '../net/roll.js';
 import { renderMinis } from './minis.js';
-import { T, pulg } from '../i18n/es.js';
+import { G, T, pulg } from '../i18n/es.js';
 import { accionesHooks, renderAcciones } from './acciones.js';
 import { accionesLegales, agotada, alcanceArma, blancoValidoCon, buscadoraAplica, costeAccion, puede, puedeCambiarOrden } from '../game/acciones.js';
 import { alternasObligatorias, conectarTurno, pistaDeTurno, porQueNoActua, puedeActuar, todosUsados } from './turno.js';
@@ -291,7 +294,7 @@ export function doShoot() {
     else {
       // fuera de línea: se puede usar Repetición de mando en el ataque y en la defensa
       const w = armaPara(WPN[what.w], a, b, "disparo"), hit = effHit(a, w), cd = critDesde(w.rules);
-      const atk = rollAttack(Math.max(0, w.atk - certera(what, w)), hit, w.rules, die);
+      const atk = rollAttack(Math.max(0, w.atk - certera(what, w)), hit, w.rules, die, a);
       const exitoAtk = v => v !== 1 && (v >= cd || v >= hit), fijos = new Set();
       if ((await usarDestino([{ team: a.team, nombre: a.name, dados: atk.dice, exito: exitoAtk, fijos }])).length)
         Object.assign(atk, clasificarAtaque(atk.dice, hit, w.rules));
@@ -561,7 +564,8 @@ export function renderCard() {
       <button id="tgtbtn" class="${state.mode==='target'?'active':''}">${T.ficha.apuntarBoton}</button>
       <button id="shootbtn" ${(!state.target || !state.lastShot || !(SHOT_KINDS[state.lastShot.kind].valid || buscadoraAplica(WPN[state.sel.weapon], state.lastShot)) || cannotShoot(selEye()) || WPN[state.sel.weapon].type!=="R") ? "disabled" : ""}>${T.ficha.disparar}</button>
       <button id="fightbtn" ${meleeFoes.length ? "" : "disabled"}>${T.ficha.combatir}</button>
-    </div>`;
+    </div>${filaUnicas(state.sel)}`;
+  c.querySelectorAll("[data-unica]").forEach(b => { b.onclick = () => usarUnica(state.sel, b.dataset.unica); });
   if (RULES.orders) c.querySelector("#ordbtn").onclick = () => toggleOrder(state.sel.id);
   c.querySelector("#endact").onclick = () => endActivation(state.sel);
   c.querySelectorAll("input[name=wpn]").forEach(r => r.onchange = () => { state.sel.weapon = r.value; refreshSight(); renderAll(); });
@@ -719,6 +723,51 @@ export const reiniciarActivaciones = () => { ultimoBando = null; };
 export const pasarTurno = team => { ultimoBando = team; };
 conectarTurno({ tray, ultimo: () => ultimoBando });   // turno.js consulta el marcador sin importar este módulo
 // Mark an operative expended: its activation is over for this turning point.
+// Acciones únicas psíquicas (src/game/unicas.js): una fila de botones en la ficha
+function filaUnicas(op) {
+  const ids = unicasDe(op).filter(id => UNICAS[id]);
+  if (!ids.length) return "";
+  const botones = ids.map(id => {
+    const p = puedeUnica(op, id, OPS, tray), tx = T.unicas[id];
+    const motivo = p.ok ? tx.desc : T.unicas.motivo[p.motivo] || "";
+    return `<button data-unica="${id}" title="${motivo.replace(/"/g, "&quot;")}"${p.ok ? "" : " disabled"}>⚡ ${tx.nombre} ${UNICAS[id].pa} ${G.pa.abrev}</button>`;
+  }).join("");
+  return `<div class="btnrow unicas">${botones}</div>`;
+}
+let usandoUnica = false;
+async function usarUnica(op, id) {
+  if (!op || usandoUnica || !mayControl(op)) return;
+  const p = puedeUnica(op, id, OPS, tray);
+  if (!p.ok) { hint(T.unicas.motivo[p.motivo] || ""); return; }
+  const objetivos = objetivosUnica(op, id, OPS, ven);
+  if (!objetivos.length) { hint(T.unicas.sinObjetivos); return; }
+  usandoUnica = true;
+  let elegido;
+  try {
+    const tx = T.unicas[id];
+    elegido = await elegirOpcion({ titulo: tx.nombre, quien: op.name, texto: tx.desc, porDefecto: null,
+      opciones: objetivos.map(o => ({ id: o.id, etiqueta: `${o.id} ${o.name}`, detalle: `${o.wounds}/${o.maxW} H` })) });
+  } finally { usandoUnica = false; }
+  const t = objetivos.find(o => o.id === elegido);
+  if (!t) return;
+  const gastar = () => { op.ap -= UNICAS[id].pa; op.used.push("unica:" + id); op.psiPI = [...(op.psiPI || []), "u:" + id]; };
+  snapshot();
+  if (id === "ritual") {        // 2D3 heridas recuperadas: dados repartidos como los demás
+    const what = { k: "ritual", by: op.id, at: t.id, tp: tray.tp, n: op.activaciones || 0 };
+    const why = rollFor(what, (die, done, n) => {
+      const total = Math.ceil(die() / 2) + Math.ceil(die() / 2), antes = t.wounds;
+      t.wounds = Math.min(t.maxW, t.wounds + total); gastar();
+      tray.ritual = tray.ritual || [null, null]; tray.ritual[op.team] = tray.tp;
+      logLine(T.unicas.logRitual(op.name, t.name, total, t.wounds - antes) + fairNote(n), true, true);
+      rolled(n, done);
+    });
+    if (why) hint(why);
+    return;
+  }
+  ponerEfecto(op, id, t, OPS); gastar();
+  logLine(T.unicas.log[id](op.name, t.name));
+  renderAll();
+}
 let cerrando = false;
 // Terminar la activación. Fuera de línea, antes puede salir la ventana de los ardides "al terminar la
 // activación" (Plan caprichoso): si dan una acción libre de Correr, la activación sigue abierta.
@@ -753,6 +802,7 @@ function comprobarInicio() {
 function terminarActivacion(op) {
   if (!op || !op.alive || !op.ready) return;
   ultimoBando = op.team;
+  if (!op.reaccion) op.activaciones = (op.activaciones || 0) + 1;   // efectos que duran hasta su siguiente activación (unicas.js)
   quitarPrestadas(op); delete op.grupo; delete op.gratisCorrer;
   snapshot();
   // Aturdidora: termina su siguiente activación (una reacción no cuenta como activación)

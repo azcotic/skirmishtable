@@ -27,6 +27,7 @@
 import { CTRL, WPN } from '../config.js';
 import { T } from '../i18n/es.js';
 import { elegirOpcion } from './tirada.js';
+import { UNICAS, unicasDe } from '../game/unicas.js';
 import { ajustesArma, ajustesDefensa, bloquear, ignoraLesion, ignoraSaturacion, reglasOp } from '../engine/dice.js';
 import { ignoraAturdir } from '../engine/efectos.js';
 import { ajustesCoste, cargarTrabado } from '../game/acciones.js';
@@ -237,7 +238,7 @@ export function gastarDestino(s, g) {
 
 /* ---------- Ardides de tiroteo del Aquelarre Disforme ---------- */
 const hechicero = op => aquelarre(op) && es(op, 'hechicero');
-const ven = (a, b) => sightAnalysis({ x: a.x, y: a.y, z: a.z || 0, team: a.team, op: a }, b).visible;
+export const ven = (a, b) => sightAnalysis({ x: a.x, y: a.y, z: a.z || 0, team: a.team, op: a }, b).visible;
 const psiquicas = o => (o.weapons || []).filter(k => WPN[k] && WPN[k].type === 'R' && WPN[k].rules.includes('PSYCHIC'));
 
 // Plan caprichoso: al terminar la activación de un Hechicero, acción libre de Correr o cambio de orden.
@@ -258,8 +259,10 @@ registrarDisparador({
 // Cábala psíquica: al activarse un Hechicero, toma prestada un arma psíquica a distancia de otro
 // Hechicero a 9″ o menos y visible, hasta el final de su activación. Ese otro no puede usarla en
 // todo el punto de inflexión, ni se puede elegir un arma que ya usó en él.
+const libre = (o, clave) => !(o.psiPI || []).includes(clave) && !(o.vetadas || []).includes(clave);
 const opcionesCabala = op => amigos(op).filter(o => hechicero(o) && opGap(o, op) <= 9 + 1e-9 && ven(op, o))
-  .flatMap(o => psiquicas(o).filter(k => !(o.psiPI || []).includes(k) && !(o.vetadas || []).includes(k)).map(k => ({ o, k })));
+  .flatMap(o => [...psiquicas(o).filter(k => libre(o, k)).map(k => ({ o, k })),
+    ...(KINDS[o.kind].unicas || []).filter(u => UNICAS[u] && !UNICAS[u].pendiente && libre(o, 'u:' + u)).map(u => ({ o, u }))]);
 registrarDisparador({
   id: 'cabala', ardid: 'Cábala psíquica', momento: 'inicioActivacion',
   quien: ctx => ctx.op.team,
@@ -267,9 +270,17 @@ registrarDisparador({
   efecto: async ctx => {
     const C = T.ardidesAD.cabala, op = ctx.op, ops = opcionesCabala(op);
     const id = await elegirOpcion({ titulo: C.titulo, quien: op.name, texto: C.texto(op.name), porDefecto: null,
-      opciones: ops.map(({ o, k }) => ({ id: o.id + '|' + k, etiqueta: `${o.name} · ${WPN[k].name}`, detalle: `${WPN[k].atk}A ${WPN[k].hit}+ ${WPN[k].dmgN}/${WPN[k].dmgC}` })) });
-    const e = ops.find(({ o, k }) => o.id + '|' + k === id);
+      opciones: ops.map(({ o, k, u }) => u
+        ? ({ id: o.id + '|u:' + u, etiqueta: `${o.name} · ${T.unicas[u].nombre}`, detalle: T.unicas.acc })
+        : ({ id: o.id + '|' + k, etiqueta: `${o.name} · ${WPN[k].name}`, detalle: `${WPN[k].atk}A ${WPN[k].hit}+ ${WPN[k].dmgN}/${WPN[k].dmgC}` })) });
+    const e = ops.find(({ o, k, u }) => o.id + '|' + (u ? 'u:' + u : k) === id);
     if (!e) return;
+    if (e.u) {
+      op.unicasPrestadas = [...(op.unicasPrestadas || []), e.u];
+      e.o.vetadas = [...(e.o.vetadas || []), 'u:' + e.u];
+      registro(C.log(op.name, e.o.name, T.unicas[e.u].nombre));
+      return;
+    }
     if (!op.weapons.includes(e.k)) { op.weapons = [...op.weapons, e.k]; op.prestadas = [...(op.prestadas || []), e.k]; }
     e.o.vetadas = [...(e.o.vetadas || []), e.k];
     registro(C.log(op.name, e.o.name, WPN[e.k].name));
@@ -277,6 +288,7 @@ registrarDisparador({
 });
 // al terminar la activación, el arma prestada vuelve (el otro agente sigue sin poder usarla)
 export function quitarPrestadas(op) {
+  delete op.unicasPrestadas;
   if (!op.prestadas || !op.prestadas.length) return;
   op.weapons = op.weapons.filter(k => !op.prestadas.includes(k));
   if (!op.weapons.includes(op.weapon)) op.weapon = op.weapons[0];
