@@ -32,8 +32,8 @@ import { ajustesArma, ajustesDefensa, bloquear, clasificarAtaque, critDesde, ign
 import { ignoraAturdir } from '../engine/efectos.js';
 import { ajustesCoste, cargarTrabado } from '../game/acciones.js';
 import { registrarDisparador } from '../game/disparadores.js';
-import { esArmaBolter, opcionesDe } from '../data/teams/index.js';
-import { KINDS, OPS } from '../engine/world.js';
+import { comandoPorId, esArmaBolter, opcionesDe } from '../data/teams/index.js';
+import { KINDS, OPS, ajustarAgente } from '../engine/world.js';
 import { opGap } from '../engine/geometry.js';
 import { sightAnalysis } from '../engine/sight.js';
 
@@ -455,3 +455,31 @@ registrarDisparador({
   },
 });
 export const auspexVale = (a, b) => !!a && a.auspexTP === (tray && tray.tp) && a.auspexAct === (a.activaciones || 0) && opGap(a, b) <= 8 + 1e-9;
+
+/* ---------- Pergaminos de hechicería (equipo de facción del Aquelarre) ----------
+ * Una vez por batalla, al activarse o reaccionar un Hechicero amigo: cambia su Don de Tzeentch por otro
+ * que no tenga ningún Hechicero amigo; lo conserva hasta el final de la batalla. tray.pergaminos[bando] = true. */
+for (const momento of ['inicioActivacion', 'reaccion']) registrarDisparador({
+  id: 'pergaminos-' + momento, ardid: 'Pergaminos de hechicería', momento, gratis: true,
+  quien: ctx => ctx.op.team,
+  condicion: ctx => hechicero(ctx.op) && ctx.op.alive && equipo(ctx.op.team, 'pergaminos') && !(tray.pergaminos && tray.pergaminos[ctx.op.team])
+    && donesLibres(ctx.op).length > 0,
+  efecto: async ctx => {
+    const P = T.pergaminos, op = ctx.op, libres = donesLibres(op);
+    const id = await elegirOpcion({ titulo: P.titulo, quien: op.name, texto: P.texto, porDefecto: null,
+      opciones: libres.map(d => ({ id: d.id, etiqueta: d.nombre })) });
+    if (!id) return;
+    tray.pergaminos = tray.pergaminos || [false, false]; tray.pergaminos[op.team] = true;
+    op.opciones = { ...op.opciones, dones: id };
+    ajustarAgente(op);
+    registro(P.log(op.name, libres.find(d => d.id === id).nombre));
+  },
+});
+// los Dones que puede tomar `op`: distintos del suyo y de los de otros Hechiceros amigos, y con efecto en la app
+function donesLibres(op) {
+  const el = (KINDS[op.kind] && comandoDe(op) || {}).elecciones || [];
+  const dones = (el.find(e => e.id === 'dones') || { opciones: [] }).opciones;
+  const tomados = new Set(OPS.filter(o => o.team === op.team && o.alive && o.opciones).map(o => o.opciones.dones));
+  return dones.filter(d => !d.pendiente && !tomados.has(d.id));
+}
+const comandoDe = op => comandoPorId(perfil(op).comando);

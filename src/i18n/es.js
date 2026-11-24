@@ -893,6 +893,7 @@ export const T = {
     log: (equipo, antes, v, n) => `<b>${equipo}</b> usa El destino es mi arma: el ${antes} de ${n} pasa a ser un ${v}.`,
   },
 
+  pergaminos: { titulo: 'Pergaminos de hechicería', texto: 'Cambia el Don de Tzeentch de este Hechicero por otro que no tenga ningún Hechicero amigo. Lo conserva hasta el final de la batalla. Solo una vez por batalla.', log: (n, d) => `Pergaminos de hechicería: ${n} recibe el don ${d}.` },
   // Elección de equipo del comando (src/game/equipo.js, pantalla de inicio)
   equipo: {
     titulo: 'Elige el equipo del comando',

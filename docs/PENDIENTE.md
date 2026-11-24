@@ -16,7 +16,8 @@ Pasa a ser el equipo principal de la app. Modelos: los azules (Ultramarines, mod
 - [ ] Reglas de ficha sin efecto aún: Líder heroico (Capitán), Granadero (faltan las granadas del equipo universal) y la acción Óptica del Francotirador.
 - [ ] Móviles: la acción Cargar ya se permite en zona de control, pero la ruta no sale de esa zona (movimiento).
 - [x] Sigilosos y Aura de hierro preguntan al jugador (fuera de línea y contra la computadora); en línea se aplican solas. Las habilidades con ventana se declaran en los datos del agente (`habilidades`, ver `habilidadesDe` en `src/ui/ardides.js`).
-- [x] Ardides de tiroteo del Aquelarre Disforme y de los Ángeles de la Muerte con ventana (`src/game/disparadores.js`, solo fuera de línea). Faltan los de la Garra Némesis (fotos) y la pantalla para elegir el equipo de facción (`tray.equipoFaccion`).
+- [x] Ardides de tiroteo del Aquelarre Disforme y de los Ángeles de la Muerte con ventana (`src/game/disparadores.js`, solo fuera de línea). Faltan los de la Garra Némesis (fotos).
+- [x] Pantalla de elección de equipo (paso `equipo0/1` de inicio.js, `src/game/equipo.js`): hasta 4 opciones, facción y universal mezcladas, sin repetir. La computadora no lleva equipo. Pergaminos de hechicería listos. Del equipo universal solo se elige: falta darle efecto (granadas, marcadores, pasivos) y el equipo de la Garra Némesis.
 - [ ] Color del capítulo: que cada jugador elija el color, girando el tono azul de las texturas.
 - [ ] Validar en el teléfono que los modelos azules se vean bien.
 
