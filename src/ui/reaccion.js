@@ -15,8 +15,8 @@ import { enDespliegue } from '../engine/deploy.js';
 import { puedeReaccionar } from '../game/acciones.js';
 import { tieneEfecto } from '../data/teams/index.js';
 import { state } from '../state.js';
-import { mayControl } from '../net/sync.js';
-import { pasarTurno, snapshot } from './panels.js';
+import { mayControl, online } from '../net/sync.js';
+import { pasarTurno, snapshot, ventanaArdides } from './panels.js';
 import { renderAll } from './board.js';
 import { hint, logLine } from './dom.js';
 import { setModoEspecial } from './acciones.js';
@@ -45,6 +45,7 @@ export function iniciarReaccion(op) {
   if (op.ecosActivo) logLine(T.reaccion.ecos(op.name));
   renderAll();
   hint(T.reaccion.empieza(op.name));
+  if (!online() && !esDeLaIA(op.team)) ventanaArdides('reaccion', { op }).then(() => renderAll());   // Ira de venganza
 }
 export function pasar(s) {
   pasarTurno(s);

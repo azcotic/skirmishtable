@@ -7,11 +7,11 @@ import { retrato } from '../view3d/units.js';
 import { aplicarCombate, bloquear, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
   armaPara, distanciaRegla, isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
 import { elegirCombate, elegirDestino, elegirRepeticion, elegirSigilosos, ofrecerArdides, preguntarHabilidad } from './tirada.js';
-import { activar, candidatos, silenciado, silenciar } from '../game/disparadores.js';
+import { activar, candidatos, costeDe, silenciado, silenciar } from '../game/disparadores.js';
 import './unicas.js';
 import { UNICAS, objetivosUnica, ponerEfecto, puedeUnica, unicasDe } from '../game/unicas.js';
 import { elegirOpcion } from './tirada.js';
-import { automataSinHechicero, ven, quitarPrestadas, conectarRegistro, conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
+import { aplicarSellos, auspexVale, automataSinHechicero, ven, quitarPrestadas, conectarRegistro, conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
 import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
 import { SHOT_KINDS, cannotShoot, judgeShot, shotsFrom } from '../engine/shots.js';
@@ -82,16 +82,16 @@ async function usarDestino(grupos) {
 // Ventana de ardides de tiroteo en un momento de la tirada (solo fuera de línea; la IA no recibe
 // ventanas). Muestra juntos los que se pueden usar, aplica los activados (−1 PM, usado este punto
 // de inflexión) y guarda el silencio. Devuelve los disparadores que se activaron.
-async function ventanaArdides(momento, ctx) {
+export async function ventanaArdides(momento, ctx) {
   const c = candidatos(tray, momento, ctx).filter(({ bando }) => !esDeLaIA(bando) && mayControl({ team: bando }));
   if (!c.length) return [];
   const { activar: si, silenciar: no } = await ofrecerArdides({ pm: tray.cp,
-    lista: c.map(({ d, bando }) => ({ id: d.id, nombre: d.ardid, desc: T.ardidDesc[d.ardid] || '', gratis: !!d.gratis, bando, quien: TEAMNAME[bando] })) });
+    lista: c.map(({ d, bando }) => ({ id: d.id, nombre: d.ardid, desc: T.ardidDesc[d.ardid] || '', gratis: !!d.gratis, coste: costeDe(d, ctx), bando, quien: TEAMNAME[bando] })) });
   const hechos = [];
   for (const { d, bando } of c) {
     if (no.includes(d.id)) silenciar(tray, bando, d.ardid);
-    if (si.includes(d.id) && activar(tray, bando, d.ardid, !!d.gratis)) {
-      logLine(d.gratis ? T.ventanaArdid.logEquipo(TEAMNAME[bando], d.ardid) : T.ventanaArdid.log(TEAMNAME[bando], d.ardid));
+    if (si.includes(d.id) && activar(tray, bando, d.ardid, !!d.gratis, costeDe(d, ctx))) {
+      logLine(d.gratis ? T.ventanaArdid.logEquipo(TEAMNAME[bando], d.ardid) : T.ventanaArdid.log(TEAMNAME[bando], d.ardid, costeDe(d, ctx)));
       await d.efecto(ctx); hechos.push(d);
     }
   }
@@ -249,7 +249,7 @@ accionesHooks.porQue = id => {
   const r = accionesLegales(state.sel, OPS).find(x => x.accion === a);
   return r && !r.ok && r.motivo !== "yaHecha" ? T.reglas.noPuede(T.reglas.accion[a], T.reglas.motivo[r.motivo] || r.motivo) : null;
 };
-export function doShoot() {
+export async function doShoot() {
   if (!state.sel || !state.target) return;
   const w = WPN[state.sel.weapon];
   if (w.type !== "R") { explicar(T.disparo.armaDeCombate); return; }
@@ -270,9 +270,12 @@ export function doShoot() {
   if (!pr.ok && ["yaHecha", "sinPA", "psiquicaRepetida", "sinBolter"].includes(pr.motivo)) {
     explicar(T.reglas.noPuede(T.reglas.accion.shoot, T.reglas.motivo[pr.motivo])); return;
   }
+  // Auspex: al elegir blanco, los enemigos a 8″ o menos no pueden estar ofuscados
+  if (!online()) await ventanaArdides('elegirBlanco', { a: state.sel, b: state.target, shot });
+  if (!state.sel || !state.target) return;
   // what is rolled for: the shot as this table judges it, fixed before the dice are known
   const what = {k: "shoot", by: state.sel.id, at: state.target.id, w: state.sel.weapon,
-                acc: Math.min(shot.accurate, w.atk), obsc: !!shot.obscured, cover: !!shot.save};
+                acc: Math.min(shot.accurate, w.atk), obsc: !!shot.obscured && !auspexVale(state.sel, state.target), cover: !!shot.save};
   // Área / Ráfaga: quiénes más reciben el disparo, decidido al apuntar
   const secundarios = blancosSecundarios(state.sel, state.target, w, shot);
   if (secundarios.length) logLine(T.disparo.secundarios(distanciaRegla(w.rules, "Blast") ? "area" : "rafaga",
@@ -301,6 +304,7 @@ export function doShoot() {
       const ctxAtk = T.repeticion.ctxAtaque(atk.crit, w.dmgC, atk.norm, w.dmgN, b.name, b.save, !!what.cover);
       if (await repeticionDeMando(a.team, atk.dice, exitoAtk, die, T.repeticion.ataque, a.name, ctxAtk, false, fijos))
         Object.assign(atk, clasificarAtaque(atk.dice, hit, w.rules));
+      if (aplicarSellos(a, atk.dice, hit, w.rules)) Object.assign(atk, clasificarAtaque(atk.dice, hit, w.rules));   // Sellos de pureza
       // Sigilosos: el defensor elige cómo guardar su cobertura (la computadora, sola)
       const sig = opcionesSigilosos(b, w, what);
       if (sig.length && !esDeLaIA(b.team))
@@ -314,6 +318,8 @@ export function doShoot() {
       const dfn = [...r.dfn.dice];
       if (dfn.length && await repeticionDeMando(b.team, dfn, v => v === 6 || (v !== 1 && v >= b.save), die, T.repeticion.defensa, b.name, ctxDfn, siCritico === r.dmg))
         r = resolverDisparo(what, w, hit, atk, b, die, dfn, r.hotDado);
+      // Fisiología transhumana: tras la defensa, un éxito normal se guarda como crítico
+      if ((await ventanaArdides('trasDefensa', { a, b, w, r, what })).length) r = resolverDisparo(what, w, hit, atk, b, die, [...r.dfn.dice], r.hotDado);
       // Aura de hierro: un dado normal va a hacerle daño: ¿lo ignora?
       if (r.auraPosible && what.aura === false && await preguntarHabilidad("aura", [a.name, w.dmgN], b.name)) {
         what.aura = true;
@@ -388,6 +394,8 @@ export function doFight() {
       };
       // El destino es mi arma: antes de repetir, sobre los dados de cualquiera de los dos
       const fijosC = [new Set(), new Set()];
+      // Escudos decorativos: tras tirar el rival, antes de repetir
+      for (const [k, angel] of [[0, a], [1, b]]) await ventanaArdides('trasAtaqueCombate', { angel, k, a, b, est, lados });
       const grupos = lados.map(([k, op, roll, hit, w]) => ({ team: op.team, nombre: op.name, dados: roll.dice,
         exito: v => v !== 1 && (v >= critDesde(w.rules) || v >= hit), fijos: fijosC[k] }));
       for (const k of await usarDestino(grupos)) reclasificar(k, lados[k][2], lados[k][3], lados[k][4]);
@@ -399,7 +407,9 @@ export function doFight() {
           rival.name, q.crit, q.w.dmgC, q.norm, q.w.dmgN, est.vida[1 - k].wounds);
         if (await repeticionDeMando(op.team, roll.dice, v => v !== 1 && (v >= cd || v >= hit), die, T.repeticion.combate, op.name, ctx, false, fijosC[k]))
           reclasificar(k, roll, hit, w);
+        if (aplicarSellos(op, roll.dice, hit, w.rules)) reclasificar(k, roll, hit, w);   // Sellos de pureza
       }
+      await ventanaArdides('combatir', { a, b, est });      // Asalto de choque
       const quedan = k => est.pools[k].crit + est.pools[k].norm > 0;
       est.fin = !quedan(0) && !quedan(1);
       if (!est.fin && !quedan(0)) est.turno = 1;

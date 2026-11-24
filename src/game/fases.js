@@ -33,8 +33,8 @@ export function pmDelPI(tp, ini) {
 }
 
 // ¿Puede el bando s usar este ardid ahora? (tiene PM y no lo usó en este punto de inflexión)
-export function puedeUsarArdid(cp, usados, s, nombre) {
-  return cp[s] >= COSTE_ARDID && !(usados[s] || []).includes(nombre);
+export function puedeUsarArdid(cp, usados, s, nombre, coste = COSTE_ARDID) {
+  return cp[s] >= coste && !(usados[s] || []).includes(nombre);
 }
 
 export const tirarD6 = (rng = Math.random) => 1 + Math.floor(rng() * 6);

@@ -694,6 +694,10 @@ export const T = {
     'Doctrina de combate': 'Elige una doctrina: tus agentes tienen Equilibrada al disparar a más de 6″ (devastadora), a 6″ o menos (táctica) o al combatir (asalto).',
     'Y no conocerán el miedo': 'Tus agentes lesionados no empeoran sus atributos ni los de sus armas.',
     'Tácticas flexibles': 'Cambia tu táctica de capítulo secundaria hasta el final del punto de inflexión. (Aún no tiene efecto en la app: faltan las tácticas de capítulo.)',
+    'Ajustar doctrina': 'Durante la activación de un Ángel de la Muerte amigo, antes o después de una acción: si usaste Doctrina de combate este punto de inflexión, cambias la doctrina elegida.',
+    'Fisiología transhumana': 'Cuando disparan a un Ángel de la Muerte amigo, al tirar la defensa: guardas uno de tus éxitos normales como éxito crítico.',
+    'Asalto de choque': 'Cuando un Ángel de la Muerte amigo combate en una activación en la que Cargó, al empezar a resolver los dados de ataque: su arma de combate tiene Choque y el primer golpe de la secuencia hace 1 de daño más (hasta 7).',
+    'Ira de venganza': 'Cuando un Ángel de la Muerte amigo reacciona: hace una acción de 1 PA más, gratis, distinta de la primera.',
     'Plan caprichoso': 'Al terminar la activación de un Hechicero amigo: hace una acción libre de Correr (aunque otra acción lo impidiera), o le cambias la orden.',
     'Cábala psíquica': 'Al activarse un Hechicero amigo: elige a otro Hechicero amigo a 9″ o menos y visible, y una de sus armas psíquicas a distancia. El primero la tiene hasta el final de su activación; el otro no puede usarla en este punto de inflexión.',
     'Rebaño mutante': 'Al activar un Tzaangor: elige a otro Tzaangor amigo apostado, a 2″ o menos y visible, para que se active a la vez. Sus acciones van una tras otra, en cualquier orden.',
@@ -703,16 +707,24 @@ export const T = {
   // ventana de ardides de tiroteo (src/ui/tirada.js, ofrecerArdides; motor en src/game/disparadores.js)
   ventanaArdid: {
     titulo: 'Ardid de tiroteo disponible',
-    pm: (equipo, pm) => `${equipo} tiene ${pm} ${PM}. Activarlo cuesta 1 ${PM}.`,
-    activar: 'Activar (−1 PM)',
+    pm: (equipo, pm, coste = 1) => `${equipo} tiene ${pm} ${PM}. Activarlo cuesta ${coste} ${PM}.`,
+    activar: coste => `Activar (−${coste} PM)`,
     usar: 'Usar (sin coste)',
     pmEquipo: equipo => `${equipo}: regla de equipo de facción, no cuesta PM.`,
     noActivar: 'No activar',
     noAvisar: 'No avisar hasta el próximo punto de inflexión',
     nota: 'Si no lo activas ahora, el ardid sigue disponible; el botón «Ardides» de la barra sirve de respaldo.',
-    log: (equipo, n) => `<b>${equipo}</b> usa el ardid <b>${n}</b> (−1 ${PM}).`,
+    log: (equipo, n, coste = 1) => `<b>${equipo}</b> usa el ardid <b>${n}</b> (−${coste} ${PM}).`,
     logEquipo: (equipo, n) => `<b>${equipo}</b> usa <b>${n}</b> (equipo de facción).`,
     todoPolvo: equipo => `${equipo}: Todo es polvo reduce en 1 el daño de ese dado.`,
+  },
+  // ardides y equipo de facción de los Ángeles de la Muerte (src/ui/ardides.js)
+  ardidesAM: {
+    ajustar: { titulo: 'Ajustar doctrina', texto: d => `Tu doctrina de combate es ${d}. Elige la nueva.`, log: (n, d) => `${n}: la doctrina de combate pasa a ser ${d}.` },
+    ira: n => `${n} reacciona con Ira de venganza: tiene una acción de 1 PA más, distinta de la primera.`,
+    sellos: n => `Sellos de pureza: ${n} descarta un fallo y guarda otro como éxito normal.`,
+    escudos: n => `Escudos decorativos: los dados del rival que combate con ${n} no pueden guardarse como críticos si son menores que 6.`,
+    auspex: n => `Auspex: hasta el final de su activación, los enemigos a 8″ o menos de ${n} no pueden estar ofuscados.`,
   },
   // habilidades de ficha del Aquelarre Disforme (src/ui/ardides.js)
   habilidadesAD: {

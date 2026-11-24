@@ -16,18 +16,18 @@ Pasa a ser el equipo principal de la app. Modelos: los azules (Ultramarines, mod
 - [ ] Reglas de ficha sin efecto aún: Líder heroico (Capitán), Granadero (faltan las granadas del equipo universal) y la acción Óptica del Francotirador.
 - [ ] Móviles: la acción Cargar ya se permite en zona de control, pero la ruta no sale de esa zona (movimiento).
 - [x] Sigilosos y Aura de hierro preguntan al jugador (fuera de línea y contra la computadora); en línea se aplican solas. Las habilidades con ventana se declaran en los datos del agente (`habilidades`, ver `habilidadesDe` en `src/ui/ardides.js`).
-- [ ] Ardides de tiroteo. Faltan las fotos.
+- [x] Ardides de tiroteo del Aquelarre Disforme y de los Ángeles de la Muerte con ventana (`src/game/disparadores.js`, solo fuera de línea). Faltan los de la Garra Némesis (fotos) y la pantalla para elegir el equipo de facción (`tray.equipoFaccion`).
 - [ ] Color del capítulo: que cada jugador elija el color, girando el tono azul de las texturas.
 - [ ] Validar en el teléfono que los modelos azules se vean bien.
 
 ## 2. Reglas generales
 
 - [x] Ardides de estrategia del Aquelarre Disforme: descripción y efecto.
-- [ ] Ardides de tiroteo: el botón se muestra; se eligen y cuestan PM, pero aún no tienen efecto.
+- [x] Ardides de tiroteo: salen en una ventana en su momento; el botón manual "Ardides" queda de respaldo.
 - [ ] Ponerse en guardia, acciones psíquicas y acciones de misión.
 - [ ] Misiones: operación crítica y táctica, y puntos por objetivos. Hoy solo puntúa sola la operación de bajas.
 - [ ] Vuelo inmaterial: no impedir atravesar una escotilla abierta.
-- [ ] Apéndice mutante y Maestro del Immaterium: se pueden elegir pero no tienen efecto (dependen de misiones y acciones psíquicas).
+- [ ] Apéndice mutante y Cazadores de reliquias: sin efecto hasta tener acciones de misión y marcadores. Flujo temporal y Pergaminos de hechicería también pendientes.
 - [ ] Opciones de arma con límite por comando (por ejemplo, una pistola de llamas disformes en el Aquelarre Disforme).
 - [ ] El modelo 3D según el arma elegida.
 - [ ] `tests/unit/link.test.js` falla desde antes de estos cambios (ida y vuelta de un enlace de partida).

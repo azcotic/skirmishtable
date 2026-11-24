@@ -28,7 +28,7 @@ import { CTRL, WPN } from '../config.js';
 import { T } from '../i18n/es.js';
 import { elegirOpcion } from './tirada.js';
 import { UNICAS, unicasDe } from '../game/unicas.js';
-import { ajustesArma, ajustesDefensa, bloquear, ignoraLesion, ignoraSaturacion, reduceNormal, reglasOp } from '../engine/dice.js';
+import { ajustesArma, ajustesDefensa, bloquear, clasificarAtaque, critDesde, ignoraLesion, ignoraSaturacion, reduceNormal, reglasOp } from '../engine/dice.js';
 import { ignoraAturdir } from '../engine/efectos.js';
 import { ajustesCoste, cargarTrabado } from '../game/acciones.js';
 import { registrarDisparador } from '../game/disparadores.js';
@@ -362,3 +362,96 @@ ajustesArma.push((w, a, b, modo) => {
 });
 reduceNormal.push(b => !!b && aquelarre(b) && es(b, 'tzaangor')
   && amigos(b).some(o => aquelarre(o) && perfil(o).clave === 'portaiconoTzaangor' && opGap(o, b) <= 3 + 1e-9 && ven(o, b)) ? 1 : 0);
+
+/* ---------- Ardides de tiroteo de los Ángeles de la Muerte ----------
+ * Ajustar doctrina: durante la activación de un Ángel (al empezar o al terminar), si usaste Doctrina de
+ *   combate este punto de inflexión, cambias la doctrina elegida.
+ * Fisiología transhumana: al disparar a un Ángel amigo, tras tirar la defensa, un éxito normal se guarda
+ *   como crítico (ctx.what.fisiologia; lo lee el ajuste de defensa de abajo).
+ * Asalto de choque: al combatir un Ángel que Cargó en esta activación, su arma tiene Choque y su primer
+ *   golpe de la secuencia hace 1 más (hasta 7).
+ * Ira de venganza: al reaccionar un Ángel, una acción de 1 PA más, gratis y distinta (con Relicarios del
+ *   capítulo y orden de trabarse, cuesta 0 PM).
+ * Equipo de facción (tray.equipoFaccion[bando]): 'sellos', 'relicarios', 'escudos', 'auspex'. */
+const ADOC = { devastadora: 'Devastadora', tactica: 'Táctica', asalto: 'Asalto' };
+for (const momento of ['inicioActivacion', 'finActivacion']) registrarDisparador({
+  id: 'ajustar-' + momento, ardid: 'Ajustar doctrina', momento,
+  quien: ctx => ctx.op.team,
+  condicion: ctx => angeles(ctx.op) && ctx.op.alive && activo(ctx.op.team, ARDID.doctrina),
+  efecto: async ctx => {
+    const A = T.ardidesAM.ajustar, s = ctx.op.team;
+    const id = await elegirOpcion({ titulo: A.titulo, quien: ctx.op.name, texto: A.texto(ADOC[doctrina(s)]), porDefecto: null,
+      opciones: DOCTRINAS.filter(d => d !== doctrina(s)).map(d => ({ id: d, etiqueta: ADOC[d] })) });
+    if (!id) return;
+    elegirDoctrina(s, id);
+    registro(A.log(ctx.op.name, ADOC[id]));
+  },
+});
+registrarDisparador({
+  id: 'fisiologia', ardid: 'Fisiología transhumana', momento: 'trasDefensa',
+  quien: ctx => ctx.b.team,
+  condicion: ctx => angeles(ctx.b) && ctx.w.type === 'R' && ctx.r.dfn.norm > 0,
+  efecto: ctx => { ctx.what.fisiologia = true; },
+});
+ajustesDefensa.push((dfn, b, w, ctx) => ctx && ctx.what && ctx.what.fisiologia && angeles(b) && dfn.norm > 0
+  ? { norm: dfn.norm - 1, crit: dfn.crit + 1, nota: 'fisiologia' } : null);
+registrarDisparador({
+  id: 'choque', ardid: 'Asalto de choque', momento: 'combatir',
+  quien: ctx => ctx.a.team,
+  condicion: ctx => angeles(ctx.a) && (ctx.a.used || []).includes('charge') && !ctx.a.reaccion,
+  efecto: ctx => {
+    const p = ctx.est.pools[0];
+    if (!tiene(p.w, 'Shock')) { p.w = { ...p.w, rules: [...p.w.rules, 'Shock'] }; ctx.est.wa = p.w; }
+    p.plus1 = true;
+  },
+});
+registrarDisparador({
+  id: 'ira', ardid: 'Ira de venganza', momento: 'reaccion',
+  quien: ctx => ctx.op.team,
+  coste: ctx => equipo(ctx.op.team, 'relicarios') && ctx.op.order === 'engage' ? 0 : 1,
+  condicion: ctx => angeles(ctx.op),
+  efecto: ctx => { ctx.op.ap += 1; ctx.op.iraTP = tray.tp; registro(T.ardidesAM.ira(ctx.op.name)); },
+});
+
+// Sellos de pureza (una vez por PI para el comando): con 2 o más fallos entre los dados de ataque de un
+// Ángel, descarta uno y guarda otro como éxito normal. Cambia `dice` en el lugar; true si lo usó.
+export function aplicarSellos(op, dice, hit, rules) {
+  if (!tray || !angeles(op) || !equipo(op.team, 'sellos') || (tray.sellos && tray.sellos[op.team] === tray.tp)) return false;
+  const cd = critDesde(rules), exito = v => v !== 1 && (v >= cd || v >= hit);
+  const fallos = dice.map((v, i) => exito(v) ? -1 : i).filter(i => i >= 0);
+  if (fallos.length < 2) return false;
+  dice[fallos[0]] = hit; dice.splice(fallos[1], 1);
+  tray.sellos = tray.sellos || [null, null]; tray.sellos[op.team] = tray.tp;
+  registro(T.ardidesAM.sellos(op.name));
+  return true;
+}
+// Escudos decorativos (una vez por PI): tras tirar el rival sus dados en un combate de un Ángel, sin
+// repeticiones aún, sus dados menores que 6 no pueden guardarse como críticos (Letal, Desgarradora, Severa).
+registrarDisparador({
+  id: 'escudos', ardid: 'Escudos decorativos', momento: 'trasAtaqueCombate', gratis: true,
+  quien: ctx => ctx.angel.team,
+  condicion: ctx => angeles(ctx.angel) && equipo(ctx.angel.team, 'escudos') && !(tray.escudos && tray.escudos[ctx.angel.team] === tray.tp),
+  efecto: ctx => {
+    tray.escudos = tray.escudos || [null, null]; tray.escudos[ctx.angel.team] = tray.tp;
+    const r = 1 - ctx.k, L = ctx.lados[r];
+    const w2 = { ...L[4], rules: L[4].rules.filter(x => !/^Lethal\b|^Rending$|^Severe$/.test(x)) };
+    L[4] = w2; ctx.est.pools[r].w = w2; if (r === 0) ctx.est.wa = w2; else ctx.est.wb = w2;
+    Object.assign(L[2], clasificarAtaque(L[2].dice, L[3], w2.rules));
+    ctx.est.pools[r].crit = L[2].crit; ctx.est.pools[r].norm = L[2].norm + (ctx.est.acc[r] || 0);
+    registro(T.ardidesAM.escudos(ctx.angel.name));
+  },
+});
+// Auspex (una vez por PI): al elegir blanco con una acción de Disparar, hasta el final de la activación
+// los enemigos a 8″ o menos de ese agente no pueden estar ofuscados.
+registrarDisparador({
+  id: 'auspex', ardid: 'Auspex', momento: 'elegirBlanco', gratis: true,
+  quien: ctx => ctx.a.team,
+  condicion: ctx => angeles(ctx.a) && equipo(ctx.a.team, 'auspex') && !(tray.auspex && tray.auspex[ctx.a.team] === tray.tp)
+    && !!ctx.shot.obscured && opGap(ctx.a, ctx.b) <= 8 + 1e-9,
+  efecto: ctx => {
+    tray.auspex = tray.auspex || [null, null]; tray.auspex[ctx.a.team] = tray.tp;
+    ctx.a.auspexTP = tray.tp; ctx.a.auspexAct = ctx.a.activaciones || 0;
+    registro(T.ardidesAM.auspex(ctx.a.name));
+  },
+});
+export const auspexVale = (a, b) => !!a && a.auspexTP === (tray && tray.tp) && a.auspexAct === (a.activaciones || 0) && opGap(a, b) <= 8 + 1e-9;

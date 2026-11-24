@@ -13,11 +13,12 @@
  */
 import { puedeUsarArdid } from './fases.js';
 
-export const MOMENTOS = ['inicioActivacion', 'antesAtaque', 'trasAtaque', 'antesDefensa', 'recibirDano', 'combatir', 'moverCargar', 'finActivacion'];
+export const MOMENTOS = ['inicioActivacion', 'antesAtaque', 'trasAtaque', 'antesDefensa', 'trasDefensa', 'recibirDano', 'elegirBlanco',
+  'trasAtaqueCombate', 'combatir', 'moverCargar', 'reaccion', 'finActivacion'];
 
 // La lista de disparadores: se llena desde src/ui/ardides.js con registrarDisparador.
 // { id, ardid (nombre oficial), momento, quien(ctx) -> bando, condicion(ctx) -> bool,
-//   efecto(ctx) -> void | texto del registro }
+//   efecto(ctx) -> void | promesa, coste?(ctx) -> PM (1 si falta; 0 con alguna regla de equipo) }
 export const DISPARADORES = [];
 export function registrarDisparador(d) {
   if (!MOMENTOS.includes(d.momento)) throw new Error(`Momento desconocido: ${d.momento}`);
@@ -32,23 +33,24 @@ export function silenciar(tray, s, ardid) {
 }
 export const limpiarSilencio = tray => { tray.silencio = [[], []]; };
 
+export const costeDe = (d, ctx) => d.coste ? d.coste(ctx) : 1;
 // Los ardides que se pueden ofrecer ahora, agrupados en una sola ventana: [{ d, bando }]
 // gratis: reglas de equipo, sin PM ni registro de ardid usado; su condicion decide cuándo están disponibles.
 export function candidatos(tray, momento, ctx) {
   const usados = tray.ardidesT || [[], []];
   return DISPARADORES.filter(d => d.momento === momento).map(d => ({ d, bando: d.quien(ctx) }))
     .filter(({ d, bando }) => (bando === 0 || bando === 1)
-      && (d.gratis || puedeUsarArdid(tray.cp, usados, bando, d.ardid))
+      && (d.gratis || puedeUsarArdid(tray.cp, usados, bando, d.ardid, costeDe(d, ctx)))
       && !silenciado(tray, bando, d.ardid)
       && d.condicion(ctx));
 }
 
 // Activa un ardid: −1 PM y queda usado este punto de inflexión. Devuelve false si no se podía.
-export function activar(tray, bando, ardid, gratis = false) {
+export function activar(tray, bando, ardid, gratis = false, coste = 1) {
   if (gratis) return true;
   tray.ardidesT = tray.ardidesT || [[], []];
-  if (!puedeUsarArdid(tray.cp, tray.ardidesT, bando, ardid)) return false;
+  if (!puedeUsarArdid(tray.cp, tray.ardidesT, bando, ardid, coste)) return false;
   tray.ardidesT[bando].push(ardid);
-  tray.cp[bando] -= 1;
+  tray.cp[bando] -= coste;
   return true;
 }

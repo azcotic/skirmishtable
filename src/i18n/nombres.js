@@ -61,7 +61,7 @@ const ARDIDES_AD = {
 };
 const ARDIDES_AM = {
   estrategia: ['Doctrina de combate', 'Y no conocerán el miedo', 'Tácticas flexibles', 'Indomitus'],
-  tiroteo: [],
+  tiroteo: ['Ajustar doctrina', 'Fisiología transhumana', 'Asalto de choque', 'Ira de venganza'],
 };
 export const ARDIDES = {
   '2272196183': ARDIDES_AM,   // Ángeles de la Muerte

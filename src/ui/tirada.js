@@ -57,9 +57,9 @@ export function ofrecerArdides({ lista, pm }) {
     if (!d) { resolve({ activar: [], silenciar: [] }); return; }
     const fin = r => { d.onclick = null; d.oncancel = null; if (d.open) d.close(); resolve(r); };
     const tarjeta = a => `<div class="tctx" data-id="${esc(a.id)}"><p><b>${esc(a.nombre)}</b> · ${esc(a.quien)}</p>
-      <p>${esc(a.desc)}</p><p>${esc(a.gratis ? V.pmEquipo(a.quien) : V.pm(a.quien, pm[a.bando]))}</p>
+      <p>${esc(a.desc)}</p><p>${esc(a.gratis ? V.pmEquipo(a.quien) : V.pm(a.quien, pm[a.bando], a.coste))}</p>
       <div class="topciones">
-        <button class="topc" data-v='${JSON.stringify({ activar: [a.id], silenciar: [] })}'>${esc(a.gratis ? V.usar : V.activar)}</button>
+        <button class="topc" data-v='${JSON.stringify({ activar: [a.id], silenciar: [] })}'>${esc(a.gratis ? V.usar : V.activar(a.coste))}</button>
         <button class="topc" data-v='${JSON.stringify({ activar: [], silenciar: [] })}'>${esc(V.noActivar)}</button>
         <button class="topc" data-v='${JSON.stringify({ activar: [], silenciar: [a.id] })}'>${esc(V.noAvisar)}</button>
       </div></div>`;

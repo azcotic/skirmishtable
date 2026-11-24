@@ -264,6 +264,7 @@ export function aplicarCombate(est, op) {
   p[op.con]--;
   if (op.tipo === "golpe") {
     let dmg = op.con === "crit" ? p.w.dmgC : p.w.dmgN, aura = false;
+    if (p.plus1 && !p.plus1Usado) { p.plus1Usado = true; dmg = Math.max(dmg, Math.min(7, dmg + 1)); }   // Asalto de choque: +1 de daño, hasta 7
     if (op.con === "norm" && est.ops) dmg = Math.max(0, dmg - bajaNormal(est.ops[1 - i], dmg));   // Estandarte del rebaño
     const rr = est.rasgos ? est.rasgos[1 - i] : {}, u = est.usado || (est.usado = {});
     // Robustos: al contraatacar (el defensor), el primer daño normal de 3 o más baja en 1
