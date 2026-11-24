@@ -12,7 +12,7 @@ export default {
   nombre: "Aquelarre Disforme",
   prefijo: "ad",
   armas: {
-    proyectilCondenacion: R("Proyectil de condenación", 4, 3, 4, 4, ["PSYCHIC", "Devastating 2", "Lethal 5+"]),
+    proyectilCondenacion: R("Proyectil de condenación", 4, 3, 4, 2, ["PSYCHIC", "Devastating 2", "Lethal 5+"]),
     descargaFlujo:        R("Descarga de flujo", 4, 3, 3, 4, ["PSYCHIC", 'Blast 2"', "Rending"]),
     tormentaFuego:        R("Tormenta de fuego", 5, 4, 2, 3, ["PSYCHIC", "Saturate", "Seek Light", 'Torrent 2"']),
     quemarMente:          R("Quemar mente", 5, 4, 1, 1, ["PSYCHIC", "Lethal 5+", "Saturate", "Seek", "Mindburn*"]),
@@ -25,6 +25,7 @@ export default {
     pistolaAutomatica:    R("Pistola automática", 4, 4, 2, 3),
     bastonPsicofuerza:    M("Bastón de psicofuerza", 4, 3, 4, 6, ["PSYCHIC", "Shock"]),
     khopesh:              M("Khopesh prosperiano", 5, 3, 4, 6, ["Lethal 5+"]),
+    khopeshEquilibrado:   M("Khopesh prosperiano", 4, 3, 4, 6, ["Balanced", "Lethal 5+"]),   // el de los Hechiceros Tempíreo y del Fuego Disforme
     punos:                M("Puños", 3, 3, 3, 4),
     granHacha:            M("Gran hacha", 4, 3, 4, 5, ["Brutal", "Lethal 5+"]),
     espadon:              M("Espadón", 4, 3, 4, 5, ["Lethal 5+", "Rending"]),
@@ -74,9 +75,9 @@ export default {
     ],
   }],
   agentes: {
-    hechiceroDestino:   { nombre: "Hechicero del Destino", lider: true, astartes: true, palabras: ["hechicero"], unicas: ["proteccionDestino", "saboteaDestino"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["proyectilCondenacion", "pistolaBolterInfierno", "bastonPsicofuerza"] },
-    hechiceroTempireo:  { nombre: "Hechicero Tempíreo", lider: true, astartes: true, palabras: ["hechicero"], unicas: ["ritual", "flujoTemporal"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["descargaFlujo", "pistolaBolterInfierno", "bastonPsicofuerza"] },
-    hechiceroFuego:     { nombre: "Hechicero del Fuego Disforme", lider: true, astartes: true, palabras: ["hechicero"], unicas: ["prender"], apl: 3, move: 6, save: 3, wounds: 14, armas: ["tormentaFuego", "quemarMente", "pistolaBolterInfierno", "bastonPsicofuerza"] },
+    hechiceroDestino:   { nombre: "Hechicero del Destino", lider: true, astartes: true, palabras: ["hechicero"], unicas: ["proteccionDestino", "saboteaDestino"], apl: 3, move: 6, save: 3, wounds: 15, armas: ["proyectilCondenacion", "pistolaBolterInfierno", "bastonPsicofuerza"] },
+    hechiceroTempireo:  { nombre: "Hechicero Tempíreo", lider: true, astartes: true, palabras: ["hechicero"], unicas: ["ritual", "flujoTemporal"], apl: 3, move: 6, save: 3, wounds: 15, armas: ["descargaFlujo", "pistolaBolterInfierno", "bastonPsicofuerza"] },
+    hechiceroFuego:     { nombre: "Hechicero del Fuego Disforme", lider: true, astartes: true, palabras: ["hechicero"], unicas: ["prender"], apl: 3, move: 6, save: 3, wounds: 15, armas: ["tormentaFuego", "quemarMente", "pistolaBolterInfierno", "bastonPsicofuerza"] },
     tiradorRubrica:     { nombre: "Tirador Marine Rúbrica", palabras: ["rubrica"], astartes: true, apl: 3, move: 5, save: 2, wounds: 14, armas: ["canonConcentrado", "canonBarrido", "punos"] },
     portaiconoRubrica:  { nombre: "Portaicono Marine Rúbrica", palabras: ["rubrica"], astartes: true, apl: 3, move: 5, save: 2, wounds: 14, armas: ["bolterInfierno", "punos"] },
     combatienteRubrica: { nombre: "Combatiente Marine Rúbrica", palabras: ["rubrica"], astartes: true, apl: 3, move: 5, save: 2, wounds: 14, armas: ["bolterInfierno", "punos"] },
