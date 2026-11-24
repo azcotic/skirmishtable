@@ -893,6 +893,42 @@ export const T = {
     log: (equipo, antes, v, n) => `<b>${equipo}</b> usa El destino es mi arma: el ${antes} de ${n} pasa a ser un ${v}.`,
   },
 
+  // Elección de equipo del comando (src/game/equipo.js, pantalla de inicio)
+  equipo: {
+    titulo: 'Elige el equipo del comando',
+    sub: (n, usados, max) => `${n}: hasta ${max} opciones, mezclando las de facción y las universales. No se puede repetir ninguna. Llevas ${usados} de ${max}.`,
+    seccionFaccion: 'Equipo de facción', seccionUniversal: 'Equipo universal',
+    pendiente: '(aún no tiene efecto en la app)',
+    continuar: 'Continuar', sinEquipo: 'Seguir sin equipo',
+    nombre: {
+      balas: 'Balas hechizadas', faucesdaemonicas: 'Armas faucesdaemónicas', tunicas: 'Túnicas arcanas', pergaminos: 'Pergaminos de hechicería',
+      sellos: 'Sellos de pureza', relicarios: 'Relicarios del capítulo', escudos: 'Escudos decorativos', auspex: 'Auspex',
+      deposito: 'Depósito de munición', alambre: 'Alambre de púas', comunicaciones: 'Aparato de comunicaciones', minas: 'Minas',
+      barricadasLigeras: '2 barricadas ligeras', barricadaPesada: 'Barricada pesada', barricadaPortatil: 'Barricada portátil', escaleras: '2 escaleras',
+      granadasEspeciales: 'Granadas especiales', granadasExplosivas: 'Granadas explosivas', cargaDemolicion: 'Carga de demolición',
+    },
+    desc: {
+      balas: 'Los bólteres infierno, pistolas bólter infierno y pistolas automáticas ganan Devastadora 1.',
+      faucesdaemonicas: 'Las armas de combate de los Marines Rúbrica tienen +1 Ataque; al contraatacar, Certera 1.',
+      tunicas: 'Una vez por punto de inflexión y agente, un dado que iba a hacer daño crítico a un Hechicero hace daño normal.',
+      pergaminos: 'Mejoras para los Hechiceros.',
+      sellos: 'Una vez por punto de inflexión, con 2 o más fallos al atacar, descarta uno y guarda otro como éxito normal.',
+      relicarios: 'Ira de venganza cuesta 0 PM si el agente tiene orden de trabarse.',
+      escudos: 'Una vez por punto de inflexión, al combatir, los dados del rival menores que 6 no pueden guardarse como críticos.',
+      auspex: 'Una vez por punto de inflexión, al disparar a un blanco ofuscado a 8″ o menos, deja de estarlo esa activación.',
+      deposito: 'Un marcador en tu territorio: un agente que lo controla puede, sin gastar PA, repetir un dado de ataque al disparar hasta el siguiente punto de inflexión.',
+      alambre: 'Terreno expuesto y obstructor que se despliega en tu territorio y frena a quien lo cruce.',
+      comunicaciones: 'Un marcador en tu territorio: quien lo controla suma 3″ al alcance de sus reglas de apoyo sobre agentes amigos.',
+      minas: 'Un marcador en tu territorio: la primera vez que entra en la zona de control de un agente, explota (1D3+3 de daño).',
+      barricadasLigeras: 'Dos barricadas ligeras dentro de tu territorio.',
+      barricadaPesada: 'Una barricada pesada cerca de tu zona de descenso.',
+      barricadaPortatil: 'Una barricada portátil que da cobertura y mejora la salvación; los agentes pueden moverla.',
+      escaleras: 'Dos escaleras que facilitan trepar un muro.',
+      granadasEspeciales: 'Dos granadas a elegir entre humo y aturdidoras; cada una es una acción única, y el comando solo las usa tantas veces como las elegidas.',
+      granadasExplosivas: 'Dos granadas a elegir entre frag y perforantes; cada una es un arma a distancia, y el comando solo las usa tantas veces como las elegidas.',
+      cargaDemolicion: 'Una vez por batalla, una acción de Brecha cuesta 1 PA menos.',
+    },
+  },
   // Elecciones de facción (src/data/teams: `elecciones`): pantallas de inicio y ficha.
   // Las opciones se resumen con nuestras palabras, por su id.
   faccion: {

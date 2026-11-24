@@ -40,6 +40,7 @@ import { gradoActual, puntuarKillOp, reiniciarPuntos } from './ops.js';
 import { setPick } from '../view3d/units.js';
 import { bandoEnTurno } from './turno.js';
 import { mayControl } from '../net/sync.js';
+import { MAX_EQUIPO, alternarEquipo, equipoDeFaccion, separar, todoElEquipo } from '../game/equipo.js';
 
 const KEY = "skirmishtable.inicio";
 export const KEY_PARTIDA = "skirmishtable.partida";   // la partida guardada (src/ui/guardado.js)
@@ -50,7 +51,7 @@ const ORDEN = ["modo", "mapa", "comando0", "plantilla0", "comando1", "plantilla1
 // plantilla: los agentes elegidos de cada bando (claves); config: el nombre de la configuración
 // faccion: por bando, lo elegido en las elecciones de facción de su comando (src/data/teams):
 // { [índice del agente en la plantilla]: { [id de la elección]: id de la opción } }
-const eleccion = { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], tacticas: [[null, null], [null, null]], despliegue: null };
+const eleccion = { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], tacticas: [[null, null], [null, null]], equipo: [[], []], despliegue: null };
 // Lo que falta o hay que elegir en un bando: una entrada por agente y elección que le toca
 function porElegir(s) {
   if (!eleccion.plantilla[s]) return [];
@@ -69,14 +70,21 @@ function elegirOpcion(s, { e, i }, id) { eleccion.faccion[s][i] = { ...(eleccion
 function trasFaccion(s) {
   const c = comandoPorId(eleccion.comando[s]), despues = s === 0 ? "comando1" : "despliegue";
   eleccion.tacticas[s] = [null, null];
-  if (!c || !c.tacticas) return ir(despues);
+  if (!c || !c.tacticas) return trasTacticas(s);
   if (s === 1 && eleccion.modo === "ia") {   // la computadora elige dos distintas al azar
     const ids = c.tacticas.map(t => t.id), p = ids[Math.floor(Math.random() * ids.length)];
     const resto = ids.filter(x => x !== p);
     eleccion.tacticas[1] = [p, resto[Math.floor(Math.random() * resto.length)]];
-    return ir(despues);
+    return trasTacticas(1);
   }
   return ir("tacticas" + s);
+}
+// Tras las tácticas: el equipo del comando (la computadora no lleva equipo todavía); luego, el siguiente paso
+function trasTacticas(s) {
+  const c = comandoPorId(eleccion.comando[s]), sigue = s === 0 ? "comando1" : "despliegue";
+  eleccion.equipo[s] = [];
+  if (!c || (s === 1 && eleccion.modo === "ia")) return ir(sigue);
+  return ir("equipo" + s);
 }
 function trasConfig(s) {
   eleccion.faccion[s] = {};
@@ -163,6 +171,17 @@ function contenido() {
       return { titulo: segunda ? F.tituloSecundaria : F.tituloPrimaria,
         sub: segunda ? F.subSecundaria(esc(c.tacticas.find(x => x.id === t[0]).nombre)) : F.subPrimaria, html };
     }
+    case "equipo0": case "equipo1": {          // equipo del comando: hasta 4 opciones
+      const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), Q = T.equipo;
+      const html = [[Q.seccionFaccion, equipoDeFaccion(c)], [Q.seccionUniversal, todoElEquipo(c).filter(e => !e.faccion)]]
+        .filter(([, l]) => l.length).map(([t, l]) => `<div class="pant-grupo"><h3>${t}</h3>` + l.map(e => {
+          const on = eleccion.equipo[s].includes(e.id);
+          return opcion("eq:" + e.id, esc(Q.nombre[e.id]), `${esc(Q.desc[e.id])}${e.pendiente ? ` <em class="pant-pendiente">${Q.pendiente}</em>` : ""}`,
+            { activa: on, deshabilitada: !on && eleccion.equipo[s].length >= MAX_EQUIPO });
+        }).join("") + "</div>").join("");
+      return { titulo: Q.titulo, sub: Q.sub(esc(c.nombre), eleccion.equipo[s].length, MAX_EQUIPO), html,
+        principal: `<button class="pant-jugar" id="pantequipo">${eleccion.equipo[s].length ? Q.continuar : Q.sinEquipo}</button>` };
+    }
     case "elegir0": case "elegir1": {          // armar el comando agente por agente
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = eleccion.plantilla[s] || [];
       const v = validarComando(c, lista), comp = c.composicion || {};
@@ -205,7 +224,6 @@ function contenido() {
       principal: `<button class="pant-jugar" id="pantjugar">${I.jugar}</button>` };
     case "listo": return { titulo: I.listoTitulo, sub: I.listoSub, html:
       `<p class="pant-nota">${I.opcionales}</p>` +
-      opcion("equipo", I.equipoT, I.equipoD, { deshabilitada: true, extra: `<span class="pant-pronto">${I.pronto}</span>` }) +
       opcion("operaciones", I.opsT, I.opsD, { deshabilitada: true, extra: `<span class="pant-pronto">${I.pronto}</span>` }),
       principal: `<button class="pant-jugar" id="pantempezar">${I.empezar}</button>` +
         `<button class="pant-secundario" id="pantdeshacer">${I.deshacerUltimo}</button>` };
@@ -293,7 +311,7 @@ function render() {
   const el = pantalla();
   if (!el) return;
   // armar el comando cuenta como el paso de su configuración, para los puntos de progreso
-  const c = contenido(), i = ORDEN.indexOf(/^(elegir|faccion|tacticas)/.test(paso) ? "plantilla" + paso.slice(-1) : paso);
+  const c = contenido(), i = ORDEN.indexOf(/^(elegir|faccion|tacticas|equipo)/.test(paso) ? "plantilla" + paso.slice(-1) : paso);
   const puntos = i < 0 ? "" : ORDEN.map((_, k) => `<i class="${k < i ? "hecho" : k === i ? "ahora" : ""}"></i>`).join("");
   el.innerHTML = `<div class="pant" data-paso="${paso}">
     <div class="pant-cab">
@@ -345,7 +363,12 @@ function elegir(v) {
       if (!t[0]) { t[0] = id; return render(); }
       if (id === t[0]) return;
       t[1] = id;
-      return ir(s === 0 ? "comando1" : "despliegue");
+      return trasTacticas(s);
+    }
+    case "equipo0": case "equipo1": {
+      const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]);
+      if (v.startsWith("eq:")) eleccion.equipo[s] = alternarEquipo(c, eleccion.equipo[s], v.slice(3));
+      return render();
     }
     case "elegir0": case "elegir1": {
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), lista = eleccion.plantilla[s] = eleccion.plantilla[s] || [];
@@ -476,6 +499,8 @@ function empezar() {
   // con sus elecciones de facción (5.º dato de cada agente)
   tray.tacticas = [0, 1].map(s => eleccion.tacticas[s][0] && eleccion.tacticas[s][1] ? [...eleccion.tacticas[s]] : null);
   tray.flex = [null, null]; tray.guerra = [[], []]; tray.guerraPI = [null, null];
+  tray.equipoFaccion = [0, 1].map(s => separar(comandoPorId(eleccion.comando[s]), eleccion.equipo[s] || []).faccion);
+  tray.equipoUniversal = [0, 1].map(s => separar(comandoPorId(eleccion.comando[s]), eleccion.equipo[s] || []).universal);
   rosterInit([0, 1].flatMap(s => plantillaDefs(s, eleccion.comando[s], eleccion.plantilla[s])
     .map((d, i) => eleccion.faccion[s][i] ? [...d, eleccion.faccion[s][i]] : d)));
   loadMap(eleccion.mapa);
@@ -498,7 +523,7 @@ export function abrirInicio() {
   finMostrado = false;
   partidaIniciada = false; ultimaEleccion = null;   // el menú principal: la partida anterior se abandona
   try { localStorage.removeItem(KEY_PARTIDA); } catch (e) {}
-  Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], tacticas: [[null, null], [null, null]], despliegue: null });
+  Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], tacticas: [[null, null], [null, null]], equipo: [[], []], despliegue: null });
   paso = "modo"; pila.length = 0;
   el.hidden = false;
   render();
@@ -591,6 +616,7 @@ export function wireInicio() {
     const b = ev.target.closest("button");
     if (!b || b.disabled) return;
     if (b.id === "pantatras") return atras();
+    if (b.id === "pantequipo") { const s = +paso.slice(-1); return ir(s === 0 ? "comando1" : "despliegue"); }
     if (b.id === "pantjugar") return empezar();
     if (b.id === "pantmesa") return cerrar();
     if (b.id === "pantnueva") return abrirInicio();
