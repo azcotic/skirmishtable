@@ -86,7 +86,7 @@ export function puede(op, accion, ops) {
   // Plan caprichoso: una acción libre de Correr, aunque otra acción lo impidiera (no en zona de control)
   if (accion === "dash" && op.gratisCorrer && enZonaDeControl(op, ops).length === 0) return { ok: true };
   if (yaHecha(op, accion)) return no("yaHecha");
-  if ((op.ap ?? op.apl) < costeAccion(op, accion)) return no("sinPA");
+  if ((op.ap ?? op.apl) < costeAccion(op, accion)) return no(costeAccion(op, accion) > COSTE[accion] ? "sinPAExtra" : "sinPA");
   const usado = a => (op.used || []).includes(a);
   const trabado = enZonaDeControl(op, ops).length > 0;
   // un arma Pesada: si ya disparó con ella, no se mueve (salvo el movimiento que la regla permita)

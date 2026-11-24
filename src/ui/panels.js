@@ -267,7 +267,7 @@ export async function doShoot() {
   if (agotada(state.sel, state.sel.weapon)) { explicar(T.disparo.agotada(w.name)); return; }
   // ya disparó todas las veces que puede, sin PA, o repite arma psíquica (regla Astartes)
   const pr = puede(state.sel, "shoot", OPS);
-  if (!pr.ok && ["yaHecha", "sinPA", "psiquicaRepetida", "sinBolter"].includes(pr.motivo)) {
+  if (!pr.ok && ["yaHecha", "sinPA", "sinPAExtra", "psiquicaRepetida", "sinBolter"].includes(pr.motivo)) {
     explicar(T.reglas.noPuede(T.reglas.accion.shoot, T.reglas.motivo[pr.motivo])); return;
   }
   // Auspex: al elegir blanco, los enemigos a 8″ o menos no pueden estar ofuscados
@@ -367,7 +367,7 @@ export function doFight() {
   if (gap > CTRL) { explicar(T.combate.fueraDeZona(CTRL)); return; }
   // ya combatió todas las veces que puede (dos, si es Astartes) o no le quedan PA
   const pr = puede(state.sel, "fight", OPS);
-  if (!pr.ok && ["yaHecha", "sinPA"].includes(pr.motivo)) {
+  if (!pr.ok && ["yaHecha", "sinPA", "sinPAExtra"].includes(pr.motivo)) {
     explicar(T.reglas.noPuede(T.reglas.accion.fight, T.reglas.motivo[pr.motivo])); return;
   }
   const what = {k: "fight", by: state.sel.id, at: state.target.id, wa: meleeKey(state.sel),

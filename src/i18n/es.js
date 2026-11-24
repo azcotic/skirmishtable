@@ -1008,6 +1008,7 @@ export const T = {
       usado: 'ya está usado en este punto de inflexión',
       desconocida: 'acción desconocida',
       sinPA: `no le quedan ${G.pa.abrev} suficientes`,
+      sinPAExtra: `el segundo disparo con un arma pesada cuesta 1 ${G.pa.abrev} más (2 en total) y no le quedan suficientes`,
       yaHecha: 'ya hizo esa acción en esta activación',
       enZonaDeControl: `está en la ${G.zonaControl.es} de un enemigo`,
       yaCargoORetrocedio: `ya usó ${G.cargar.es} o ${G.retroceder.es} en esta activación`,

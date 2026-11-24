@@ -359,8 +359,9 @@ export function wireInput() {
       // navegador no manda el clic: arriba se cancela touchstart para que la página no se desplace
       // mientras arrastras, y eso también lo anula. Así que el toque se resuelve aquí, y si el clic
       // llega de todos modos se ignora para no contarlo dos veces.
+      // Con ratón también: si la ficha se redibuja entre apretar y soltar, el clic llega sin saber cuál era y no selecciona.
       if (d.from3d) clickOp(d.op.id);
-      else if (ev.pointerType !== "mouse") {
+      else {
         clickOp(d.op.id);
         state.suppressClick = true; setTimeout(() => { state.suppressClick = false; }, 400);
       }
