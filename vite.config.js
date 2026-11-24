@@ -12,5 +12,5 @@ export default defineConfig({
   // (el archivo de encuadres lo escribe la pantalla #/encuadres: que no recargue la página mientras se edita)
   server: { watch: { ignored: ['**/src/data/retrato-encuadres.js'] }, allowedHosts: ['.devtunnels.ms', '.trycloudflare.com', '.ngrok-free.app', '.ngrok.app', '.loca.lt'] },
   build: { target: 'es2020', outDir: 'dist', cssCodeSplit: false, modulePreload: false, assetsInlineLimit: 100000000 },
-  test: { include: ['tests/unit/**/*.test.js'], environment: 'node' },
+  test: { include: ['tests/unit/**/*.test.js'], environment: 'node', fsModuleCache: true },   // fsModuleCache: guarda las transformaciones entre ejecuciones
 });
