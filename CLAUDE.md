@@ -51,7 +51,10 @@ licencia que exija aviso.
 
 - Trabajamos en **nuestro fork**. `upstream` apunta al repo original, solo para traer mejoras.
 - Una rama y un worktree por tarea (`git worktree add ../kt-<tarea> -b <tipo>/<tarea>`).
-- Nunca commit directo a `main`; PR desde la rama a `main` del fork.
+- Por defecto, nada de commits directos a `main`: PR desde la rama a `main` del fork.
+- **Excepción:** cuando el usuario pida explícitamente subir o fusionar a `main`, se puede hacer
+  directamente (merge de la rama en `main` y `git push origin main`), sin PR. Antes: `git fetch origin`,
+  merge de `origin/main` en la rama y `npm test` en verde. Nunca con `--force`.
 - Commits pequeños y descriptivos. Antes del PR: `git fetch origin`, merge de `origin/main`,
   `npm test` en verde y, si tocaste la interfaz, `npm run test:e2e`.
 
