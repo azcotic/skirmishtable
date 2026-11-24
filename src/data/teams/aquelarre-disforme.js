@@ -46,11 +46,11 @@ export default {
     { id: "caminante", nombre: "Caminante temporal",     move: 1 },
     { id: "ecos",      nombre: "Ecos de la Disformidad", ecos: true },
     { id: "hinchazon", nombre: "Hinchazón disforme",     armas: { combate: { dmgN: 1 } } },
-    { id: "apendice",  nombre: "Apéndice mutante",       pendiente: true },
+    { id: "apendice",  nombre: "Apéndice mutante",       apendice: true, pendiente: true }   /* sin efecto hasta que haya acciones de misión y de marcadores */,
     { id: "vuelo",     nombre: "Vuelo inmaterial",       vuelo: true },
     { id: "giro",      nombre: "Giro del destino",       armas: { psiquicas: { anadir: ["Piercing Crits 1"] } } },
     { id: "bombardeo", nombre: "Bombardeo astral",       armas: { unaPsiquica: { anadir: ["Devastating 1"], devArea: 2 } } },
-    { id: "maestro",   nombre: "Maestro del Immaterium", pendiente: true },
+    { id: "maestro",   nombre: "Maestro del Immaterium", distanciaPsiquica: 3, pendiente: true }   /* sin efecto hasta que haya acciones únicas psíquicas */,
     ],
   }, {
     // opciones de arma de la hoja de equipo (equipo: las armas que lleva en lugar de las de su ficha)
