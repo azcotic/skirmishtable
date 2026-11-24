@@ -22,7 +22,7 @@ export default {
     canonBarrido:         R("Cañón cosechaalmas (barrido)", 4, 3, 4, 5, ["Piercing 1", 'Torrent 1"']),
     lanzallamasDisforme:  R("Lanzallamas disforme", 4, 2, 4, 4, ['Range 8"', "Saturate", "Piercing 1", 'Torrent 2"']),
     bolterInfierno:       R("Bólter infierno", 4, 3, 3, 4, ["Piercing 1"]),
-    pistolaAutomatica:    R("Pistola automática", 4, 4, 2, 3),
+    pistolaAutomatica:    R("Pistola automática", 4, 4, 2, 3, ['Range 8"']),
     bastonPsicofuerza:    M("Bastón de psicofuerza", 4, 3, 4, 6, ["PSYCHIC", "Shock"]),
     khopesh:              M("Khopesh prosperiano", 5, 3, 4, 6, ["Lethal 5+"]),
     khopeshEquilibrado:   M("Khopesh prosperiano", 4, 3, 4, 6, ["Balanced", "Lethal 5+"]),   // el de los Hechiceros Tempíreo y del Fuego Disforme
