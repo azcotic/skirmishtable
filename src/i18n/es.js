@@ -942,6 +942,7 @@ export const T = {
   // pantalla #/encuadres: elegir el encuadre del retrato 2D de cada miniatura (src/ui/encuadres.js)
   encuadres: {
     titulo: 'Encuadres de las fichas 2D',
+    botonTitulo: 'Encuadres de las fichas 2D (solo en desarrollo)',
     cerrar: 'Cerrar',
     ayuda: 'Elige un agente de la lista. Arrastra para girar, usa la rueda (o pellizca) para acercar y arrastra con el botón derecho (o con dos dedos) para mover. Lo que quede dentro del círculo es lo que saldrá en la ficha. Se hace una sola vez por miniatura y se guarda en el archivo del proyecto, listo para commit. Si un agente puede repetirse en el comando (por ejemplo, dos Kroxigor), cada figura tiene su propio encuadre: aparecen como «Kroxigor · 1», «Kroxigor · 2»…',
     equipo: 'Comando',

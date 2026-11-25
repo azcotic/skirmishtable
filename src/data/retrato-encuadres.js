@@ -16,7 +16,13 @@ export const ENCUADRES = {
   "Tirador Intercesor": { "p": [-2.239,0.844,-0.511], "t": [0,0.66,0], "g": 231 },
   "Sargento Intercesor": { "p": [-0.218,0.568,2.291], "t": [0,0.66,0], "g": 332 },
   "Combatiente Intercesor": { "p": [2.292,0.878,0.086], "t": [0,0.66,0], "g": 121 },
-  "Capitán Marine Espacial": { "p": [0.599,0.836,-1.483], "t": [0,0.66,0], "g": 173 }
+  "Capitán Marine Espacial": { "p": [0.599,0.836,-1.483], "t": [0,0.66,0], "g": 173 },
+  "Combatiente Intercesor de Asalto": { "p": [0.745,1.448,-2.032], "t": [0,0.66,0], "g": 171 },
+  "Combatiente Intercesor de Asalto#2": { "p": [0.45,1.284,-2.171], "t": [0,0.66,0], "g": 181 },
+  "Combatiente Intercesor de Asalto#3": { "p": [0.809,1.116,-2.108], "t": [0,0.66,0], "g": 117 },
+  "Combatiente Intercesor#2": { "p": [-2.267,1.083,-0.003], "t": [-0.005,0.66,0.11], "g": 262 },
+  "Combatiente Intercesor#3": { "p": [-2.08,0.912,-0.957], "t": [0,0.66,0], "g": 299 },
+  "Combatiente Intercesor#4": { "p": [-1.947,0.603,-1.23], "t": [0,0.66,0], "g": 235 }
  },
  "3272457903": {
   "Kroxigor": { "p": [1.339,1.113,-0.308], "t": [0.277,0.8,0.02], "g": 63 },
@@ -26,7 +32,11 @@ export const ENCUADRES = {
   "Sacerdote Estelar Eslizón": { "p": [-0.114,0.53,-1.299], "t": [0,0.66,0], "g": 179 },
   "Saurio Escamadura": { "p": [0.556,0.63,-1.198], "t": [-0.142,0.72,-0.11], "g": 177 },
   "Guardia Saurio": { "p": [-0.98,0.315,2.461], "t": [0,0.66,0], "g": 0 },
-  "Eslizón Camaleón": { "p": [-0.913,0.775,1.555], "t": [0.23,0.66,0.193], "g": 14 }
+  "Eslizón Camaleón": { "p": [-0.913,0.775,1.555], "t": [0.23,0.66,0.193], "g": 14 },
+  "Kroxigor#2": { "p": [0.413,0.47,-1.21], "t": [0,0.755,0], "g": 132 },
+  "Combatiente Saurio#2": { "p": [0.859,1.429,1.93], "t": [0,0.66,0], "g": 7 },
+  "Combatiente Saurio#3": { "p": [1.166,0.748,-2.233], "t": [0,0.66,0], "g": 183 },
+  "Combatiente Saurio#4": { "p": [0.433,0.425,0.972], "t": [0,0.34,0], "g": 0 }
  },
  "3348897103": {
   "Tirador Marine Rúbrica (Cañón cosechaalmas)": { "p": [-1.815,1.032,0.297], "t": [0,0.66,0], "g": 320 },

@@ -81,6 +81,16 @@ if (import.meta.env.DEV) window.addEventListener('hashchange', () => {
   if (rutaEncuadres()) revisarRuta(); else import('./ui/encuadres.js').then(m => m.cerrarEncuadres());
 });
 
+// Un botón pequeño y discreto en la barra superior para abrir la pantalla de encuadres (solo en desarrollo)
+if (import.meta.env.DEV) {
+  const b = document.createElement('button');
+  b.id = 'encuadresbtn'; b.className = 'mini icono'; b.textContent = '▣';
+  b.title = T.encuadres.botonTitulo; b.setAttribute('aria-label', T.encuadres.botonTitulo);
+  b.onclick = () => { location.hash = '#/encuadres'; };
+  const o = document.getElementById('optionsbtn');
+  if (o) o.before(b);
+}
+
 /* ---------- go ---------- */
 world.initMaps();
 useRuleset("killteam", false);
