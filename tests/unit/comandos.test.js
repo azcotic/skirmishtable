@@ -5,6 +5,7 @@ import { COMANDOS, modelosPara, plantillaDefs, puedeAnadir, registrarComandos, v
 import { KINDS, mkOp } from '../../src/engine/world.js';
 import { BASE_SIZES, WPN } from '../../src/config.js';
 import { TTS_TEAMS } from '../../src/data/tts-teams.js';
+import { claveFigura } from '../../src/view3d/retratos.js';
 import { traducirCatalogo } from '../../src/i18n/nombres.js';
 import { traducirRegla } from '../../src/i18n/es.js';
 
@@ -100,6 +101,26 @@ describe('Saurios de Lustria (comando casero)', () => {
     const picks = modelosPara(ops, team);
     expect(Object.keys(picks).length).toBe(ops.length);
     for (const k of Object.keys(sl.agentes)) expect(team.models.some(m => m.name === sl.agentes[k].nombre), k).toBe(true);
+  });
+});
+
+describe('encuadre por figura', () => {
+  it('la primera figura de un nombre conserva el nombre; las demás, "nombre#N"', () => {
+    const t = traducirCatalogo(JSON.parse(JSON.stringify(TTS_TEAMS))).find(x => x.id === '3272457903');
+    const kro = t.models.filter(m => m.name === 'Kroxigor');
+    expect(kro.length).toBeGreaterThan(1);
+    expect(claveFigura(t, kro[0])).toBe('Kroxigor');
+    expect(claveFigura(t, kro[1])).toBe('Kroxigor#2');
+    expect(claveFigura(t, kro[2])).toBe('Kroxigor#3');
+    const unica = t.models.find(m => m.name === 'Saurio Escamadura');
+    expect(claveFigura(t, unica)).toBe('Saurio Escamadura');
+  });
+  it('unidades que caben en un comando: 2 Kroxigor, 1 Guardia Saurio, 10 Eslizones', () => {
+    const sl = COMANDOS.find(c => c.prefijo === 'sl');
+    const caben = k => { const l = []; while (l.length < 30 && puedeAnadir(sl, l, k).ok) l.push(k); return l.length; };
+    expect(caben('kroxigor')).toBe(2);
+    expect(caben('guardiaSaurio')).toBe(1);
+    expect(caben('combatienteEslizon')).toBe(10);
   });
 });
 

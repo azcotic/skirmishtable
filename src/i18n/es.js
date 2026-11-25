@@ -943,7 +943,7 @@ export const T = {
   encuadres: {
     titulo: 'Encuadres de las fichas 2D',
     cerrar: 'Cerrar',
-    ayuda: 'Elige un agente de la lista. Arrastra para girar, usa la rueda (o pellizca) para acercar y arrastra con el botón derecho (o con dos dedos) para mover. Lo que quede dentro del círculo es lo que saldrá en la ficha. Se hace una sola vez por miniatura y se guarda en el archivo del proyecto, listo para commit.',
+    ayuda: 'Elige un agente de la lista. Arrastra para girar, usa la rueda (o pellizca) para acercar y arrastra con el botón derecho (o con dos dedos) para mover. Lo que quede dentro del círculo es lo que saldrá en la ficha. Se hace una sola vez por miniatura y se guarda en el archivo del proyecto, listo para commit. Si un agente puede repetirse en el comando (por ejemplo, dos Kroxigor), cada figura tiene su propio encuadre: aparecen como «Kroxigor · 1», «Kroxigor · 2»…',
     equipo: 'Comando',
     ejeTitulo: 'Subir o bajar el encuadre (el eje vertical), sin cambiar el zoom ni el giro',
     subir: 'Subir el encuadre',

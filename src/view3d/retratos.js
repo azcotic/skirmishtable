@@ -39,6 +39,12 @@ export async function cargarEncuadresDelArchivo() {
     return true;
   } catch (e) { return false; }
 }
+// La clave del encuadre de una figura del catálogo: su nombre y, si hay varias con el mismo nombre (dos escaneos
+// del mismo agente), "nombre#2", "nombre#3"… para las siguientes. La primera conserva solo el nombre.
+export function claveFigura(team, model) {
+  const mismos = ((team && team.models) || []).filter(m => m.name === model.name), i = mismos.indexOf(model);
+  return i > 0 ? `${model.name}#${i + 1}` : model.name;
+}
 // El encuadre guardado de un agente (el de esta sesión del editor si lo hay, si no el del archivo); o null
 export function encuadreGuardado(comando, nombre) {
   const base = delArchivo || ENCUADRES;

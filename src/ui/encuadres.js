@@ -9,9 +9,9 @@
  */
 import { T } from '../i18n/es.js';
 import { TTS_TEAMS } from '../data/tts-teams.js';
-import { comandoPorId } from '../data/teams/index.js';
+import { comandoPorId, puedeAnadir } from '../data/teams/index.js';
 import { plantillaDe } from '../view3d/units.js';
-import { FOV, borrarEncuadre, cargarEncuadresDelArchivo, encuadreAuto, encuadreDeCamara, encuadreGuardado, frenteAuto, guardarEncuadre, ponerCamara,
+import { FOV, borrarEncuadre, claveFigura, cargarEncuadresDelArchivo, encuadreAuto, encuadreDeCamara, encuadreGuardado, frenteAuto, guardarEncuadre, ponerCamara,
   prepararEscena, texturasListas } from '../view3d/retratos.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -22,7 +22,28 @@ let renderer2 = null, camBase = null;               // la vista pequeña desde a
 let frente = 0, flecha = null;                    // el frente de la miniatura (grados, 0 = +z) y su flecha sobre la peana
 
 const equipos = () => TTS_TEAMS.filter(t => comandoPorId(t.id) && t.models && t.models.length);
-const nombres = id => { const t = TTS_TEAMS.find(x => x.id === id); return t ? [...new Set(t.models.map(m => m.name))] : []; };
+// Cuántas unidades de un agente caben en un comando (p. ej. 2 Kroxigor, 1 Guardia Saurio): no tiene sentido
+// encuadrar más figuras de las que se pueden llevar. Sin ficha de agente conocida, una.
+function unidadesMax(id, nombreModelo) {
+  const c = comandoPorId(id), base = nombreModelo.replace(/\s*\(.*\)$/, '');
+  const k = c && Object.keys(c.agentes).find(x => c.agentes[x].nombre === base);
+  if (!k) return 1;
+  const l = [];
+  while (l.length < 30 && puedeAnadir(c, l, k).ok) l.push(k);
+  return Math.max(1, l.length);
+}
+// Las figuras que se encuadran: por cada nombre, tantas como unidades caben (y figuras haya). Cada una tiene
+// su propio encuadre: [{ clave, nombre, n (su número, desde 1), de (cuántas hay), modelo }]
+const figuras = id => {
+  const t = TTS_TEAMS.find(x => x.id === id), out = [];
+  if (!t) return out;
+  for (const nombre of new Set(t.models.map(m => m.name))) {
+    const mismas = t.models.filter(m => m.name === nombre), cuantas = Math.min(mismas.length, unidadesMax(id, nombre));
+    mismas.slice(0, cuantas).forEach((modelo, i) => out.push({ clave: claveFigura(t, modelo), nombre, n: i + 1, de: cuantas, modelo }));
+  }
+  return out;
+};
+const nombres = id => figuras(id).map(f => f.clave);
 const $ = id => raiz.querySelector("#" + id);
 const estado = txt => { const e = $("encestado"); if (e) e.textContent = txt || ""; };
 
@@ -122,9 +143,9 @@ export function cerrarEncuadres() {
 
 function pintarLista() {
   const E = T.encuadres;
-  $("enclista").innerHTML = nombres(equipo).map(n => {
-    const ok = !!encuadreGuardado(equipo, n);
-    return `<button class="enc-ag${n === nombre ? " ahora" : ""}${ok ? " hecho" : ""}" data-n="${esc(n)}">${ok ? "✓ " : ""}${esc(n)}</button>`;
+  $("enclista").innerHTML = figuras(equipo).map(f => {
+    const ok = !!encuadreGuardado(equipo, f.clave), etiqueta = f.de > 1 ? `${f.nombre} · ${f.n}` : f.nombre;
+    return `<button class="enc-ag${f.clave === nombre ? " ahora" : ""}${ok ? " hecho" : ""}" data-n="${esc(f.clave)}">${ok ? "✓ " : ""}${esc(etiqueta)}</button>`;
   }).join("") || `<p>${E.sinModelos}</p>`;
   for (const b of $("enclista").querySelectorAll("button")) b.onclick = () => seleccionar(b.dataset.n);
 }
@@ -144,7 +165,7 @@ async function seleccionar(n) {
   const E = T.encuadres, mia = ++ficha;
   nombre = n; pintarLista();
   escena = null;
-  const t = TTS_TEAMS.find(x => x.id === equipo), modelo = t && t.models.find(m => m.name === n);
+  const fig = figuras(equipo).find(f => f.clave === n), modelo = fig && fig.modelo;
   if (!modelo) return;
   estado(E.cargando);
   let plantilla;

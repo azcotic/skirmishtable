@@ -12,7 +12,7 @@ import { opR } from '../engine/geometry.js';
 import { BH, BW, KINDS, OPS } from '../engine/world.js';
 import { noteFailure, steamMaterial, steamParts } from './models.js';
 import { idleClone, idleFields, idleGeometry, idlePhase } from './idle.js';
-import { frenteDe, retratoDe } from './retratos.js';
+import { claveFigura, frenteDe, retratoDe } from './retratos.js';
 import { state } from '../state.js';
 
 const PREF = "skirmishtable.minis";
@@ -179,7 +179,7 @@ export function retrato(op) {
   if (!model) return null;
   const key = keyOf(model);
   if (!(key in ready)) { load(model); return null; }
-  return ready[key] ? retratoDe(key, ready[key], { comando: minis.sides[op.team].team, nombre: model.name }) : null;
+  return ready[key] ? retratoDe(key, ready[key], { comando: minis.sides[op.team].team, nombre: claveFigura(teamOf(op.team), model) }) : null;
 }
 // The miniature for an operative, or null while it loads / when its side has no team.
 // Expended operatives' miniatures lose most of their colour. Every part gets its own material
@@ -230,7 +230,7 @@ export function unitObject(op, r) {
   // hacia dónde mira: el blanco, si es el agente seleccionado y tiene uno; si no, el centro de la mesa. El frente
   // de cada modelo (su `g`, fijado en #/encuadres) se hace coincidir con esa dirección: los escaneos no miran todos a +z
   const mira = state.sel === op && state.target && state.target.alive ? state.target : { x: BW / 2, y: BH / 2 };
-  const yaw = Math.atan2(mira.x - op.x, mira.y - op.y) - frenteDe(minis.sides[op.team].team, model.name) * Math.PI / 180;
+  const yaw = Math.atan2(mira.x - op.x, mira.y - op.y) - frenteDe(minis.sides[op.team].team, claveFigura(teamOf(op.team), model)) * Math.PI / 180;
   obj.matrixAutoUpdate = false;
   obj.matrix.makeTranslation(op.x, 0, op.y)
     .multiply(new THREE.Matrix4().makeRotationY(yaw))
