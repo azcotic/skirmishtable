@@ -569,6 +569,15 @@ export function legCosts(path) {
   }
   return out;
 }
+// Reglas que limitan cuánto puede escalar un agente en una misma acción (Inmenso): (agente) => pulgadas máximas o null
+export const limiteEscalada = [];
+export const escaladaMaxima = op => limiteEscalada.reduce((m, f) => { const v = f(op); return typeof v === "number" ? Math.min(m, v) : m; }, Infinity);
+// ¿Esta ruta sube más de lo que el agente puede escalar? (cuenta lo que sube en total, sin la bajada)
+export function escaladaExcede(op, path) {
+  const max = escaladaMaxima(op);
+  if (!isFinite(max) || !path || path.length < 2) return false;
+  return legCosts(path).reduce((t, c) => t + (c.rise || 0), 0) > max + 1e-9;
+}
 export function pathTotalInches(path) {
   return legCosts(path).reduce((t, c) => t + c.cost, 0);
 }

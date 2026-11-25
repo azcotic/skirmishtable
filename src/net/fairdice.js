@@ -103,8 +103,9 @@ export function applyRoll(what, s, st, die, touched, sides) {
       st.trays[b.team] = { ...st.trays[b.team], dice: r.dfn.dice, hit: b.save, rerolled: [] };
       b.wounds = Math.max(0, b.wounds - r.dmg);
       if (b.wounds === 0) b.alive = false;
+      if (r.semilla) b.semillaUsada = true;     // Semilla de renacimiento: ya tiró (r.dmg ya la cuenta)
       touched.add(b.id);
-      for (const o of danoDevastadoraArea(st.ops, b, r)) touched.add(o.id);   // Devastadora con distancia
+      for (const o of danoDevastadoraArea(st.ops, b, r, die)) touched.add(o.id);   // Devastadora con distancia
       if (terrotoxinas(a, b, r.w.rules, r.critDano)) touched.add(b.id);        // Terrotoxinas
       if (aturdir(b, r.w.rules, r.atkC)) touched.add(b.id);                     // Aturdidora
       if (quemarMente(st.ops, a, b, r.w.rules, r)) touched.add(b.id);          // Quemar mente
@@ -130,7 +131,7 @@ export function applyRoll(what, s, st, die, touched, sides) {
   if (what.k === "veneno") {             // Veneno de terrotoxinas: 1D3 al activarse
     const op = st.ops.find(o => o.id === what.at);
     if (!op || op.team !== s || !op.alive || !op.terrotoxinas) return "poison for an operative that has none";
-    veneno(op, die());
+    veneno(op, die(), die);
     op.venenoTP = what.tp;
     touched.add(op.id);
     return null;
