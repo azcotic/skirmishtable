@@ -9,6 +9,7 @@ import { G, LEVELS, layerAt } from './grid.js';
 import { sightAnalysis } from './sight.js';
 import { OPS } from './world.js';
 import { RULES } from '../rules/index.js';
+import { WPN } from '../config.js';
 
 export const SHOT_KINDS = {
   clear:     {label: "Clear shot",  tag: "CLEAR",     valid: true},
@@ -29,11 +30,12 @@ export function standing(p) {
 }
 
 // Why the operative at eye {x, y, team, op?} can't take a Shoot action at all, or null:
-// it is on Conceal (`{why: "conceal"}`), or an enemy has it within control range
-// (`{why: "engaged", by}`).
+// it is on Conceal (`{why: "conceal"}`) and its weapon isn't Silent (a Silent weapon can shoot from Conceal),
+// or an enemy has it within control range (`{why: "engaged", by}`).
 export function cannotShoot(eye) {
   const op = eye.op || eye;
-  if (RULES.orders && op.order === "conceal") return {why: "conceal"};
+  const silenciosa = !!(op.weapon && WPN[op.weapon] && WPN[op.weapon].rules.some(r => r === "Silent"));   // Silenciosa: dispara aunque esté oculto
+  if (RULES.orders && op.order === "conceal" && !silenciosa) return {why: "conceal"};
   if (eye.team === undefined) return null;
   const by = foesNear(eye.x, eye.y, eye.team, null, undefined, eye.z || 0)[0];
   return by ? {why: "engaged", by} : null;
@@ -51,6 +53,9 @@ export function cannotShoot(eye) {
 // `line` is the sight line that decides the call: a clear line, the cover line through the
 // cover or the one through the obscuring terrain; none to a target that isn't visible.
 // `obscured` and `save` (a cover save) say what applies if it is shot.
+// Reglas que hacen que un blanco cuente como en cobertura aunque no haya terreno (p. ej. Camuflaje cromático):
+// (blanco, distancia en pulgadas) => true
+export const camuflaje = [];
 export function judgeShot(eye, target) {
   const shooter = eye.op || eye;
   const s = sightAnalysis(eye, target);
@@ -60,7 +65,7 @@ export function judgeShot(eye, target) {
     : foesNear(target.x, target.y, target.team, shooter.id ?? null, undefined, target.z || 0).find(o => o.team === eye.team && o !== shooter) || null;
   const V = RULES.vantage, up = standing(eye), drop = up.z - standing(target).z;
   const onVantage = !!(V && up.vantage);
-  const obscured = !!(s.visible && s.obscBy), inCover = !!(s.visible && s.coverBy);
+  const obscured = !!(s.visible && s.obscBy), inCover = !!(s.visible && (s.coverBy || camuflaje.some(f => f(target, s.gap))));
   const conceal = !!(RULES.orders && target.order === "conceal");
   // a Concealed target in light cover, seen past from a Vantage Point
   const vantage = inCover && conceal && onVantage && !s.hardCover;
@@ -71,8 +76,8 @@ export function judgeShot(eye, target) {
   else kind = obscured ? "obscured" : inCover ? "cover" : "clear";
   const accurate = inCover && !conceal && onVantage ? V.accurate.filter(h => drop >= h - 1e-9).length : 0;
   const line = !s.visible ? null
-             : kind === "concealed" ? s.coverBy.line
-             : obscured ? s.obscBy.line : inCover ? s.coverBy.line : s.clearLine;
+             : kind === "concealed" ? (s.coverBy || {}).line || s.clearLine
+             : obscured ? s.obscBy.line : inCover ? (s.coverBy || {}).line || s.clearLine : s.clearLine;
   return {target, kind, sight: s, line, range: Math.max(0, s.gap), engagedBy,
           obscured, inCover, save: inCover, accurate, vantage};
 }

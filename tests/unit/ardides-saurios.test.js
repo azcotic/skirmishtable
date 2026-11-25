@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { registrarComandos } from '../../src/data/teams/index.js';
 import { OPS, mkOp } from '../../src/engine/world.js';
 import { WPN } from '../../src/config.js';
-import { armaPara, effMove, resolverDisparo } from '../../src/engine/dice.js';
+import { armaPara, effHit, effMove, rasgos, resolverDisparo } from '../../src/engine/dice.js';
 import { ARDID, conectarArdides, conectarRegistro, equipoNuevoPI, idoloAncestrales } from '../../src/ui/ardides.js';
 import { DISPARADORES } from '../../src/game/disparadores.js';
+import { camuflaje, cannotShoot } from '../../src/engine/shots.js';
+import { costeAccion } from '../../src/game/acciones.js';
 import { equipoDeFaccion } from '../../src/game/equipo.js';
 import { comandoPorId } from '../../src/data/teams/index.js';
 
@@ -112,5 +114,73 @@ describe('Saurios de Lustria: equipo de facción', () => {
     expect(idoloAncestrales(0)).toBe(0);
     expect(idoloAncestrales(1)).toBe(0);                                            // el otro bando no lo tiene
     expect(tray.cp).toEqual([3, 2]);
+  });
+});
+
+describe('Silenciosa: disparar con orden de ocultarse', () => {
+  it('el Camaleón (Cerbatana Silenciosa) puede disparar oculto; con un arma que no lo es, no', () => {
+    const cam = op('sl.camaleon', 0), tir = op('gn.tirador', 0, 8, 5);
+    cam.order = 'conceal'; tir.order = 'conceal';
+    cam.weapon = 'sl.cerbatana';
+    expect(cannotShoot(cam)).toBeNull();
+    expect(cannotShoot({ x: cam.x, y: cam.y, z: 0, team: 0, op: cam })).toBeNull();
+    expect(cannotShoot(tir)).toEqual({ why: 'conceal' });                  // sin arma Silenciosa, no
+    cam.order = 'engage';
+    expect(cannotShoot(cam)).toBeNull();
+  });
+});
+
+describe('Saurios de Lustria: habilidades de ficha', () => {
+  it('Sangre fría: lesionado no empeora Impactar ni Movimiento', () => {
+    const k = op('sl.kroxigor', 0), foe = op('gn.tirador', 1, 20, 5);
+    const w = WPN['sl.martilloLunar'], hit = effHit(k, w);
+    k.wounds = 3;
+    expect(effHit(k, w)).toBe(hit);
+    expect(effMove(k)).toBe(6);
+    foe.wounds = 3;
+    expect(effMove(foe)).toBeLessThan(foe.move);                                   // los de otros comandos, sí
+  });
+  it('Escudo de escamas: solo el Combatiente Saurio bloquea críticos con normales', () => {
+    expect(rasgos(op('sl.combatienteSaurio', 0)).duelista).toBe(true);
+    expect(!!rasgos(op('sl.guardiaSaurio', 0)).duelista).toBe(false);
+  });
+  it('Orden primordial: Equilibrada a 3″ del Escamadura (6″ con el Estandarte de guerra)', () => {
+    OPS.length = 0;
+    const l = op('sl.saurioEscamadura', 0, 5, 5), s = op('sl.combatienteSaurio', 0, 10, 5), foe = op('gn.combatiente', 1, 11, 5);   // la distancia se mide entre peanas
+    OPS.push(l, s, foe); l.id = 'A1'; s.id = 'A2'; foe.id = 'B1';
+    const maza = WPN['sl.mazaCelestita'];
+    expect(armaPara(maza, s, foe, 'combate').rules).not.toContain('Balanced');       // a unas 4″ entre peanas
+    s.x = 8;
+    expect(armaPara(maza, s, foe, 'combate').rules).toContain('Balanced');           // a menos de 2″
+    s.x = 10; l.opciones = { armasEscamadura: 'estandarte' };
+    expect(armaPara(maza, s, foe, 'combate').rules).toContain('Balanced');           // a 5″ con el Estandarte
+    OPS.length = 0;
+  });
+  it('Ágil: Retroceder le cuesta 1 PA menos al Combatiente Eslizón', () => {
+    const e = op('sl.combatienteEslizon', 0), k = op('sl.kroxigor', 0);
+    expect(costeAccion(e, 'fallBack')).toBe(1);
+    expect(costeAccion(k, 'fallBack')).toBe(2);
+  });
+  it('Protectores abnegados: la Guardia a 3″ del líder suma 1 a su Salvación contra un disparo a 6″ o menos', () => {
+    OPS.length = 0;
+    const g = op('sl.guardiaSaurio', 1, 5, 5), l = op('sl.saurioEscamadura', 1, 7, 5), a = op('gn.tirador', 0, 9, 5), w = WPN['gn.bolter'];
+    OPS.push(g, l, a); g.id = 'B1'; l.id = 'B2'; a.id = 'A1';
+    const tira = (b, by) => resolverDisparo({ k: 'shoot', by, at: b.id, w: 'gn.bolter', acc: 0, cover: false }, w, 3, { crit: 0, norm: 3, dice: [4, 4, 4] }, b, () => 2).dfn.norm;
+    expect(tira(g, 'A1')).toBe(3);                              // Salvación 3+ -> 2+: un 2 vale
+    expect(tira(l, 'A1')).toBe(0);                              // el Escamadura (4+) no llega: 2 < 3
+    a.x = 20;                                                    // a más de 6″: no vale
+    expect(tira(g, 'A1')).toBe(0);
+    a.x = 9; l.x = 12;                                           // el líder a más de 3″: no vale
+    expect(tira(g, 'A1')).toBe(0);
+    OPS.length = 0;
+  });
+  it('Camuflaje cromático: el Camaleón oculto cuenta como en cobertura a más de 6″', () => {
+    const cam = op('sl.camaleon', 1), otro = op('sl.combatienteEslizon', 1), f = t => camuflaje.some(g => g(t, 7));
+    cam.order = 'conceal'; otro.order = 'conceal';
+    expect(f(cam)).toBe(true);
+    expect(camuflaje.some(g => g(cam, 5))).toBe(false);                            // a 6″ o menos, no
+    expect(f(otro)).toBe(false);                                                   // solo el Camaleón
+    cam.order = 'engage';
+    expect(f(cam)).toBe(false);                                                    // trabado: no
   });
 });

@@ -1076,6 +1076,50 @@ export const T = {
     noImplementada: '(aún sin efecto en la app)',
     // reglas propias de cada ficha, por "<id del comando>:<clave del agente>": [nombre, texto con nuestras palabras, ¿falta implementarla?]
     reglasAgente: {
+      '3272457903:saurioEscamadura': [
+        ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
+        ['Orden primordial', 'Las armas de combate de los Saurios y Kroxigor amigos a 3″ o menos de él tienen Equilibrada (6″ con el Estandarte de guerra).'],
+        ['Mordisco', 'Después de que luche, si el enemigo no quedó incapacitado, tira 1D6: con 5+, le inflige 1 de daño.', 'pendiente'],
+        ['Ejemplo depredador', 'Con el Estandarte de guerra, una vez por batalla, tras luchar, un Saurio amigo listo a 3″ o menos y en la zona de control del mismo enemigo lucha gratis (0 PA).', 'pendiente'],
+      ],
+      '3272457903:sacerdoteEstelar': [
+        ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
+        ['Lector de estrellas', 'Una vez por batalla, al inicio de un punto de inflexión, activa un Asterismo sin cumplir su condición.', 'pendiente'],
+        ['Escudriñar las estrellas', 'Una vez por batalla, al inicio de un punto de inflexión, tira tantos D6 como su número (máx. 4); por cada 4+, un aliado visible conserva un dado de defensa como normal.', 'pendiente'],
+        ['Luz de Chotec (1 PA)', 'Un Saurio o Kroxigor amigo visible a 6″ o menos recupera 1D3 heridas; una vez por punto de inflexión para el comando.', 'pendiente'],
+        ['Presagio celeste (1 PA)', 'Un Eslizón amigo visible a 6″ o menos tiene Equilibrada en sus armas a distancia hasta el final de su siguiente activación.', 'pendiente'],
+      ],
+      '3272457903:combatienteSaurio': [
+        ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
+        ['Escudo de escamas', 'Al combatir, sus éxitos normales pueden bloquear éxitos críticos.'],
+        ['Mordisco', 'Igual que el del Saurio Escamadura.', 'pendiente'],
+        ['Cohortes ordenadas', 'Mientras controla un marcador de objetivo, su Salvación es 3+.', 'pendiente'],
+        ['Semilla de renacimiento', 'Una vez por batalla, cuando iba a quedar incapacitado, tira 1D6: con 4+, se queda con 1 herida.', 'pendiente'],
+      ],
+      '3272457903:guardiaSaurio': [
+        ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
+        ['Guardián inquebrantable', 'Cuando un enemigo termina una Carga en la zona de control de un amigo a 3″ o menos, carga gratis (hasta 3″) contra él.', 'pendiente'],
+        ['Protectores abnegados', 'A 3″ o menos de tu líder, ambos suman 1 a su Salvación contra disparos de enemigos a 6″ o menos (nunca por encima de 2+).'],
+        ['Semilla de renacimiento', 'Una vez por batalla, cuando iba a quedar incapacitado, tira 1D6: con 4+, se queda con 1 herida.', 'pendiente'],
+      ],
+      '3272457903:kroxigor': [
+        ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
+        ['Barrido del martillo', 'Una vez por activación, al incapacitar a un enemigo luchando, lucha gratis contra otro enemigo en su zona de control.', 'pendiente'],
+        ['Inmenso', 'No obtiene cobertura de terreno ligero y no puede escalar más de 2″ en una acción.', 'pendiente'],
+      ],
+      '3272457903:combatienteEslizon': [
+        ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
+        ['Ágil', 'Retroceder le cuesta 1 PA menos.'],
+      ],
+      '3272457903:camaleon': [
+        ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
+        ['Emboscador', 'En el despliegue, puede ir a cualquier punto de la zona de aniquilación a más de 6″ de la zona de despliegue enemiga, con orden de ocultarse.', 'pendiente'],
+        ['Camuflaje cromático', 'Con orden de ocultarse cuenta como en cobertura frente a enemigos a más de 6″, aunque no haya terreno.'],
+      ],
+      '3272457903:sacerdoteEslizon': [
+        ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
+        ['Velo celeste (1 PA)', 'Un amigo visible a 6″ o menos conserva un dado de defensa como normal al recibir disparos, hasta su siguiente activación (nunca más de 2 conservados).', 'pendiente'],
+      ],
       '2272196183:capitan': [
         ['Líder heroico', `Una vez por punto de inflexión: usar un ardid de tiroteo gratis, o usar Doctrina de combate o Ajustar doctrina sin gastar PM, si está en la zona de aniquilación y fuera de la zona de control enemiga.`, 'pendiente'],
         ['Aura de hierro', 'Una vez por batalla, cuando un dado de ataque le inflige daño normal, puede ignorarlo: la app te pregunta en ese momento (en línea o contra la computadora se aplica sola con el primero).'],

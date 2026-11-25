@@ -36,6 +36,7 @@ import { comandoPorId, esArmaBolter, opcionesDe } from '../data/teams/index.js';
 import { KINDS, OPS, ajustarAgente } from '../engine/world.js';
 import { opGap } from '../engine/geometry.js';
 import { sightAnalysis } from '../engine/sight.js';
+import { camuflaje } from '../engine/shots.js';
 
 export const ARDID = {
   proteccion: 'Protección etérea',
@@ -534,13 +535,25 @@ registrarDisparador({
     && !ctx.b.escudoUsado && ctx.w.type === 'R' && ctx.b.save > 3,
   efecto: ctx => { ctx.b.escudoUsado = true; ctx.what.escudoSaurio = true; registro(T.ardidesSL.escudoSaurio(ctx.b.name)); },
 });
+// Protectores abnegados: la Guardia Saurio y un líder a 3″ o menos uno del otro suman 1 a su salvación contra
+// disparos de enemigos a 6″ o menos (nunca por encima de 2+)
+const protegidos = (b, what) => {
+  const at = what && OPS.find(o => o.id === what.by);
+  if (!at || opGap(at, b) > 6 + 1e-9) return false;
+  const juntos = f => OPS.some(o => o.alive && o.deployed !== false && o.team === b.team && o.id !== b.id && saurios(o) && f(o) && opGap(o, b) <= 3 + 1e-9);
+  if (perfil(b).clave === 'guardiaSaurio') return juntos(o => perfil(o).lider);
+  return !!perfil(b).lider && juntos(o => perfil(o).clave === 'guardiaSaurio');
+};
+// Defensa de los Saurios: Escudos de piel de estegadón (Salvación 3+), Protectores abnegados (+1) y Colmillo en la
+// brecha (un dado más como crítico). Los dados con un resultado entre la nueva y la vieja Salvación pasan a valer.
 ajustesDefensa.push((dfn, b, w, ctx) => {
-  if (!b || !saurios(b) || !ctx || !ctx.what) return null;
+  if (!b || !saurios(b) || !ctx || !ctx.what || !w || w.type !== 'R') return null;
   let { norm, crit } = dfn;
   const notas = [];
-  if (ctx.what.escudoSaurio) {   // Salvación 3+ en lugar de 4+: los dados de un punto menos que la Salvación también valen
-    const extra = (dfn.dice || []).filter(v => v === b.save - 1 && v > 1).length;
-    if (extra) { norm += extra; notas.push('escudoSaurio'); }
+  const sube = (ctx.what.escudoSaurio ? 1 : 0) + (protegidos(b, ctx.what) ? 1 : 0), nueva = Math.max(2, b.save - sube);
+  if (sube && nueva < b.save) {
+    const extra = (dfn.dice || []).filter(v => v >= nueva && v < b.save && v > 1).length;
+    if (extra) { norm += extra; notas.push(ctx.what.escudoSaurio ? 'escudoSaurio' : 'protectores'); }
   }
   if (ctx.what.colmillo) { crit += 1; notas.push('colmillo'); }
   return notas.length ? { norm, crit, nota: notas.join('+') } : null;
@@ -584,3 +597,25 @@ export function idoloAncestrales(s) {
   registro(T.ardidesSL.idolo(['Ash', 'Slate'][s]));
   return 1;
 }
+
+/* ---------- Habilidades de ficha de los Saurios de Lustria ----------
+ * Sangre Fría: sus agentes ignoran todos los efectos de estar lesionados (Impactar y Movimiento).
+ * Escudo de escamas (Combatiente Saurio): al combatir, sus éxitos normales bloquean críticos.
+ * Orden Primordial (Saurio Escamadura): las armas de combate de los Saurios y Kroxigor amigos a 3″ o menos de él
+ * (6″ con el Estandarte de guerra) tienen Equilibrada.
+ * Ágil (Combatiente Eslizón): Retroceder cuesta 1 PA menos.
+ * Camuflaje cromático (Eslizón Camaleón): con orden de ocultarse cuenta como en cobertura frente a los enemigos que
+ * estén a más de 6″, aunque no haya terreno (con la Silenciosa de su cerbatana, dispara sin dejar de estar oculto).
+ * Protectores abnegados (Guardia Saurio y líder): ver su ajuste de defensa, arriba. */
+ignoraLesion.push(op => saurios(op));
+reglasOp.push(op => saurios(op) && perfil(op).clave === 'combatienteSaurio' ? { duelista: true } : null);
+const estandarte = op => opcionesDe(op).some(o => o.id === 'estandarte');
+ajustesArma.push((w, a, b, modo) => {
+  if (!w || !a || w.type !== 'M' || !esSaurioOKroxigor(a) || (modo !== 'combate' && modo !== 'contraataque')) return w;
+  if (tiene(w, 'Balanced') || tiene(w, 'Ceaseless')) return w;
+  const cerca = OPS.some(o => o.alive && o.deployed !== false && o.team === a.team && o.id !== a.id && saurios(o) && perfil(o).clave === 'saurioEscamadura'
+    && opGap(o, a) <= (estandarte(o) ? 6 : 3) + 1e-9);
+  return cerca ? { ...w, rules: [...w.rules, 'Balanced'] } : w;
+});
+ajustesCoste.push((op, accion) => accion === 'fallBack' && saurios(op) && perfil(op).clave === 'combatienteEslizon' ? 1 : undefined);
+camuflaje.push((t, gap) => !!t && saurios(t) && perfil(t).clave === 'camaleon' && t.order === 'conceal' && gap > 6 + 1e-9);
