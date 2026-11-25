@@ -9,7 +9,7 @@
 import { TTS_TEAMS } from '../data/tts-teams.js';
 import { snapBase } from '../config.js';
 import { opR } from '../engine/geometry.js';
-import { BH, BW, OPS } from '../engine/world.js';
+import { BH, BW, KINDS, OPS } from '../engine/world.js';
 import { noteFailure, steamMaterial, steamParts } from './models.js';
 import { idleClone, idleFields, idleGeometry, idlePhase } from './idle.js';
 import { frenteDe, retratoDe } from './retratos.js';
@@ -159,6 +159,8 @@ export function syncBases() {
       if (!(key in ready)) { load(model); continue; }   // keep the base it has until this one is measured
       mm = (ready[key] && ready[key].userData.mm) || undefined;
     }
+    const fija = KINDS[op.kind] && KINDS[op.kind].peana;   // la peana que da la ficha del agente (comandos caseros): manda sobre la medida
+    if (fija) mm = fija;
     if (op.base !== mm) { if (mm) op.base = mm; else delete op.base; any = true; }
   }
   return any;

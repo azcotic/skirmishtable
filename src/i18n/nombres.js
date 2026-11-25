@@ -14,6 +14,7 @@ export const COMANDOS = {
   'Angels of Death': 'Ángeles de la Muerte',
   'Warpcoven': 'Aquelarre Disforme',
   'Nemesis Claw': 'Garra Némesis',
+  'Seraphon': 'Saurios de Lustria',
 };
 
 export const AGENTES = {
@@ -38,6 +39,15 @@ export const AGENTES = {
   'Tzaangor Horn Bearer': 'Portacuerno Tzaangor',
   'Tzaangor Icon Bearer': 'Portaicono Tzaangor',
   'Tzaangor Warrior': 'Combatiente Tzaangor',
+  // Saurios de Lustria (comando casero, a partir de los Seraphon de Age of Sigmar)
+  'Saurus Oldblood': 'Saurio Escamadura',
+  'Skink Starseer': 'Sacerdote Estelar Eslizón',
+  'Saurus Warriors': 'Combatiente Saurio',
+  'Saurus Guard': 'Guardia Saurio',
+  'Kroxigor': 'Kroxigor',
+  'Skink': 'Combatiente Eslizón',
+  'Chameleon Skink': 'Eslizón Camaleón',
+  'Skink Starpriest': 'Sacerdote Eslizón',
   // Garra Némesis
   'Visionary': 'Visionario',
   'Fearmonger': 'Siembramiedos',
@@ -63,7 +73,12 @@ const ARDIDES_AM = {
   estrategia: ['Doctrina de combate', 'Y no conocerán el miedo', 'Tácticas flexibles', 'Indomitus'],
   tiroteo: ['Ajustar doctrina', 'Fisiología transhumana', 'Asalto de choque', 'Ira de venganza'],
 };
+const ARDIDES_SL = {
+  estrategia: ['Emboscada en la jungla', 'Furia predadora'],
+  tiroteo: ['Escurridizos', 'Colmillo en la brecha', 'Señor del Espacio y el Tiempo'],
+};
 export const ARDIDES = {
+  '3272457903': ARDIDES_SL,   // Saurios de Lustria (comando casero)
   '2272196183': ARDIDES_AM,   // Ángeles de la Muerte
   '3352828814': ARDIDES_GN,   // Garra Némesis
   '3348897103': ARDIDES_AD,   // Aquelarre Disforme

@@ -33,7 +33,7 @@ import { OPS, rosterInit } from '../engine/world.js';
 import { agenteDeMuestra, comandoPorId, eleccionesDe, modelosPara, pesoAgente, plantillaDefs, puedeAnadir, seleccionesMax,
   validarComando } from '../data/teams/index.js';
 import { abrirFicha } from './ficha.js';
-import { ARDID, DOCTRINAS, dadosGuardados, doctrina, elegirDoctrina, elegirFlexible, guardarDestino, guerraDoctrinas, quitarDestino, tacticasDeBando } from './ardides.js';
+import { ARDID, DOCTRINAS, idoloAncestrales, dadosGuardados, doctrina, elegirDoctrina, elegirFlexible, guardarDestino, guerraDoctrinas, quitarDestino, tacticasDeBando } from './ardides.js';
 import { d6 } from '../engine/dice.js';
 import { showRoll } from './dicetray.js';
 import { gradoActual, puntuarKillOp, reiniciarPuntos } from './ops.js';
@@ -45,7 +45,7 @@ import { MAX_EQUIPO, alternarEquipo, equipoDeFaccion, separar, todoElEquipo } fr
 const KEY = "skirmishtable.inicio";
 export const KEY_PARTIDA = "skirmishtable.partida";   // la partida guardada (src/ui/guardado.js)
 // los comandos de prueba (ids del catálogo de Steam): Garra Némesis y Aquelarre Disforme
-const COMANDOS_PRUEBA = ["3352828814", "3348897103", "2272196183"];   // Garra Némesis, Aquelarre Disforme, Ángeles de la Muerte
+const COMANDOS_PRUEBA = ["3352828814", "3348897103", "2272196183", "3272457903"];   // Garra Némesis, Aquelarre Disforme, Ángeles de la Muerte, Saurios de Lustria
 const ORDEN = ["modo", "mapa", "comando0", "plantilla0", "comando1", "plantilla1", "despliegue", "resumen"];
 
 // plantilla: los agentes elegidos de cada bando (claves); config: el nombre de la configuración
@@ -190,15 +190,16 @@ function contenido() {
         : `<p class="pant-nota">${I.ningunoAun}</p>`;
       const disponibles = Object.entries(c.agentes).map(([k, a]) => {
         const veces = lista.filter(x => x === k).length, p = puedeAnadir(c, lista, k);
-        const medio = pesoAgente(c, k) < 1 ? ` <small class="medio" title="${I.medioTitulo}">½</small>` : "";
+        const medio = pesoAgente(c, k) < 1 ? ` <small class="medio" title="${I.medioTitulo}">½</small>`
+          : pesoAgente(c, k) > 1 ? ` <small class="medio" title="${I.dobleTitulo}">×2</small>` : "";
         return `<div class="pant-agente${veces ? " elegido" : ""}">
           <div class="pant-agente-info"><b>${esc(a.nombre)}${a.lider ? ` <small>${T.fichaDatos.lider}</small>` : ""}${medio}${veces ? ` <span class="pant-veces">×${veces}</span>` : ""}</b>
-            <span>${I.statsCortas(a.move, a.apl, a.save, a.wounds)}${p.motivo === "unico" ? ` · <em>${I.soloUno}</em>` : p.motivo === "maximo" ? ` · <em>${I.yaHayLider}</em>` : ""}</span></div>
+            <span>${I.statsCortas(a.move, a.apl, a.save, a.wounds)}${p.motivo === "unico" ? ` · <em>${I.soloUno}</em>` : p.motivo === "maximo" ? ` · <em>${p.grupo.min === 1 && p.grupo.max === 1 ? I.yaHayLider : I.alMaximo(p.grupo.plural || p.grupo.nombre, p.grupo.max)}</em>` : ""}</span></div>
           <button class="pant-ver" data-v="ver:${k}" aria-label="${esc(I.verFicha(a.nombre))}">👁</button>
           <button class="pant-mas" data-v="add:${k}"${p.ok ? "" : " disabled"} aria-label="${esc(I.anadir(a.nombre))}">＋</button></div>`;
       }).join("");
-      const reglas = [I.reglas.selecciones(v.max), ...(comp.requiere || []).map(r => r.max === 1 && r.min === 1 ? I.reglas.unoSolo(r.nombre) : I.reglas.requiere(r.nombre)),
-        ...(comp.repetibles ? [I.reglas.unicos] : []), ...(comp.medio ? [I.reglas.medio] : [])];
+      const reglas = [I.reglas.selecciones(v.max), ...(comp.requiere || []).map(r => r.max === 1 && r.min === 1 ? I.reglas.unoSolo(r.nombre) : r.min === 0 ? I.reglas.maximoGrupo(r.plural || r.nombre, r.max) : I.reglas.requiere(r.nombre)),
+        ...(comp.repetibles ? [I.reglas.unicos] : []), ...(comp.medio ? [I.reglas.medio] : []), ...(comp.doble ? [I.reglas.doble] : [])];
       const errores = lista.length ? v.errores.map(([t, x, y]) => I.error[t](t === "repetido" ? c.agentes[x].nombre : x, y)) : [];
       return { titulo: I.armarTitulo, sub: `${esc(c.nombre)} · ${I.cuenta(v.usadas, v.max)}`,
         html: `<div class="pant-elegidos">${elegidos}</div>
@@ -427,6 +428,7 @@ function fijarIniciativa(s) {
   tray.ini = s;
   const g = pmDelPI(tray.tp, s);
   tray.cp[0] += g[0]; tray.cp[1] += g[1];
+  idoloAncestrales(0); idoloAncestrales(1);   // Ídolo de los Ancestrales (Saurios de Lustria)
   logLine(T.estrategia.logIni(TEAMNAME[s], g[0], g[1], TEAMNAME[0], TEAMNAME[1]));
   ordenArdides = [s, 1 - s];
   renderAll();

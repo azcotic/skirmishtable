@@ -17,6 +17,7 @@ const TEAMS = [
 // todos: el Tirador Intercesor usa el Intercesor), pero cada escaneo se asigna a uno solo: el tercer dato
 // de cada agente es qué variantes (0, 1, 2… por orden de aparición en el mod) le tocan; así el Granadero y el
 // Combatiente no salen con la misma figura. `nombre`: el del equipo en el catálogo.
+const STORMVAULT = 'https://raw.githubusercontent.com/AoS-TTS/Stormvault/main/Order/Seraphon.json';   // mesa de TTS en GitHub, no un mod de Steam
 const MAPEOS = {
   // Akalonian's Primaris Ultramarines: escaneos pintados de azul, para los Ángeles de la Muerte
   '2272196183': { nombre: 'Angels of Death', agentes: {
@@ -28,6 +29,27 @@ const MAPEOS = {
     'Heavy Intercessor': [['Heavy Intercessor Gunner', 18]],
     'Eliminator': [['Eliminator Sniper', 12]],
   } },
+  // Malkavichs Model Updates (Age of Sigmar 4.0): modelos actuales de los Seraphon, para los Saurios de
+  // Lustria (comando casero). Cada agente usa los de su unidad de Age of Sigmar. El mod no trae Eslizones
+  // Camaleón: el Camaleón usa el Chameleon Skink con cerbatanas (Boltspitters) de Stormvault.
+  '3272457903': { nombre: 'Seraphon', agentes: {
+    'Saurus Oldblood': [['Saurus Oldblood', 14]],
+    'Skink Starseer': [['Skink Starseer', 10]],
+    'Saurus Warrior': [['Saurus Warriors', 12]],
+    'Saurus Warrior Champion': [['Saurus Warriors', 12]],
+    'Saurus Warrior Musician': [['Saurus Warriors', 12]],
+    'Saurus Warrior Standard Bearer': [['Saurus Warriors', 12]],
+    'Saurus Guard': [['Saurus Guard', 12]],
+    'Saurus Guard Champion': [['Saurus Guard', 12]],
+    'Saurus Guard Musician': [['Saurus Guard', 12]],
+    'Saurus Guard Standard Bearer': [['Saurus Guard', 12]],
+    'Kroxigor': [['Kroxigor', 18]],
+    'Kroxigor w/Moonstone Hammer': [['Kroxigor', 18]],
+    'Kroxigor Warspawned': [['Kroxigor', 18]],
+    'Kroxigor Warspawned w/Starfang Warpick': [['Kroxigor', 18]],
+    'Skink': [['Skink', 7]],
+    'Skink Starpriest': [['Skink Starpriest', 8]],
+  }, mezclar: [{ url: STORMVAULT, agentes: { 'Chameleon Skinks with Boltspitters': [['Chameleon Skink', 8]] } }] },
 };
 TEAMS.push(...Object.keys(MAPEOS));
 const API = 'https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/';
@@ -97,7 +119,7 @@ for (const d of await details(TEAMS)) {
     const m = /^\s*(?:E\s+)?[{]?\s*(\d+)\s*\/\s*(\d+)\s*[}]?\s*(.+)$/.exec(nick);
     return m ? [[m[3].trim(), +m[2]]] : null;
   };
-  (function visit(o) {
+  const recorrer = (root, agentesDe) => (function visit(o) {
     if (!o || typeof o !== 'object') return;
     if (Array.isArray(o)) { o.forEach(visit); return; }
     const agentes = agentesDe(clean(o.Nickname));
@@ -114,6 +136,13 @@ for (const d of await details(TEAMS)) {
     }
     for (const k in o) if (k !== 'LuaScript' && k !== 'XmlUI' && k !== 'ChildObjects') visit(o[k]);
   })(root.ObjectStates);
+  recorrer(root, agentesDe);
+  // modelos sueltos de otros mods (mezclar: [{ id, agentes }]), para agentes que el mod principal no trae
+  for (const x of (mapeo && mapeo.mezclar) || []) {
+    const [dx] = x.url ? [{ publishedfileid: 'externo', result: 1, file_url: x.url, time_updated: 'web' }] : await details([x.id]);
+    if (dx.result === 1 && dx.file_url) recorrer(await save(dx), nick => x.agentes[nick] || null);
+    else console.log(`  mezclar: ${x.id || x.url} no disponible`);
+  }
   const ok = [];
   for (const m of models) {
     const urls = [m.base, ...m.parts].flatMap(e => [e.obj || e.bundle, e.tex]).filter(Boolean);

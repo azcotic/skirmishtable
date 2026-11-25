@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { COMANDOS, modelosPara, plantillaDefs, puedeAnadir, registrarComandos, validarComando } from '../../src/data/teams/index.js';
 import { KINDS, mkOp } from '../../src/engine/world.js';
-import { WPN } from '../../src/config.js';
+import { BASE_SIZES, WPN } from '../../src/config.js';
 import { TTS_TEAMS } from '../../src/data/tts-teams.js';
 import { traducirCatalogo } from '../../src/i18n/nombres.js';
 import { traducirRegla } from '../../src/i18n/es.js';
@@ -70,6 +70,36 @@ describe('composición del comando', () => {
   it('Garra Némesis: 6, con el Visionario, combatientes repetibles', () => {
     expect(validarComando(gn, ['visionario', 'combatiente', 'combatiente', 'combatiente', 'aullador', 'tirador']).ok).toBe(true);
     expect(puedeAnadir(gn, ['aullador'], 'aullador').motivo).toBe('unico');
+  });
+});
+
+describe('Saurios de Lustria (comando casero)', () => {
+  const sl = COMANDOS.find(c => c.prefijo === 'sl');
+  it('7 selecciones: 1 líder, Eslizones a media, Kroxigor a dos (máximo 2)', () => {
+    expect(validarComando(sl, sl.plantilla).ok).toBe(true);
+    expect(validarComando(sl, ['kroxigor', 'combatienteSaurio']).errores).toContainEqual(['requiere', 'Líder']);
+    expect(validarComando(sl, ['saurioEscamadura', 'sacerdoteEstelar', 'guardiaSaurio', 'combatienteSaurio', 'combatienteSaurio', 'combatienteSaurio', 'combatienteSaurio']).errores).toContainEqual(['maximo', 'Líder', 1]);
+    const dos = ['saurioEscamadura', 'kroxigor', 'kroxigor'];
+    expect(puedeAnadir(sl, dos, 'kroxigor')).toMatchObject({ ok: false, motivo: 'maximo' });
+    expect(puedeAnadir(sl, ['saurioEscamadura', 'kroxigor', 'kroxigor', 'camaleon', 'sacerdoteEslizon'], 'combatienteEslizon').ok).toBe(true);
+    expect(puedeAnadir(sl, ['saurioEscamadura'], 'saurioEscamadura').motivo).toBe('maximo');
+    expect(puedeAnadir(sl, ['saurioEscamadura', 'camaleon'], 'camaleon').motivo).toBe('unico');
+  });
+  it('peanas: Eslizones 28 mm, Saurios 32 mm y Kroxigor 40 mm, ya registradas en el motor', () => {
+    const pe = k => KINDS[`sl.${k}`].peana;
+    for (const k of ['combatienteEslizon', 'camaleon', 'sacerdoteEslizon', 'sacerdoteEstelar']) expect(pe(k), k).toBe(28);
+    for (const k of ['saurioEscamadura', 'combatienteSaurio', 'guardiaSaurio']) expect(pe(k), k).toBe(32);
+    expect(pe('kroxigor')).toBe(40);
+    for (const a of Object.values(sl.agentes)) expect(BASE_SIZES).toContain(a.peana);
+  });
+  it('cada agente de la plantilla encuentra su modelo en el catálogo', () => {
+    const equipos = traducirCatalogo(JSON.parse(JSON.stringify(TTS_TEAMS)));
+    const team = equipos.find(t => t.id === sl.id);
+    expect(team.name).toBe('Saurios de Lustria');
+    const ops = plantillaDefs(0, sl.id).map(([oid, s, n, k]) => ({ id: oid, team: s, name: n, kind: k }));
+    const picks = modelosPara(ops, team);
+    expect(Object.keys(picks).length).toBe(ops.length);
+    for (const k of Object.keys(sl.agentes)) expect(team.models.some(m => m.name === sl.agentes[k].nombre), k).toBe(true);
   });
 });
 

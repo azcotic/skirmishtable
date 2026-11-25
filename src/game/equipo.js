@@ -24,6 +24,7 @@ export const UNIVERSAL = [
 // De facción, por id del comando (src/data/teams)
 const FACCION = {
   '3348897103': [{ id: 'balas' }, { id: 'faucesdaemonicas' }, { id: 'tunicas' }, { id: 'pergaminos' }],   // Aquelarre Disforme
+  '3272457903': [{ id: 'puntas' }, { id: 'escudosEstegadon' }, { id: 'plumas' }, { id: 'idolo' }, { id: 'tambores', pendiente: true }],   // Saurios de Lustria
   '2272196183': [{ id: 'sellos' }, { id: 'relicarios' }, { id: 'escudos' }, { id: 'auspex' }],                              // Ángeles de la Muerte
 };
 

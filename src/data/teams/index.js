@@ -10,8 +10,9 @@ import { WPN } from '../../config.js';
 import garraNemesis from './garra-nemesis.js';
 import aquelarreDisforme from './aquelarre-disforme.js';
 import angelesMuerte from './angeles-muerte.js';
+import sauriosLustria from './saurios-lustria.js';
 
-export const COMANDOS = [garraNemesis, aquelarreDisforme, angelesMuerte];
+export const COMANDOS = [garraNemesis, aquelarreDisforme, angelesMuerte, sauriosLustria];
 // "arma bólter" (la usan reglas de los Ángeles de la Muerte): arma a distancia con "bólter" en el nombre
 export const esArmaBolter = w => !!w && w.type === "R" && /bólter/i.test(w.name);
 export const comandoPorId = id => COMANDOS.find(c => c.id === id || (c.ids || []).includes(id)) || null;
@@ -26,7 +27,7 @@ export function registrarComandos() {
     for (const [k, a] of Object.entries(c.agentes))
       KINDS[`${c.prefijo}.${k}`] = { apl: a.apl, move: a.move, save: a.save, wounds: a.wounds,
         weapons: a.armas.map(w => `${c.prefijo}.${w}`), nombre: a.nombre, lider: !!a.lider, comando: c.id,
-        habilidades: a.habilidades || [], astartes: !!a.astartes, astartesBolter: !!(a.astartes && c.astartesBolter), clave: k, palabras: a.palabras || [], unicas: a.unicas || [] };   // palabras: HECHICERO, TZAANGOR…
+        habilidades: a.habilidades || [], astartes: !!a.astartes, astartesBolter: !!(a.astartes && c.astartesBolter), clave: k, palabras: a.palabras || [], unicas: a.unicas || [], peana: a.peana };   // palabras: HECHICERO, TZAANGOR…
   }
   ajustesAgente.push(aplicarOpciones);
 }
@@ -114,18 +115,19 @@ export const TAM_COMANDO = 6;
 
 /* ---------- composición del comando ---------- */
 const comp = c => c.composicion || { selecciones: TAM_COMANDO };
-// cuánto cuenta un agente: 1 selección, o ½ (p. ej. los Tzaangor del Aquelarre Disforme)
-export const pesoAgente = (c, k) => (comp(c).medio || []).includes(k) ? 0.5 : 1;
+// cuánto cuenta un agente: 1 selección, ½ (p. ej. los Tzaangor del Aquelarre Disforme) o 2 (los Kroxigor)
+export const pesoAgente = (c, k) => (comp(c).medio || []).includes(k) ? 0.5 : (comp(c).doble || []).includes(k) ? 2 : 1;
 export const seleccionesMax = c => comp(c).selecciones;
 export const selecciones = (c, claves) => claves.reduce((a, k) => a + pesoAgente(c, k), 0);
 const repetible = (c, k) => !comp(c).repetibles || comp(c).repetibles.includes(k);
 
-// ¿Se puede añadir el agente `k` a `claves`? {ok, motivo: "lleno" | "unico" | null}
+// ¿Se puede añadir el agente `k` a `claves`? {ok, motivo: "lleno" | "unico" | "maximo" | null, grupo}
+// (grupo: la regla `requiere` que ya está llena, cuando el motivo es "maximo")
 export function puedeAnadir(c, claves, k) {
   if (selecciones(c, claves) + pesoAgente(c, k) > seleccionesMax(c) + 1e-9) return { ok: false, motivo: "lleno" };
   // requiere con max (p. ej. un solo líder): no añadir otro del grupo si ya está lleno
   for (const r of comp(c).requiere || [])
-    if (r.max && r.claves.includes(k) && claves.filter(x => r.claves.includes(x)).length >= r.max) return { ok: false, motivo: "maximo" };
+    if (r.max && r.claves.includes(k) && claves.filter(x => r.claves.includes(x)).length >= r.max) return { ok: false, motivo: "maximo", grupo: r };
   if (!repetible(c, k) && claves.includes(k)) return { ok: false, motivo: "unico" };
   return { ok: true, motivo: null };
 }

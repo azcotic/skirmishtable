@@ -13,7 +13,7 @@ describe('Ángeles de la Muerte', () => {
     for (const e of c.ejemplos) expect(validarComando(c, e.agentes).ok, e.nombre).toBe(true);
   });
   it('un solo líder', () => {
-    expect(puedeAnadir(c, ['capitan'], 'sargentoAsalto')).toEqual({ ok: false, motivo: 'maximo' });
+    expect(puedeAnadir(c, ['capitan'], 'sargentoAsalto')).toMatchObject({ ok: false, motivo: 'maximo' });
     const v = validarComando(c, ['capitan', 'sargentoIntercesor', 'tiradorPesado', 'francotirador', 'combatienteAsalto', 'combatienteAsalto']);
     expect(v.errores).toContainEqual(['maximo', 'Líder', 1]);
     expect(validarComando(c, ['tiradorPesado', 'francotirador', 'granaderoAsalto', 'combatienteAsalto', 'combatienteAsalto', 'tiradorIntercesor']).errores)

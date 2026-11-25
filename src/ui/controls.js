@@ -25,6 +25,7 @@ import { syncBases } from '../view3d/units.js';
 import { RULES, RULESETS, fmtIn, setRuleset } from '../rules/index.js';
 import { mayPlay, maySetUp, pump, requestUndo } from '../net/sync.js';
 import { restartRecording } from '../net/replayer.js';
+import { equipoNuevoPI } from './ardides.js';
 
 // online, only the host sets up the table and only the two players act
 const REPLAYING = T.partida.viendoGrabacion;
@@ -144,6 +145,7 @@ export function wireControls() {
     tray.tp += 1; tray.ardides = [[], []]; tray.ardidesT = [[], []]; limpiarSilencio(tray); tray.destino = [null, null]; reiniciarActivaciones();
     OPS.forEach(o => { o.ready = true; o.ap = o.apl; o.used = []; o.disparadas = []; delete o.reacciono; delete o.reaccion; delete o.volo; delete o.psiPI; delete o.vetadas; delete o.grupo; delete o.gratisCorrer; delete o.tunicaTP; if (o.aplBase) { o.apl = o.aplBase; o.ap = o.apl; delete o.aplBase; } if (o.cuerno) { o.move -= 1; delete o.cuerno; } });
     logLine(T.partida.nuevoPI(tray.tp));
+    equipoNuevoPI();              // Plumas incandescentes (Saurios de Lustria)
     renderAll();
     alNuevoPI();                  // fase de estrategia: iniciativa, PM y ardides (inicio.js)
   };

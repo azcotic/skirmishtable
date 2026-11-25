@@ -43,8 +43,15 @@ export function abrirEncuadres() {
       </div>
       <div class="enc-visor">
         <div class="enc-fila">
-          <div class="enc-lienzo"><canvas id="enccanvas"></canvas><div class="enc-guia" aria-hidden="true"></div>
-            <canvas id="encbase" class="enc-base" width="240" height="240" title="${E.vistaArriba}" aria-label="${E.vistaArriba}"></canvas></div>
+          <div class="enc-col">
+            <div class="enc-lienzo"><canvas id="enccanvas"></canvas><div class="enc-guia" aria-hidden="true"></div>
+              <canvas id="encbase" class="enc-base" width="240" height="240" title="${E.vistaArriba}" aria-label="${E.vistaArriba}"></canvas></div>
+            <div class="enc-ejex" id="encejex" title="${E.ejeXTitulo}">
+              <button class="mini" id="encizq" aria-label="${E.izquierda}" title="${E.izquierda}">◀</button>
+              <input type="range" id="enceje_x" min="-1" max="1" step="0.005" value="0" aria-label="${E.ejeXTitulo}">
+              <button class="mini" id="encder" aria-label="${E.derecha}" title="${E.derecha}">▶</button>
+            </div>
+          </div>
           <div class="enc-eje" title="${E.ejeTitulo}">
             <button class="mini" id="encarriba" aria-label="${E.subir}" title="${E.subir}">▲</button>
             <input type="range" id="enceje" min="-0.3" max="1.5" step="0.005" value="0.66" aria-label="${E.ejeTitulo}">
@@ -78,6 +85,9 @@ export function abrirEncuadres() {
   $("encguardar").onclick = guardar;
   $("encauto").onclick = () => { if (escena) { aplicar(encuadreAuto(escena, frente)); estado(E.autoPuesto); } };
   $("enceje").oninput = e => moverEje(+e.target.value);
+  $("enceje_x").oninput = e => moverEjeX(+e.target.value);
+  $("encizq").onclick = () => moverEjeX(valorEjeX() - 0.02);
+  $("encder").onclick = () => moverEjeX(valorEjeX() + 0.02);
   $("encarriba").onclick = () => moverEje(valorEje() + 0.02);
   $("encabajo").onclick = () => moverEje(valorEje() - 0.02);
   $("encfrente").oninput = e => ponerFrente(+e.target.value);
@@ -127,6 +137,7 @@ function ajustar() {
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.setSize(lado, lado, false);
   $("enceje").style.height = Math.max(120, lado - 100) + "px";   // el control vertical, del alto del visor menos sus dos botones
+  $("encejex").style.width = lado + "px";                        // el horizontal, del ancho del visor
 }
 
 async function seleccionar(n) {
@@ -215,8 +226,26 @@ function aplicar(enc) {
 // El valor es la altura a la que mira la cámara, en alturas de la figura (0 = pies, 1 = cabeza).
 const valorEje = () => escena ? (controles.target.y - escena.origen.y) / escena.alto : 0;
 function sincronizarEje() {
-  const i = $("enceje");
+  const i = $("enceje"), x = $("enceje_x");
   if (i && escena && controles) i.value = String(valorEje());
+  if (x && escena && controles) x.value = String(valorEjeX());
+}
+// El eje X: mueve el encuadre a izquierda o derecha de la pantalla (la cámara y su punto de mira, juntos), sin
+// cambiar el zoom, el giro ni la altura. El valor es la distancia lateral al centro de la figura, en alturas de la figura.
+function derechaDeCamara() {
+  cam.updateMatrixWorld();
+  const d = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0);
+  d.y = 0;
+  return d.lengthSq() > 1e-9 ? d.normalize() : new THREE.Vector3(1, 0, 0);
+}
+const valorEjeX = () => escena
+  ? ((controles.target.x - escena.origen.x) * derechaDeCamara().x + (controles.target.z - escena.origen.z) * derechaDeCamara().z) / escena.alto : 0;
+function moverEjeX(v) {
+  if (!escena) return;
+  const d = (Math.max(-1, Math.min(1, v)) - valorEjeX()) * escena.alto, r = derechaDeCamara();
+  cam.position.addScaledVector(r, d); controles.target.addScaledVector(r, d);
+  controles.update();
+  sincronizarEje();
 }
 function moverEje(v) {
   if (!escena) return;

@@ -114,7 +114,12 @@ export function bloquear(aN, aC, dN, dC, dmgN, dmgC) {
 // Impactar: 1 peor si está lesionado o tiene una ficha de Quemar mente (no se acumulan)
 export function effHit(op, w) { return Math.min(6, w.hit + (penalizaLesion(op) || op.quemarMente ? 1 : 0)); }
 export function isInjured(op) { return op.wounds < op.maxW/2; }
-export function effMove(op) { return penalizaLesion(op) ? Math.max(4, op.move-2) : op.move; }
+// Reglas que bajan el Movimiento (p. ej. un ardid): (op) => pulgadas menos; nunca baja de 4″
+export const reduceMove = [];
+export function effMove(op) {
+  const base = penalizaLesion(op) ? Math.max(4, op.move-2) : op.move, menos = reduceMove.reduce((a, f) => a + (f(op) || 0), 0);
+  return menos ? Math.max(4, base - menos) : base;
+}
 // Reglas que hacen ignorar los cambios por estar lesionado (p. ej. un ardid): (op) => true si lo ignora
 export const ignoraLesion = [];
 export const penalizaLesion = op => isInjured(op) && !ignoraLesion.some(f => f(op));

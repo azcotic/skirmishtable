@@ -28,7 +28,7 @@ import { CTRL, WPN } from '../config.js';
 import { T } from '../i18n/es.js';
 import { elegirOpcion } from './tirada.js';
 import { UNICAS, unicasDe } from '../game/unicas.js';
-import { ajustesArma, ajustesDefensa, bloquear, clasificarAtaque, critDesde, ignoraLesion, ignoraSaturacion, reduceNormal, reglasOp } from '../engine/dice.js';
+import { ajustesArma, ajustesDefensa, bloquear, clasificarAtaque, critDesde, d6, ignoraLesion, ignoraSaturacion, reduceMove, reduceNormal, reglasOp } from '../engine/dice.js';
 import { ignoraAturdir } from '../engine/efectos.js';
 import { ajustesCoste, cargarTrabado } from '../game/acciones.js';
 import { registrarDisparador } from '../game/disparadores.js';
@@ -46,6 +46,10 @@ export const ARDID = {
   miedo: 'Y no conocerán el miedo',
   flexibles: 'Tácticas flexibles',
   indomitus: 'Indomitus',
+  emboscada: 'Emboscada en la jungla',
+  furia: 'Furia predadora',
+  colmillo: 'Colmillo en la brecha',
+  espacio: 'Señor del Espacio y el Tiempo',
 };
 export const DOCTRINAS = ['devastadora', 'tactica', 'asalto'];
 
@@ -483,3 +487,100 @@ function donesLibres(op) {
   return dones.filter(d => !d.pendiente && !tomados.has(d.id));
 }
 const comandoDe = op => comandoPorId(perfil(op).comando);
+
+/* ---------- Saurios de Lustria (comando casero) ----------
+ * Ardides de estrategia (tray.ardides): Emboscada en la jungla (a los Eslizones en cobertura, un dado de
+ * defensa más conservado como normal) y Furia predadora (armas de combate de Saurios y Kroxigor que
+ * Cargaron: Incesante). Ardides de tiroteo: Colmillo en la brecha (un dado de defensa conservado como
+ * crítico, al disparar a un Saurio o Kroxigor) y Señor del Espacio y el Tiempo (al activarse un enemigo
+ * visible a 6″ o menos de un Sacerdote, su Movimiento baja 2″ hasta el final del punto de inflexión).
+ * Escurridizos aún no tiene efecto. Nunca se conservan más de 2 dados de defensa sin tirar en un disparo
+ * (la cobertura da uno; Emboscada y Colmillo no coinciden: son de Eslizones y de Saurios).
+ * Equipo de facción (tray.equipoFaccion[bando]): 'puntas' (Letal 5+ una vez por punto de inflexión al
+ * disparar un Eslizón con Escupedardos o Jabalinas), 'escudosEstegadon' (Salvación 3+ la primera vez que
+ * disparan a cada Saurio, salvo la Guardia), 'plumas' (el líder recupera 1D3 heridas al empezar cada punto
+ * de inflexión) e 'idolo' (1 PM más, una vez por batalla). 'tambores' queda pendiente. */
+const SL = '3272457903';
+const saurios = op => perfil(op).comando === SL;
+const esSaurioOKroxigor = op => saurios(op) && (es(op, 'saurio') || es(op, 'kroxigor'));
+const PUNTAS = ['Escupedardos', 'Jabalinas'];
+const puntasVale = a => !!tray && a.puntasTP === tray.tp && a.puntasAct === (a.activaciones || 0);
+ajustesArma.push((w, a, b, modo) => {
+  if (!w || !a || !saurios(a)) return w;
+  if (modo === 'contraataque') modo = 'combate';
+  if (modo === 'combate' && w.type === 'M' && esSaurioOKroxigor(a) && activo(a.team, ARDID.furia)
+    && (a.used || []).includes('charge') && !a.reaccion && !tiene(w, 'Ceaseless'))
+    return { ...w, rules: [...w.rules, 'Ceaseless'] };
+  if (modo === 'disparo' && w.type === 'R' && es(a, 'eslizon') && PUNTAS.includes(w.name) && equipo(a.team, 'puntas')
+    && puntasVale(a) && !tiene(w, 'Lethal'))
+    return { ...w, rules: [...w.rules, 'Lethal 5+'] };
+  return w;
+});
+// Emboscada en la jungla
+ajustesDefensa.push((dfn, b, w) => saurios(b) && es(b, 'eslizon') && w && w.type === 'R' && dfn.cover && activo(b.team, ARDID.emboscada)
+  ? { norm: dfn.norm + 1, nota: 'emboscada' } : null);
+// Colmillo en la brecha: tras tirar la defensa, un dado más como crítico
+registrarDisparador({
+  id: 'colmillo', ardid: 'Colmillo en la brecha', momento: 'trasDefensa',
+  quien: ctx => ctx.b.team,
+  condicion: ctx => esSaurioOKroxigor(ctx.b) && ctx.w.type === 'R',
+  efecto: ctx => { ctx.what.colmillo = true; registro(T.ardidesSL.colmillo(ctx.b.name)); },
+});
+// Escudos de piel de estegadón: la primera vez que disparan a cada Saurio, su Salvación es 3+
+registrarDisparador({
+  id: 'escudoSaurio', ardid: 'Escudos de piel de estegadón', momento: 'trasDefensa', gratis: true,
+  quien: ctx => ctx.b.team,
+  condicion: ctx => saurios(ctx.b) && es(ctx.b, 'saurio') && perfil(ctx.b).clave !== 'guardiaSaurio' && equipo(ctx.b.team, 'escudosEstegadon')
+    && !ctx.b.escudoUsado && ctx.w.type === 'R' && ctx.b.save > 3,
+  efecto: ctx => { ctx.b.escudoUsado = true; ctx.what.escudoSaurio = true; registro(T.ardidesSL.escudoSaurio(ctx.b.name)); },
+});
+ajustesDefensa.push((dfn, b, w, ctx) => {
+  if (!b || !saurios(b) || !ctx || !ctx.what) return null;
+  let { norm, crit } = dfn;
+  const notas = [];
+  if (ctx.what.escudoSaurio) {   // Salvación 3+ en lugar de 4+: los dados de un punto menos que la Salvación también valen
+    const extra = (dfn.dice || []).filter(v => v === b.save - 1 && v > 1).length;
+    if (extra) { norm += extra; notas.push('escudoSaurio'); }
+  }
+  if (ctx.what.colmillo) { crit += 1; notas.push('colmillo'); }
+  return notas.length ? { norm, crit, nota: notas.join('+') } : null;
+});
+// Puntas de obsidiana (una vez por punto de inflexión para el comando): al elegir blanco con un Eslizón
+registrarDisparador({
+  id: 'puntas', ardid: 'Puntas de obsidiana', momento: 'elegirBlanco', gratis: true,
+  quien: ctx => ctx.a.team,
+  condicion: ctx => saurios(ctx.a) && es(ctx.a, 'eslizon') && equipo(ctx.a.team, 'puntas') && !(tray.puntas && tray.puntas[ctx.a.team] === tray.tp)
+    && PUNTAS.includes((WPN[ctx.a.weapon] || {}).name),
+  efecto: ctx => {
+    tray.puntas = tray.puntas || [null, null]; tray.puntas[ctx.a.team] = tray.tp;
+    ctx.a.puntasTP = tray.tp; ctx.a.puntasAct = ctx.a.activaciones || 0;
+    registro(T.ardidesSL.puntas(ctx.a.name));
+  },
+});
+// Señor del Espacio y el Tiempo: al activarse un enemigo visible a 6″ o menos de un Sacerdote
+registrarDisparador({
+  id: 'espacio', ardid: 'Señor del Espacio y el Tiempo', momento: 'inicioActivacion',
+  quien: ctx => 1 - ctx.op.team,
+  condicion: ctx => ctx.op.alive && ctx.op.espacioTP !== tray.tp && OPS.some(o => o.alive && o.deployed !== false && o.team !== ctx.op.team
+    && saurios(o) && es(o, 'sacerdote') && opGap(o, ctx.op) <= 6 + 1e-9 && ven(o, ctx.op)),
+  efecto: ctx => { ctx.op.espacioTP = tray.tp; registro(T.ardidesSL.espacio(ctx.op.name)); },
+});
+reduceMove.push(op => tray && op.espacioTP != null && op.espacioTP === tray.tp ? 2 : 0);
+// Plumas incandescentes: al empezar cada punto de inflexión (desde el 2.º), el líder recupera 1D3 heridas
+export function equipoNuevoPI(die = d6) {
+  if (!tray) return;
+  for (const s of [0, 1]) {
+    if (!equipo(s, 'plumas')) continue;
+    const l = OPS.find(o => o.alive && o.deployed !== false && o.team === s && saurios(o) && perfil(o).lider);
+    if (!l || l.wounds >= l.maxW) continue;
+    const cura = Math.min(l.maxW - l.wounds, Math.ceil(die() / 2));
+    l.wounds += cura; registro(T.ardidesSL.plumas(l.name, cura));
+  }
+}
+// Ídolo de los Ancestrales: 1 PM más, una vez por batalla (en la primera fase de estrategia)
+export function idoloAncestrales(s) {
+  if (!tray || !equipo(s, 'idolo') || (tray.idolo && tray.idolo[s])) return 0;
+  tray.idolo = tray.idolo || [false, false]; tray.idolo[s] = true; tray.cp[s] += 1;
+  registro(T.ardidesSL.idolo(['Ash', 'Slate'][s]));
+  return 1;
+}

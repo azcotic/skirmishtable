@@ -588,8 +588,10 @@ export const T = {
     anadir: n => `Añadir ${n}`,
     quitar: n => `Quitar ${n}`,
     medioTitulo: 'Cuenta como media selección',
+    dobleTitulo: 'Cuenta como dos selecciones',
     soloUno: 'solo uno por comando',
     yaHayLider: 'ya elegiste el líder',
+    alMaximo: (plural, max) => `ya tienes el máximo (${max} ${plural.toLowerCase()})`,
     reglasTitulo: 'Reglas del comando',
     reglas: {
       selecciones: n => `${n} selecciones en total.`,
@@ -597,6 +599,8 @@ export const T = {
       unoSolo: nombre => `Exactamente un ${nombre.toLowerCase()} (elige uno de los marcados como ${nombre.toLowerCase()}).`,
       unicos: 'Cada agente solo una vez, salvo los combatientes.',
       medio: 'Los marcados con ½ cuentan como media selección: dos de ellos ocupan una.',
+      doble: 'Los marcados con ×2 cuentan como dos selecciones.',
+      maximoGrupo: (plural, max) => `Como máximo ${max} ${plural.toLowerCase()}.`,
     },
     error: {
       faltan: n => n === 0.5 ? 'Falta media selección.' : `${n === 1 ? 'Falta' : 'Faltan'} ${num(n)} ${n === 1 ? 'selección' : 'selecciones'}.`,
@@ -703,6 +707,11 @@ export const T = {
     'Rebaño mutante': 'Al activar un Tzaangor: elige a otro Tzaangor amigo apostado, a 2″ o menos y visible, para que se active a la vez. Sus acciones van una tras otra, en cualquier orden.',
     'Todo es polvo': 'Cuando un dado de ataque normal va a hacer daño a uno de tus Marines Rúbrica, ese dado hace 1 de daño menos.',
     'Indomitus': 'Si disparan a uno de tus agentes y sacas dos fallos o más en defensa, uno cuenta como éxito normal.',
+    'Emboscada en la jungla': 'Si disparan a uno de tus Eslizones que está en cobertura, puedes conservar un dado de defensa más como éxito normal sin tirarlo (nunca más de 2 dados conservados en un disparo).',
+    'Furia predadora': 'Las armas de combate de tus Saurios y Kroxigor que hayan Cargado en esa activación tienen Incesante.',
+    'Escurridizos': 'Cuando termina un Disparo enemigo contra un Eslizón tuyo que no queda incapacitado, ese Eslizón se mueve hasta 2″ sin terminar en la zona de control de un enemigo. (Aún no tiene efecto en la app.)',
+    'Colmillo en la brecha': 'Cuando disparan a un Saurio o Kroxigor tuyo, conservas un dado de defensa como éxito crítico sin tirarlo (nunca más de 2 dados conservados en un disparo).',
+    'Señor del Espacio y el Tiempo': 'Cuando un agente enemigo visible a 6″ o menos de un Sacerdote tuyo empieza su activación, su Movimiento baja 2″ hasta el final del punto de inflexión (nunca por debajo de 4″).',
   },
   // ventana de ardides de tiroteo (src/ui/tirada.js, ofrecerArdides; motor en src/game/disparadores.js)
   ventanaArdid: {
@@ -717,6 +726,15 @@ export const T = {
     log: (equipo, n, coste = 1) => `<b>${equipo}</b> usa el ardid <b>${n}</b> (−${coste} ${PM}).`,
     logEquipo: (equipo, n) => `<b>${equipo}</b> usa <b>${n}</b> (equipo de facción).`,
     todoPolvo: equipo => `${equipo}: Todo es polvo reduce en 1 el daño de ese dado.`,
+  },
+  // ardides y equipo de facción de los Saurios de Lustria (src/ui/ardides.js)
+  ardidesSL: {
+    puntas: n => `Puntas de obsidiana: el arma de ${n} tiene Letal 5+ en esta acción.`,
+    escudoSaurio: n => `Escudos de piel de estegadón: la Salvación de ${n} es 3+ en este disparo.`,
+    plumas: (n, c) => `Plumas incandescentes: ${n} recupera ${c} ${c === 1 ? 'herida' : 'heridas'}.`,
+    idolo: s => `Ídolo de los Ancestrales: ${s} gana 1 PM más.`,
+    espacio: n => `Señor del Espacio y el Tiempo: el Movimiento de ${n} baja 2″ hasta el final del punto de inflexión.`,
+    colmillo: n => `Colmillo en la brecha: ${n} conserva un dado de defensa como éxito crítico.`,
   },
   // ardides y equipo de facción de los Ángeles de la Muerte (src/ui/ardides.js)
   ardidesAM: {
@@ -811,6 +829,9 @@ export const T = {
     ejeTitulo: 'Subir o bajar el encuadre (el eje vertical), sin cambiar el zoom ni el giro',
     subir: 'Subir el encuadre',
     bajar: 'Bajar el encuadre',
+    ejeXTitulo: 'Mover el encuadre a la izquierda o a la derecha (el eje horizontal), sin cambiar el zoom ni el giro',
+    izquierda: 'Mover el encuadre a la izquierda',
+    derecha: 'Mover el encuadre a la derecha',
     vistaArriba: 'La miniatura vista desde arriba, con la flecha de su frente',
     frente: 'Frente de la miniatura',
     frenteMenos: 'Girar el frente 15° a la izquierda',
@@ -904,6 +925,7 @@ export const T = {
     nombre: {
       balas: 'Balas hechizadas', faucesdaemonicas: 'Armas faucesdaemónicas', tunicas: 'Túnicas arcanas', pergaminos: 'Pergaminos de hechicería',
       sellos: 'Sellos de pureza', relicarios: 'Relicarios del capítulo', escudos: 'Escudos decorativos', auspex: 'Auspex',
+      puntas: 'Puntas de obsidiana', escudosEstegadon: 'Escudos de piel de estegadón', plumas: 'Plumas incandescentes', idolo: 'Ídolo de los Ancestrales', tambores: 'Tambores de guerra',
       deposito: 'Depósito de munición', alambre: 'Alambre de púas', comunicaciones: 'Aparato de comunicaciones', minas: 'Minas',
       barricadasLigeras: '2 barricadas ligeras', barricadaPesada: 'Barricada pesada', barricadaPortatil: 'Barricada portátil', escaleras: '2 escaleras',
       granadasEspeciales: 'Granadas especiales', granadasExplosivas: 'Granadas explosivas', cargaDemolicion: 'Carga de demolición',
@@ -917,6 +939,11 @@ export const T = {
       relicarios: 'Ira de venganza cuesta 0 PM si el agente tiene orden de trabarse.',
       escudos: 'Una vez por punto de inflexión, al combatir, los dados del rival menores que 6 no pueden guardarse como críticos.',
       auspex: 'Una vez por punto de inflexión, al disparar a un blanco ofuscado a 8″ o menos, deja de estarlo esa activación.',
+      puntas: 'Una vez por punto de inflexión, cuando un Eslizón dispara con Escupedardos o Jabalinas, esa arma tiene Letal 5+ en esa acción.',
+      escudosEstegadon: 'La primera vez en la batalla que disparan a cada Saurio (salvo la Guardia Saurio), su Salvación es 3+ en ese disparo.',
+      plumas: 'Al empezar cada punto de inflexión, tu líder recupera 1D3 heridas.',
+      idolo: 'Una vez por batalla, en la fase de estrategia, ganas 1 PM más (se aplica al empezar la batalla).',
+      tambores: 'Una vez por batalla, al inicio de un punto de inflexión, suma 1″ a la distancia de Cargar de tus agentes hasta el final de ese punto de inflexión.',
       deposito: 'Un marcador en tu territorio: un agente que lo controla puede, sin gastar PA, repetir un dado de ataque al disparar hasta el siguiente punto de inflexión.',
       alambre: 'Terreno expuesto y obstructor que se despliega en tu territorio y frena a quien lo cruce.',
       comunicaciones: 'Un marcador en tu territorio: quien lo controla suma 3″ al alcance de sus reglas de apoyo sobre agentes amigos.',
