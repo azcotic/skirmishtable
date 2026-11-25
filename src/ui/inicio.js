@@ -40,18 +40,20 @@ import { gradoActual, puntuarKillOp, reiniciarPuntos } from './ops.js';
 import { setPick } from '../view3d/units.js';
 import { bandoEnTurno } from './turno.js';
 import { mayControl } from '../net/sync.js';
+import { ASTERISMOS, FORMACIONES, asterismosActivos, formacion, iniciarPlan, planAlAzar } from './saurios-plan.js';
 import { MAX_EQUIPO, alternarEquipo, equipoDeFaccion, separar, todoElEquipo } from '../game/equipo.js';
 
 const KEY = "skirmishtable.inicio";
 export const KEY_PARTIDA = "skirmishtable.partida";   // la partida guardada (src/ui/guardado.js)
 // los comandos de prueba (ids del catálogo de Steam): Garra Némesis y Aquelarre Disforme
 const COMANDOS_PRUEBA = ["3352828814", "3348897103", "2272196183", "3272457903"];   // Garra Némesis, Aquelarre Disforme, Ángeles de la Muerte, Saurios de Lustria
+const COMANDO_SAURIOS = "3272457903";
 const ORDEN = ["modo", "mapa", "comando0", "plantilla0", "comando1", "plantilla1", "despliegue", "resumen"];
 
 // plantilla: los agentes elegidos de cada bando (claves); config: el nombre de la configuración
 // faccion: por bando, lo elegido en las elecciones de facción de su comando (src/data/teams):
 // { [índice del agente en la plantilla]: { [id de la elección]: id de la opción } }
-const eleccion = { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], tacticas: [[null, null], [null, null]], equipo: [[], []], despliegue: null };
+const eleccion = { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], tacticas: [[null, null], [null, null]], saurios: [[null, null], [null, null]], equipo: [[], []], despliegue: null };
 // Lo que falta o hay que elegir en un bando: una entrada por agente y elección que le toca
 function porElegir(s) {
   if (!eleccion.plantilla[s]) return [];
@@ -79,8 +81,16 @@ function trasFaccion(s) {
   }
   return ir("tacticas" + s);
 }
-// Tras las tácticas: el equipo del comando (la computadora no lleva equipo todavía); luego, el siguiente paso
+// Tras las tácticas: el Gran Plan y la Formación de los Saurios de Lustria (la computadora los elige al azar)
 function trasTacticas(s) {
+  eleccion.saurios = eleccion.saurios || [[null, null], [null, null]];
+  eleccion.saurios[s] = [null, null];
+  if (eleccion.comando[s] !== COMANDO_SAURIOS) return trasPlan(s);
+  if (s === 1 && eleccion.modo === "ia") { const p = planAlAzar(); eleccion.saurios[1] = [p.asterismo, p.formacion]; return trasPlan(1); }
+  return ir("saurios" + s);
+}
+// Tras el Gran Plan: el equipo del comando (la computadora no lleva equipo todavía); luego, el siguiente paso
+function trasPlan(s) {
   const c = comandoPorId(eleccion.comando[s]), sigue = s === 0 ? "comando1" : "despliegue";
   eleccion.equipo[s] = [];
   if (!c || (s === 1 && eleccion.modo === "ia")) return ir(sigue);
@@ -115,6 +125,14 @@ const nombreMapa = k => MAPS[k] ? MAPS[k].name : k;
 const opcion = (v, titulo, desc = "", { activa = false, deshabilitada = false, extra = "" } = {}) =>
   `<button class="pant-op${activa ? " activa" : ""}" data-v="${esc(v)}"${deshabilitada ? " disabled" : ""}>` +
   `<span class="pant-op-t">${titulo}</span>${desc ? `<span class="pant-op-d">${desc}</span>` : ""}${extra}</button>`;
+
+// El Gran Plan de un bando de Saurios: su Formación y los Asterismos activos (se ve en la fase de estrategia)
+function notaPlan(lado) {
+  const f = formacion(lado);
+  if (!f) return "";
+  const Z = T.saurios;
+  return `<p class="pant-nota"><b>${esc(Z.formacion[f].nombre)}</b> · ${esc(Z.fichaActivos(asterismosActivos(lado).map(id => Z.asterismo[id].nombre)))}</p>`;
+}
 
 function opcionesComando(lado) {
   const elegido = eleccion.comando[lado];
@@ -171,6 +189,13 @@ function contenido() {
       return { titulo: segunda ? F.tituloSecundaria : F.tituloPrimaria,
         sub: segunda ? F.subSecundaria(esc(c.tacticas.find(x => x.id === t[0]).nombre)) : F.subPrimaria, html };
     }
+    case "saurios0": case "saurios1": {        // Gran Plan (Asterismo) y luego Formación de los Saurios de Lustria
+      const s = +paso.slice(-1), p = eleccion.saurios[s], Z = T.saurios, segunda = !!p[0];
+      const html = segunda
+        ? FORMACIONES.map(id => opcion("f:" + id, esc(Z.formacion[id].nombre), esc(Z.formacion[id].desc))).join("")
+        : ASTERISMOS.map(id => opcion("a:" + id, esc(Z.asterismo[id].nombre), esc(Z.asterismo[id].desc) + "<br><em>" + esc(Z.asterismo[id].cond) + "</em>")).join("");
+      return { titulo: segunda ? Z.tituloFormacion : Z.tituloAsterismo, sub: segunda ? Z.subFormacion(esc(Z.asterismo[p[0]].nombre)) : Z.subAsterismo, html };
+    }
     case "equipo0": case "equipo1": {          // equipo del comando: hasta 4 opciones
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]), Q = T.equipo;
       const html = [[Q.seccionFaccion, equipoDeFaccion(c)], [Q.seccionUniversal, todoElEquipo(c).filter(e => !e.faccion)]]
@@ -219,6 +244,8 @@ function contenido() {
       `<dt>${I.rMapa}</dt><dd>${esc(nombreMapa(eleccion.mapa))}</dd>` +
       `<dt>${I.rComando}</dt><dd>${esc(nombreComando(eleccion.comando[0]))}${eleccion.config[0] ? ` · ${esc(eleccion.config[0])}` : ""}</dd>` +
       `<dt>${I.rRival}</dt><dd>${esc(nombreComando(eleccion.comando[1]))}${eleccion.config[1] ? ` · ${esc(eleccion.config[1])}` : ""}</dd>` +
+      [0, 1].map(s => { const z = (eleccion.saurios || [])[s];
+        return z && z[0] && z[1] ? `<dt>${T.saurios.resumenPlan(s)}</dt><dd>${esc(T.saurios.asterismo[z[0]].nombre)}</dd><dt>${T.saurios.resumenFormacion(s)}</dt><dd>${esc(T.saurios.formacion[z[1]].nombre)}</dd>` : ""; }).join("") +
       [0, 1].map(s => { const c = comandoPorId(eleccion.comando[s]), t = eleccion.tacticas[s];
         return c && c.tacticas && t[0] && t[1] ? `<dt>${T.tacticas.resumen(s)}</dt><dd>${esc(c.tacticas.find(x => x.id === t[0]).nombre)} · ${esc(c.tacticas.find(x => x.id === t[1]).nombre)}</dd>` : ""; }).join("") +
       `<dt>${I.rDespliegue}</dt><dd>${eleccion.despliegue === "azar" ? I.azar : I.turnos}</dd></dl>`,
@@ -284,7 +311,7 @@ function contenido() {
       // El destino es mi arma ya elegido pero sin lanzar sus dos dados: no se sigue hasta lanzarlos
       const faltaLanzar = usados.includes(ARDID.destino) && !dadosGuardados(lado).length;
       return { titulo: `${E.titulo(tray.tp)} · ${E.ardidesTitulo}`,
-        sub: mio ? E.ardidesSub(esc(bando(lado)), tray.cp[lado]) : E.esperaArdides(esc(TEAMNAME[lado])), html,
+        sub: mio ? E.ardidesSub(esc(bando(lado)), tray.cp[lado]) : E.esperaArdides(esc(TEAMNAME[lado])), html: notaPlan(lado) + html,
         principal: mio ? `<button class="pant-jugar" id="pantardidesok"${faltaLanzar ? " disabled" : ""}>${faltaLanzar ? T.destino.lanzaPrimero : ultimo ? E.aTiroteo : E.siguiente(esc(TEAMNAME[ordenArdides[1]]))}</button>` : "" };
     }
     case "fin": {
@@ -312,7 +339,7 @@ function render() {
   const el = pantalla();
   if (!el) return;
   // armar el comando cuenta como el paso de su configuración, para los puntos de progreso
-  const c = contenido(), i = ORDEN.indexOf(/^(elegir|faccion|tacticas|equipo)/.test(paso) ? "plantilla" + paso.slice(-1) : paso);
+  const c = contenido(), i = ORDEN.indexOf(/^(elegir|faccion|tacticas|saurios|equipo)/.test(paso) ? "plantilla" + paso.slice(-1) : paso);
   const puntos = i < 0 ? "" : ORDEN.map((_, k) => `<i class="${k < i ? "hecho" : k === i ? "ahora" : ""}"></i>`).join("");
   el.innerHTML = `<div class="pant" data-paso="${paso}">
     <div class="pant-cab">
@@ -365,6 +392,13 @@ function elegir(v) {
       if (id === t[0]) return;
       t[1] = id;
       return trasTacticas(s);
+    }
+    case "saurios0": case "saurios1": {        // primero el Asterismo, luego la Formación
+      const s = +paso.slice(-1), p = eleccion.saurios[s];
+      if (!p[0]) { if (v.startsWith("a:") && ASTERISMOS.includes(v.slice(2))) { p[0] = v.slice(2); return render(); } return; }
+      if (!v.startsWith("f:") || !FORMACIONES.includes(v.slice(2))) return;
+      p[1] = v.slice(2);
+      return trasPlan(s);
     }
     case "equipo0": case "equipo1": {
       const s = +paso.slice(-1), c = comandoPorId(eleccion.comando[s]);
@@ -501,6 +535,7 @@ function empezar() {
   // con sus elecciones de facción (5.º dato de cada agente)
   tray.tacticas = [0, 1].map(s => eleccion.tacticas[s][0] && eleccion.tacticas[s][1] ? [...eleccion.tacticas[s]] : null);
   tray.flex = [null, null]; tray.guerra = [[], []]; tray.guerraPI = [null, null];
+  iniciarPlan(tray, [0, 1].map(s => eleccion.comando[s] === COMANDO_SAURIOS && (eleccion.saurios || [])[s] ? { asterismo: eleccion.saurios[s][0], formacion: eleccion.saurios[s][1] } : null));   // Gran Plan de los Saurios
   tray.equipoFaccion = [0, 1].map(s => separar(comandoPorId(eleccion.comando[s]), eleccion.equipo[s] || []).faccion);
   tray.equipoUniversal = [0, 1].map(s => separar(comandoPorId(eleccion.comando[s]), eleccion.equipo[s] || []).universal);
   rosterInit([0, 1].flatMap(s => plantillaDefs(s, eleccion.comando[s], eleccion.plantilla[s])
@@ -525,7 +560,7 @@ export function abrirInicio() {
   finMostrado = false;
   partidaIniciada = false; ultimaEleccion = null;   // el menú principal: la partida anterior se abandona
   try { localStorage.removeItem(KEY_PARTIDA); } catch (e) {}
-  Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], tacticas: [[null, null], [null, null]], equipo: [[], []], despliegue: null });
+  Object.assign(eleccion, { modo: null, mapa: null, comando: [null, null], plantilla: [null, null], config: [null, null], faccion: [{}, {}], tacticas: [[null, null], [null, null]], saurios: [[null, null], [null, null]], equipo: [[], []], despliegue: null });
   paso = "modo"; pila.length = 0;
   el.hidden = false;
   render();

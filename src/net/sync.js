@@ -90,7 +90,7 @@ const mapKey = () => Object.keys(MAPS).find(k => MAPS[k] === MAP) || null;
 const imported = k => /^imp/.test(k || "");
 export function exportGame() {
   return { rules: RULES.id, map: mapKey(), mapName: MAP && MAP.name, ops: OPS,
-           tray: { tp: tray.tp, cp: [...tray.cp], vp: [...tray.vp] }, minis: minis.sides,
+           tray: { tp: tray.tp, cp: [...tray.cp], vp: [...tray.vp], ...(tray.saurios ? { saurios: JSON.parse(JSON.stringify(tray.saurios)) } : {}) }, minis: minis.sides,
            dice: exportDice(),
            mission: JSON.parse(JSON.stringify(opsState)) };
 }

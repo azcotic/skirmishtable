@@ -116,9 +116,11 @@ export function effHit(op, w) { return Math.min(6, w.hit + (penalizaLesion(op) |
 export function isInjured(op) { return op.wounds < op.maxW/2; }
 // Reglas que bajan el Movimiento (p. ej. un ardid): (op) => pulgadas menos; nunca baja de 4″
 export const reduceMove = [];
+// Reglas que suman Movimiento (p. ej. un Asterismo): (op) => pulgadas más, después de los cambios anteriores
+export const sumaMove = [];
 export function effMove(op) {
   const base = penalizaLesion(op) ? Math.max(4, op.move-2) : op.move, menos = reduceMove.reduce((a, f) => a + (f(op) || 0), 0);
-  return menos ? Math.max(4, base - menos) : base;
+  return (menos ? Math.max(4, base - menos) : base) + sumaMove.reduce((a, f) => a + (f(op) || 0), 0);
 }
 // Reglas que hacen ignorar los cambios por estar lesionado (p. ej. un ardid): (op) => true si lo ignora
 export const ignoraLesion = [];
@@ -276,6 +278,8 @@ export function aplicarCombate(est, op) {
     if (rr.robusto && 1 - i === 1 && op.con === "norm" && dmg >= 3 && !u.robusto) { u.robusto = true; dmg -= 1; }
     // Aura de hierro: ignora el daño de un dado normal, una vez por batalla
     if (rr.aura && op.aura !== false && op.con === "norm" && dmg > 0 && !u["aura" + (1 - i)]) { u["aura" + (1 - i)] = true; dmg = 0; aura = true; }
+    // Asterismo Quetzl: el primer éxito normal que daña a un Saurio o Kroxigor (por PI) inflige 1 menos
+    if (rr.quetzl && op.con === "norm" && dmg > 0 && !u["quetzl" + (1 - i)]) { u["quetzl" + (1 - i)] = true; dmg -= 1; if (rr.gastarQuetzl && est.ops) rr.gastarQuetzl(est.ops[1 - i]); }
     if (op.menos && op.con === "norm") dmg = Math.max(0, dmg - op.menos);   // un ardid (Todo es polvo) baja el daño de este dado
     rival.wounds = Math.max(0, rival.wounds - dmg);
     if (rival.wounds === 0) rival.alive = false;

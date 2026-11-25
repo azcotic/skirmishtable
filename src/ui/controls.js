@@ -12,7 +12,7 @@ import { HINT0, hint, logEl, logLine, svg } from './dom.js';
 import { T } from '../i18n/es.js';
 import { reiniciarVista } from './vista2d.js';
 import { PM_INICIALES, pmDelPI } from '../game/fases.js';
-import { control } from './control.js';
+import { control, esDeLaIA } from './control.js';
 
 // Qué pasa al empezar un punto de inflexión. Por defecto, reparte los PM según las reglas sin
 // preguntar; inicio.js pone sus pantallas de fase de estrategia (iniciativa y ardides).
@@ -23,10 +23,11 @@ import { cancelMode, doUndo, reiniciarActivaciones, snapshot, tray, undoStack } 
 import { build3DScene, setView, three, view3D } from '../view3d/table3d.js';
 import { syncBases } from '../view3d/units.js';
 import { RULES, RULESETS, fmtIn, setRuleset } from '../rules/index.js';
-import { mayPlay, maySetUp, pump, requestUndo } from '../net/sync.js';
+import { mayControl, mayPlay, maySetUp, pump, requestUndo } from '../net/sync.js';
 import { restartRecording } from '../net/replayer.js';
 import { equipoNuevoPI } from './ardides.js';
 import { puntuarObjetivos } from './ops.js';
+import { inicioPuntoDeInflexion } from './saurios-plan.js';
 
 // online, only the host sets up the table and only the two players act
 const REPLAYING = T.partida.viendoGrabacion;
@@ -139,7 +140,7 @@ async function importTTSFile(file) {
 export function wireControls() {
 
   /* ---------- tray buttons ---------- */
-  document.getElementById("endtp").onclick = () => {
+  document.getElementById("endtp").onclick = async () => {
     if (playOnly()) return;
     snapshot();
     puntuarObjetivos(tray.tp);    // 1 PV por objetivo controlado al terminar el PI
@@ -148,6 +149,7 @@ export function wireControls() {
     OPS.forEach(o => { o.ready = true; o.ap = o.apl; o.used = []; o.disparadas = []; delete o.reacciono; delete o.reaccion; delete o.volo; delete o.psiPI; delete o.vetadas; delete o.grupo; delete o.gratisCorrer; delete o.tunicaTP; if (o.aplBase) { o.apl = o.aplBase; o.ap = o.apl; delete o.aplBase; } if (o.cuerno) { o.move -= 1; delete o.cuerno; } });
     logLine(T.partida.nuevoPI(tray.tp));
     equipoNuevoPI();              // Plumas incandescentes (Saurios de Lustria)
+    await inicioPuntoDeInflexion({ esIA: esDeLaIA, controla: team => mayControl({ team }) });   // Gran Plan: Asterismos y Lector de estrellas
     renderAll();
     alNuevoPI();                  // fase de estrategia: iniciativa, PM y ardides (inicio.js)
   };

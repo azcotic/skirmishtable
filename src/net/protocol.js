@@ -195,6 +195,14 @@ export function cleanTray(t, d) {
   if (Array.isArray(t.guerraPI)) out.guerraPI = [0, 1].map(i => typeof t.guerraPI[i] === "string" ? t.guerraPI[i].slice(0, 40) : null);
   // Doctrina de combate (Ángeles de la Muerte): la doctrina elegida por cada bando
   if (Array.isArray(t.doctrina)) out.doctrina = [0, 1].map(i => ["devastadora", "tactica", "asalto"].includes(t.doctrina[i]) ? t.doctrina[i] : null);
+  // Gran Plan de los Saurios de Lustria: Asterismo y Formación elegidos, Asterismos activos y PI de la Formación Eterna
+  if (t.saurios && typeof t.saurios === "object") {
+    const ast = x => ["itzl", "quetzl", "sotek", "tepok"].includes(x) ? x : null, form = x => ["eterna", "garra", "acechadora"].includes(x) ? x : null;
+    const par = (v, f) => [0, 1].map(i => Array.isArray(v) ? f(v[i]) : null);
+    out.saurios = { asterismo: par(t.saurios.asterismo, ast), formacion: par(t.saurios.formacion, form),
+      activos: [0, 1].map(i => Array.isArray(t.saurios.activos) && Array.isArray(t.saurios.activos[i]) ? [...new Set(t.saurios.activos[i].map(ast).filter(Boolean))] : []),
+      eternaTP: par(t.saurios.eternaTP, x => Number.isInteger(x) && x >= 0 && x < 100 ? x : null) };
+  }
   for (const clave of ["ardides", "ardidesT"])   // de estrategia y de tiroteo
     if (Array.isArray(t[clave]))
       out[clave] = [0, 1].map(i => Array.isArray(t[clave][i]) ? t[clave][i].filter(x => typeof x === "string").slice(0, 8).map(x => x.slice(0, 60)) : []);
