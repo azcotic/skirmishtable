@@ -135,6 +135,11 @@ export async function jugarTurnoIA() {
       }
     }
     if (op.alive && op.ready) endActivation(op);
+  } catch (e) {                // un error en su jugada: se avisa y se detiene (el botón "Jugar su turno" lo reintenta)
+    console.error("IA:", e);
+    logLine(T.ia.fallo(String((e && e.message) || e)));
+    hint(T.ia.falloPista);
+    return;
   } finally {
     control.jugando = false;
     enCurso = false;
@@ -147,9 +152,20 @@ export async function jugarTurnoIA() {
   }, 150);
 }
 
+// Destraba a la computadora si se quedó esperando (una ventana que no llegó, una recarga a mitad de su turno…):
+// suelta los seguros de su turno y la hace jugar su activación ahora.
+export function forzarTurnoIA() {
+  const bando = bandoEnTurno();
+  if (bando === null || !esDeLaIA(bando)) { hint(T.ia.noLeToca); return; }
+  enCurso = false; control.jugando = false;
+  jugarTurnoIA();
+}
+
 export function wireIA() {
   const b = document.getElementById("iasugerir");
   if (b) b.onclick = () => sugerir();
+  const j = document.getElementById("iajugar");
+  if (j) j.onclick = () => forzarTurnoIA();
   const siLeToca = () => setTimeout(() => { if (esDeLaIA(bandoEnTurno())) jugarTurnoIA(); }, 300);
   control.alTerminarActivacion = siLeToca;
   control.alEmpezarTiroteo = siLeToca;
