@@ -692,6 +692,12 @@ export function build3DScene() {
   // available; otherwise our own board with decimated scans or extruded footprints.
   if (hasModels(MAP)) {
     addModels(g, MAP, three.renderer, BW, BH, () => gen === sceneGen);
+    if (MAP.ground3d) {   // the mat of some maps doesn't reach every edge of the play area: dark floor under it
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(BW, BH), mat3d("floor3d", {color: 0x20242b, roughness: 1}));
+      floor.rotation.x = -Math.PI / 2; floor.position.set(BW / 2, -0.05, BH / 2);
+      floor.receiveShadow = true;
+      g.add(floor);
+    }
     for (const dz of DROPZONES) {   // a light tint over the mat's own deployment art
       const zone = new THREE.Mesh(new THREE.PlaneGeometry(dz.w, dz.h),
         new THREE.MeshBasicMaterial({color: lin(dz.team === 0 ? 0xe0672f : 0x5b93a6), transparent: true, opacity: 0.08, depthWrite: false}));

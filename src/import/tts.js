@@ -182,3 +182,12 @@ export function convertVolkusBag(bag, label, source) {
           models3d, frame: alpha,
           terrain: [], decor: []};
 }
+// Gallowdark: the mod's AO 1-2 layouts (src/data/gallowdark-layouts.js, rows in the same
+// format as the Volkus ones) as the exact TTS models for the 3D table. They only add the
+// picture: the walls and hatchways that move, block and see are the ones in gallowdark.js.
+// `frame` is the angle that turns TTS axes into the map's (see convertGallowdark).
+export function gallowdarkModels3d(layout) {
+  const models3d = layout.items.filter(r => r[0]).map(([k, x, z, r, s, y = 0, rx = 0, rz = 0, sy = s, sz = s]) =>
+    ({k, p: [x, y, z], r: [rx, r, rz], s: [s, sy, sz], tint: null}));
+  return {models3d, frame: layout.frame || 0};
+}

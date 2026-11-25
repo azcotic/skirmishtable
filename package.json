@@ -19,6 +19,7 @@
     "test:e2e:failed": "node scripts/e2e.mjs --last-failed",
     "export:maps": "node scripts/export-maps.mjs",
     "tts:sources": "node scripts/tts-sources.mjs",
+    "tts:gallowdark": "node scripts/tts-gallowdark.mjs",
     "tts:teams": "node scripts/tts-teams.mjs",
     "tts:ops": "node scripts/tts-ops.mjs",
     "fetch:saves": "node scripts/fetch-saves.mjs"

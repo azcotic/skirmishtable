@@ -221,7 +221,14 @@ textures directly, reads the OBJ with `src/import/obj.js` (the same conventions 
 `tools/model_pack.py`, checked to match the packed models vertex for vertex), and keeps the
 files in the Cache API (`skirmishtable-tts-v1`). The choice is remembered per browser.
 If the mod changes, rebuild the table with `npm run tts:sources` (it fetches the save
-through the Steam API).
+through the Steam API; it rewrites the whole catalogue from the Volkus bags, dropping the Gallowdark
+entries, so run `npm run tts:gallowdark` right after it).
+
+**Gallowdark AO 1-2 models.** They come from the same base mod (bag *Killzone Gallowdark*,
+"Gallowdark 01" and "Galloqdark 02"). `npm run tts:gallowdark` reads the save (from `cache/`, or
+fetches it), checks the pieces against the walls in `src/data/gallowdark.js`, writes their
+placements to `src/data/gallowdark-layouts.js` and adds the new model links to
+`src/data/tts-sources.js` without touching the Volkus ones. Details: `docs/ARCHITECTURE.md`.
 
 ### Dice, wounds, ranges, ops and score
 
@@ -295,7 +302,6 @@ offers **Load from Steam**. `npm run build` makes a normal standalone page for a
 - Rulesets: silhouette/model heights for true 3D line of sight (Infinity), zones of control,
   reactive orders, other activation systems; per-ruleset profiles and weapons.
 - The ruler on the 3D table; true 3D line of sight against the models (Infinity silhouettes).
-- Pack the Gallowdark wall bundles too.
 - Operatives as obstacles in routing (enemy control range, friendly bases).
 - A rules toggle for walk-over sub-1" clutter, and per-killzone terrain traits.
 - Charge validation (end within control range) and fight/shoot sequencing.

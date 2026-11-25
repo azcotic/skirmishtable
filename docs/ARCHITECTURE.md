@@ -362,8 +362,24 @@ upper face, so the table top is y = 0). The mirror in `L` turns Unity's left-han
 right-handed, which is why the packed geometry has its winding reversed. Materials are
 `MeshStandardMaterial` with roughness/metalness by TTS material type, PNG cut-outs use
 `alphaTest`, output is sRGB, and a 4096 shadow map gives contact shadows. Models stream in as
-they download (with a progress note). Maps without bag data (Gallowdark, hand-made) and pages
+they download (with a progress note). Gallowdark AO 1-2 get the same treatment from
+`src/data/gallowdark-layouts.js` (see "Gallowdark models" below). Maps without model data (hand-made) and pages
 without the pack fall back to the decimated `meshpack.json`, then to extruded footprints.
+
+**Gallowdark models.** The two Gallowdark mods (3353224453, 3360436479) hold only a flat board
+image; the models (pillars, walls, hatchways, floor mat, objectives) are in the base mod, bag
+*Killzone Gallowdark > Gallowdark Approved Ops 2024*. Its "Gallowdark 01" and "Galloqdark 02"
+(sic) are AO 1 and AO 2: their pieces sit within 0.45" of 29/31 and 31/32 of the walls measured
+in `gallowdark.js`, through the mapping X = z + 13.23, Y = x + 11.34 (frame angle 270 in
+`placementMatrix`). `npm run tts:gallowdark` reads the base save (`cache/3573927734.bson`, or
+fetches it), checks that match, writes the placements to `src/data/gallowdark-layouts.js` (the
+Volkus row format), measures the Unity bundles' bounds and adds only the new models to
+`tts-sources.js` (each link checked with a range request; dead ones dropped). The floor is the
+Volkus mat mesh with the Gallowdark texture under its own key `06EC984208223D38-GD`.
+`initMaps()` attaches `models3d` and `frame` to `gd1`/`gd2`; without the models (not loaded,
+no Steam) the table still draws the extruded walls, and `gallowdark.js` stays the only rules
+geometry. The mod's mat and outer walls cover 7 x 6 cells (x ±13.35", z ±11.45") while the AO
+frame is 22.68" x 26.46", so a dark floor (`ground3d`) fills what the mat doesn't reach.
 
 **Sight on the table.** With an operative selected (or a drag ghost), `sightShade` lays a dark
 sheet over the table with the `visibilityPolygon` cut out, so what it can't see is shaded,

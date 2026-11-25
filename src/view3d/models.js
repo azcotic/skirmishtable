@@ -321,6 +321,8 @@ export function placementMatrix(m, frameDeg, top, BW, BH) {
 }
 
 const MAT_KEY = "06EC984208223D38", GUIDE_KEY = "9C8BD76749A0A723";
+// the same mat mesh can carry another map's art under its own catalogue key (MAT_KEY + "-GD")
+const isMat = k => k.startsWith(MAT_KEY);
 // The mat is a thin box textured all over: its sides smear the art's edge pixels. Keep the
 // art on the upward faces (material 0) and draw the rest plain black (material 1).
 let matSides = null, aboveTable = null;   // made on first use: THREE comes from a CDN
@@ -338,7 +340,7 @@ function splitTopFaces(g) {
 
 // height of the table top in TTS coordinates: the mat surface's upper face
 function tableTop(map) {
-  const surf = map.models3d.find(m => m.k === MAT_KEY && manifest.models[m.k]);
+  const surf = map.models3d.find(m => isMat(m.k) && manifest.models[m.k]);
   if (surf) return surf.p[1] + manifest.models[surf.k].bounds[1][1] * surf.s[1];
   const ys = map.models3d.map(m => m.p[1]).sort((x, y) => x - y);
   return ys[ys.length >> 1] || 0;
@@ -369,14 +371,14 @@ export function addModels(group, map, renderer, BW, BH, isCurrent) {
         });
         // deployment guide planes reach below the table top: cut them off at the surface
         if (m.k === GUIDE_KEY) mat.clippingPlanes = aboveTable || (aboveTable = [new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)]);
-        if (m.k === MAT_KEY) {
+        if (isMat(m.k)) {
           // ruin floors, rubble and bases sit exactly on the mat: push it back in depth so
           // they always win instead of flickering
           Object.assign(mat, { polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2 });
           splitTopFaces(p.geometry);
           matSides = matSides || new THREE.MeshBasicMaterial({ color: 0x000000 });   // flat black, unlit
         }
-        const mesh = new THREE.Mesh(p.geometry, m.k === MAT_KEY ? [mat, matSides] : mat);
+        const mesh = new THREE.Mesh(p.geometry, isMat(m.k) ? [mat, matSides] : mat);
         mesh.matrixAutoUpdate = false;
         mesh.matrix.copy(M);
         mesh.castShadow = tint[3] >= 1; mesh.receiveShadow = true;

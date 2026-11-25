@@ -5,11 +5,12 @@
 import { BASE_R } from '../config.js';
 import { GDMAPS } from '../data/gallowdark.js';
 import { VOLKUS_LAYOUTS } from '../data/volkus-layouts.js';
+import { GALLOWDARK_LAYOUTS } from '../data/gallowdark-layouts.js';
 import { VOLKUS_TERRAIN } from '../data/volkus-ruins.js';
 import { dist, opR } from './geometry.js';
 import { buildClearance, buildLevels, clearAt, composeFine, deriveFineLists, newGrid, rasterizeRects } from './grid.js';
 import { buildNav } from './movement.js';
-import { convertVolkusBag } from '../import/tts.js';
+import { convertVolkusBag, gallowdarkModels3d } from '../import/tts.js';
 
 export let BW = 30, BH = 22;         // board inches (set by the loaded map)
 export let MAP = null;               // current map definition
@@ -216,4 +217,7 @@ export function initMaps() {
   for (const [key, L] of Object.entries(VOLKUS_LAYOUTS))
     MAPS[key] = Object.assign(convertVolkusBag({Nickname: L.nick, items: L.items}, L.name, "Steam Workshop 3573927734 (KT24 Killzone Mod)"),
       {group: L.nick.startsWith("Volkus 25") ? "Volkus 2025" : "Volkus 2024", short: L.name.replace(/^.*AO /, "")});
+  // Gallowdark: the walls above stay as measured (they are the rules); the mod's models are only the 3D picture
+  for (const [key, L] of Object.entries(GALLOWDARK_LAYOUTS))
+    if (MAPS[key]) Object.assign(MAPS[key], gallowdarkModels3d(L), {ground3d: true});
 }

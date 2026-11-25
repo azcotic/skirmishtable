@@ -58,7 +58,7 @@ describe('TTS_SOURCES', () => {
     for (const [k, e] of Object.entries(TTS_SOURCES)) {
       const url = e.obj || e.bundle;
       expect(url, k).toMatch(/^https:\/\/cdn\.steamusercontent\.com\/ugc\//);
-      expect(url.endsWith(k + '/'), k).toBe(true);
+      expect(url.endsWith(k.split('-')[0] + '/'), k).toBe(true);   // a key may carry a suffix (same mesh, other texture)
       expect(e.bounds.length).toBe(2);
     }
   });
