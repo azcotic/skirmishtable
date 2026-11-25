@@ -152,7 +152,7 @@ export function cleanOps(incoming, local) {
       ecosUsado: o.ecosUsado ? true : undefined, ecosActivo: o.ecosActivo ? true : undefined,
       volo: o.volo ? true : undefined, habUsadas: Array.isArray(o.habUsadas) ? o.habUsadas.filter(x => typeof x === "string" && /^[a-z]{1,16}$/.test(x)).slice(0, 6) : undefined,
       // Aturdidora: 1 LPA menos hasta el final de su siguiente activación
-      aturdido: o.aturdido ? true : undefined,
+      aturdido: o.aturdido ? true : undefined, semillaUsada: o.semillaUsada ? true : undefined,   // Semilla de renacimiento ya gastada
       terrotoxinas: o.terrotoxinas ? true : undefined, terroDe: o.terroDe === 0 || o.terroDe === 1 ? o.terroDe : undefined,
       venenoTP: Number.isInteger(o.venenoTP) ? o.venenoTP : undefined,
       quemarMente: o.quemarMente ? true : undefined, quemarDe: o.quemarDe === 0 || o.quemarDe === 1 ? o.quemarDe : undefined,

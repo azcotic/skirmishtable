@@ -56,6 +56,8 @@ export function cannotShoot(eye) {
 // Reglas que hacen que un blanco cuente como en cobertura aunque no haya terreno (p. ej. Camuflaje cromático):
 // (blanco, distancia en pulgadas) => true
 export const camuflaje = [];
+// Reglas que le quitan al blanco la cobertura de terreno ligero (Inmenso): (blanco) => true
+export const sinCoberturaLigera = [];
 export function judgeShot(eye, target) {
   const shooter = eye.op || eye;
   const s = sightAnalysis(eye, target);
@@ -65,7 +67,8 @@ export function judgeShot(eye, target) {
     : foesNear(target.x, target.y, target.team, shooter.id ?? null, undefined, target.z || 0).find(o => o.team === eye.team && o !== shooter) || null;
   const V = RULES.vantage, up = standing(eye), drop = up.z - standing(target).z;
   const onVantage = !!(V && up.vantage);
-  const obscured = !!(s.visible && s.obscBy), inCover = !!(s.visible && (s.coverBy || camuflaje.some(f => f(target, s.gap))));
+  const ligera = !!(s.coverBy && !s.hardCover && sinCoberturaLigera.some(f => f(target)));   // solo terreno ligero: no le sirve
+  const obscured = !!(s.visible && s.obscBy), inCover = !!(s.visible && ((s.coverBy && !ligera) || camuflaje.some(f => f(target, s.gap))));
   const conceal = !!(RULES.orders && target.order === "conceal");
   // a Concealed target in light cover, seen past from a Vantage Point
   const vantage = inCover && conceal && onVantage && !s.hardCover;

@@ -6,7 +6,7 @@
 import { state } from '../state.js';
 import { CTRL, S } from '../config.js';
 import { dist, opGap, opR } from '../engine/geometry.js';
-import { chopIncrements, clampPath, nearestFree, opLayer, placeBlocked, planRoute, useBase } from '../engine/movement.js';
+import { escaladaExcede, chopIncrements, clampPath, nearestFree, opLayer, placeBlocked, planRoute, useBase } from '../engine/movement.js';
 import { C_WALL, G, GRES, LEVELS, layerZ, onLayer, ptFree } from '../engine/grid.js';
 import { foesNear } from '../engine/engage.js';
 import { BH, BW, MAP, OPS } from '../engine/world.js';
@@ -26,6 +26,7 @@ import { tieneEfecto } from '../data/teams/index.js';
 import { puede } from '../game/acciones.js';
 import { accionesHooks } from './acciones.js';
 import { ganchos } from './saurios-plan.js';
+import { guardianTrasCarga } from './saurios-combate.js';
 
 /* ---------- Recolocación libre (Formaciones Eterna y Acechadora de los Saurios de Lustria) ----------
  * state.recolocar = { id, max, lejos }: el agente se arrastra hasta max pulgadas, sin gastar PA ni contar como
@@ -242,6 +243,7 @@ function planDrag(x, y, hint, up) {
     d.secAllow = pl.p2 ? pl.p2.allow : 0;
     d.foes = foesNear(end[0], end[1], d.op.team, d.op.id, R, d.goalZ);
     d.why = placeBlocked(end[0], end[1], d.op.id, d.goalLayer) ? "occupied"
+      : escaladaExcede(d.op, c.path) ? "escaladaMax"      // Inmenso (Kroxigor): no escala más de 2″
       : charging && !d.foes.length ? "chargeNoFoe"
       : retroceso && (d.foes.length || intoFoes) ? "fallBackEnZona"
       : !charging && (d.foes.length || intoFoes) && RULES.moves.charge ? "engagedAfterMove"
@@ -323,6 +325,7 @@ function landDrag(d) {
     hint(TM.ambosUsados(d.op.name));
   }
   renderAll();
+  if (charged) guardianTrasCarga(d.op);      // Guardián inquebrantable (Saurios de Lustria): reacción de un amigo cercano
 }
 
 // a click (or tap) on a token: order flip on double-click, targeting, or selection

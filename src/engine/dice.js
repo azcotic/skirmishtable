@@ -141,6 +141,32 @@ export const reglasOp = [];
 export const rasgos = op => reglasOp.reduce((r, f) => Object.assign(r, f(op) || {}), {});
 // Reglas que hacen ignorar Saturación al disparar contra un agente: (blanco) => true
 export const ignoraSaturacion = [];
+// Reglas que dan una segunda oportunidad al ir a quedar incapacitado (Semilla de renacimiento, una vez por batalla):
+// (agente) => true si la tiene. op.semillaUsada marca que ya se gastó. Se tira 1D6 con el mismo `die` de la tirada
+// (así los dos navegadores de una partida en línea llegan al mismo resultado): 4+ y se queda con 1 herida.
+export const renaceDe = [];
+export const puedeRenacer = op => !!op && !op.semillaUsada && renaceDe.some(f => f(op));
+export const renaceCon = v => v >= 4;
+// Salvación efectiva (p. ej. Cohortes ordenadas): la mejor entre la base y la que den las reglas: (agente) => número o null
+export const ajustesSalvacion = [];
+export const effSave = op => ajustesSalvacion.reduce((m, f) => { const v = f(op); return typeof v === "number" ? Math.min(m, v) : m; }, op.save);
+// Reglas que actúan al terminar un combate (Mordisco): f(est, die); pueden quitar heridas con danarVida
+export const trasCombate = [];
+// Quita `dmg` heridas al agente i (0 o 1) del combate `est`; si iba a quedar incapacitado y puede renacer, tira 1D6.
+// Devuelve el resultado de la semilla ({ dado, ok }) o null.
+export function danarVida(est, i, dmg, die = est.die) {
+  const v = est.vida[i];
+  v.wounds = Math.max(0, v.wounds - dmg);
+  if (v.wounds > 0) return null;
+  v.alive = false;
+  if (!die || v.semillaUsada || !puedeRenacer({ ...est.ops[i], semillaUsada: false })) return null;
+  const dado = die(), ok = renaceCon(dado);
+  v.semillaUsada = true;
+  if (ok) { v.wounds = 1; v.alive = true; }
+  return { dado, ok };
+}
+// Al terminar un combate: las reglas de después de luchar (Mordisco)
+export function cerrarCombate(est, die = est.die) { for (const f of trasCombate) f(est, die); }
 
 /* ---------- Shoot ---------- */
 // One shot, `what` = {by, at, w: weapon key, acc: Accurate dice, obsc: obscured, cover}:
@@ -196,13 +222,14 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
   if (saturacion && what.cover) notes.push("saturate");
   const pen = numero(R, "Piercing") + (aCrit > 0 ? numero(R, "Piercing Crits") : 0);
   if (pen) notes.push("piercing:" + pen);
+  const save = effSave(b);
   let dfn = dfnDados
-    ? { ...clasificarDefensa(dfnDados, b.save, cover), dice: dfnDados, cover }
-    : rollDefence(b.save, cover, die, Math.max(0, 3 - pen));
+    ? { ...clasificarDefensa(dfnDados, save, cover), dice: dfnDados, cover }
+    : rollDefence(save, cover, die, Math.max(0, 3 - pen));
   // Protección del destino: todos los dados de defensa fallados se repiten (nunca empeora)
   if (!dfnDados && repiteDefensa.some(f => f(b))) {
-    const dice = dfn.dice.map(v => (v === 6 || (v !== 1 && v >= b.save)) ? v : die());
-    dfn = { ...clasificarDefensa(dice, b.save, cover), dice, cover }; notes.push("proteccionDestino");
+    const dice = dfn.dice.map(v => (v === 6 || (v !== 1 && v >= save)) ? v : die());
+    dfn = { ...clasificarDefensa(dice, save, cover), dice, cover }; notes.push("proteccionDestino");
   }
   if (dfn.cover) notes.push("cover save banked");
   for (const f of ajustesDefensa) { const d = f(dfn, b, w, { aN: aNorm, aC: aCrit, what }); if (d) { Object.assign(dfn, d); if (d.nota) notes.push(d.nota); } }
@@ -221,7 +248,14 @@ export function resolverDisparo(what, w, hit, atk, b, die = d6, dfnDados = null,
   }
   // atkN/atkC: los éxitos del ataque que llegan a la defensa (para explicar decisiones)
   // critDano: algún crítico hizo daño (Devastadora o sin bloquear): Quemar mente
-  return { w, hit, atk, dfn, dmg: dev + rest.dmg, notes, selfDmg, pen, cover, hotDado: hotV, atkN: aNorm, atkC: aCrit, dev, devArea, aura: !!aura, auraPosible,
+  // Semilla de renacimiento: si el daño lo incapacita, 1D6 (guardado en `what` para no tirar otro al repetir la resolución)
+  let dmgTotal = dev + rest.dmg, semilla = null;
+  if (dmgTotal >= b.wounds && dmgTotal > 0 && puedeRenacer(b)) {
+    if (what.semillaDado == null) what.semillaDado = die();
+    semilla = { dado: what.semillaDado, ok: renaceCon(what.semillaDado) };
+    if (semilla.ok) dmgTotal = b.wounds - 1;
+  }
+  return { w, hit, atk, dfn, dmg: dmgTotal, semilla, notes, selfDmg, pen, cover, hotDado: hotV, atkN: aNorm, atkC: aCrit, dev, devArea, aura: !!aura, auraPosible,
     critDano: dev > 0 || rest.c > 0 };
 }
 
@@ -245,7 +279,8 @@ export function iniciarCombate(what, a, b, die = d6) {
   const acc = [wa, wb].map(w => Math.min(numero(w.rules, "Accurate"), w.atk));
   const ra = rollAttack(wa.atk - acc[0], hitA, wa.rules, die, a), rb = rollAttack(wb.atk - acc[1], hitB, wb.rules, die, b);
   return { wa, wb, hitA, hitB, ra, rb, acc, ops: [a, b], rasgos: [rasgos(a), rasgos(b)], usado: {},
-    vida: [{ wounds: a.wounds, alive: a.alive }, { wounds: b.wounds, alive: b.alive }],
+    vida: [{ wounds: a.wounds, alive: a.alive, ...(a.semillaUsada ? { semillaUsada: true } : {}) },
+           { wounds: b.wounds, alive: b.alive, ...(b.semillaUsada ? { semillaUsada: true } : {}) }], die,
     pools: [{ crit: ra.crit, norm: ra.norm + acc[0], w: wa, shock: false }, { crit: rb.crit, norm: rb.norm + acc[1], w: wb, shock: false }],
     turno: 0, pasos: [], fin: ra.crit + ra.norm + acc[0] + rb.crit + rb.norm + acc[1] === 0 };
 }
@@ -283,14 +318,13 @@ export function aplicarCombate(est, op) {
     // Asterismo Quetzl: el primer éxito normal que daña a un Saurio o Kroxigor (por PI) inflige 1 menos
     if (rr.quetzl && op.con === "norm" && dmg > 0 && !u["quetzl" + (1 - i)]) { u["quetzl" + (1 - i)] = true; dmg -= 1; if (rr.gastarQuetzl && est.ops) rr.gastarQuetzl(est.ops[1 - i]); }
     if (op.menos && op.con === "norm") dmg = Math.max(0, dmg - op.menos);   // un ardid (Todo es polvo) baja el daño de este dado
-    rival.wounds = Math.max(0, rival.wounds - dmg);
-    if (rival.wounds === 0) rival.alive = false;
+    const semilla = danarVida(est, 1 - i, dmg);
     let choque = false;
     if (op.con === "crit" && !p.shock && regla(p.w.rules, "Shock")) {
       p.shock = true; choque = true;
       if (q.norm > 0) q.norm--; else if (q.crit > 0) q.crit--;
     }
-    est.pasos.push({ quien: i, ...op, dmg, choque, aura });
+    est.pasos.push({ quien: i, ...op, dmg, choque, aura, ...(semilla ? { semilla } : {}) });
   } else {
     for (const c of [].concat(op.contra)) q[c]--;
     est.pasos.push({ quien: i, ...op });
@@ -328,6 +362,7 @@ export function fightRoll(what, a, b, die = d6) {
     if (!ops.length) { est.turno = 1 - est.turno; if (!opcionesCombate(est).length) break; continue; }
     aplicarCombate(est, decisionCombate(est));
   }
+  cerrarCombate(est, die);
   return { wa: est.wa, wb: est.wb, hitA: est.hitA, hitB: est.hitB, ra: est.ra, rb: est.rb,
            a: est.vida[0], b: est.vida[1], pasos: est.pasos };
 }

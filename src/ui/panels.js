@@ -4,12 +4,13 @@
 import { state } from '../state.js';
 import { CTRL, TEAMCOL, TEAMCOL_LT, TEAMNAME, WPN } from '../config.js';
 import { retrato } from '../view3d/units.js';
-import { aplicarCombate, bloquear, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
+import { aplicarCombate, bloquear, cerrarCombate, effSave, certera, clasificarAtaque, critDesde, decisionCombate, effHit, fightRoll, iniciarCombate,
   armaPara, distanciaRegla, isInjured, meleeKey, opcionesCombate, resolverDisparo, rollAttack, shootRoll } from '../engine/dice.js';
 import { elegirCombate, elegirDestino, elegirRepeticion, elegirSigilosos, ofrecerArdides, preguntarHabilidad } from './tirada.js';
 import { activar, candidatos, costeDe, silenciado, silenciar } from '../game/disparadores.js';
 import './unicas.js';
 import { conectarSacerdotes, darPresagio } from './sacerdotes-sl.js';
+import { conectarCombateSL, textoPasos, textoSemilla, trasLucha } from './saurios-combate.js';
 import { UNICAS, objetivosUnica, ponerEfecto, puedeUnica, unicasDe } from '../game/unicas.js';
 import { elegirOpcion } from './tirada.js';
 import { aplicarSellos, auspexVale, automataSinHechicero, ven, quitarPrestadas, conectarRegistro, conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
@@ -107,6 +108,7 @@ let avisadoOrden = null;
 // ini: bando con la iniciativa (null antes de decidirla); ardides: los usados en este PI
 export let tray = {tp:1, cp:[2,2], vp:[0,0], ini:null, ardides:[[],[]]};
 conectarArdides(tray); conectarRegistro(logLine); conectarSacerdotes(tray, logLine);                // los ardides leen qué se usó en este punto de inflexión
+conectarCombateSL({ registro: t => logLine(t), luchar: o => doFight(o), snapshot: () => snapshot(), redibujar: () => renderAll(), esIA: s => esDeLaIA(s), enLinea: () => online() });
 export const undoStack = [];
 // other modules' state that undo restores too ({get, set}; the ops & score panel)
 export const undoExtras = [];
@@ -171,13 +173,14 @@ export function blancosSecundarios(a, b, w, shot) {
 }
 // Lo que pasa después de una tirada de disparo además del daño al blanco: Devastadora con
 // distancia y Aturdidora. Devuelve el texto para el registro.
-function efectosDisparo(a, b, r) {
+function efectosDisparo(a, b, r, die = null) {
   let extra = "";
   if (quemarMente(OPS, a, b, r.w.rules, r)) extra += T.disparo.quemaMente(b.name);
   if (terrotoxinas(a, b, r.w.rules, r.critDano)) extra += T.disparo.terrotoxinas(b.name);
-  const area = danoDevastadoraArea(OPS, b, r);
+  const area = danoDevastadoraArea(OPS, b, r, die);
   if (area.length) extra += T.disparo.devArea(r.devArea.dmg, r.devArea.dist,
     area.map(o => o.name + (o.alive ? "" : T.disparo.cae)));
+  for (const s of r.devSemillas || []) extra += textoSemilla(OPS.find(o => o.id === s.id), s);
   if (aturdir(b, r.w.rules, r.atkC)) extra += T.disparo.aturdido(b.name);
   return extra;
 }
@@ -193,12 +196,13 @@ async function disparosSecundarios(a, what, lista) {
         const r = shootRoll(w2, a, b, die);
         if (!r) { fin(); return; }
         showRoll(r.atk.dice, r.hit, a.team, T.disparo.tiradaAtq(a.name));
-        showRoll(r.dfn.dice, b.save, b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
+        showRoll(r.dfn.dice, effSave(b), b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
         b.wounds = Math.max(0, b.wounds - r.dmg);
+        if (r.semilla) b.semillaUsada = true;     // Semilla de renacimiento (r.dmg ya la cuenta)
         let line = `${T.disparo.secundario} ` + T.disparo.log(a.name, b.name, r.w.name, fmtDice(r.atk.dice), fmtDice(r.dfn.dice), r.dfn.cover, r.dmg, r.notes);
         if (b.wounds === 0) { b.alive = false; line += T.heridas.incapacitado; }
         else if (isInjured(b)) line += T.heridas.lesionado;
-        line += efectosDisparo(a, b, r);
+        line += textoSemilla(b, r.semilla) + efectosDisparo(a, b, r, die);
         logLine(line + fairNote(n), r.dmg > 0, true);
         rolled(n, done);
         fin();
@@ -303,7 +307,7 @@ export async function doShoot() {
       const exitoAtk = v => v !== 1 && (v >= cd || v >= hit), fijos = new Set();
       if ((await usarDestino([{ team: a.team, nombre: a.name, dados: atk.dice, exito: exitoAtk, fijos }])).length)
         Object.assign(atk, clasificarAtaque(atk.dice, hit, w.rules));
-      const ctxAtk = T.repeticion.ctxAtaque(atk.crit, w.dmgC, atk.norm, w.dmgN, b.name, b.save, !!what.cover);
+      const ctxAtk = T.repeticion.ctxAtaque(atk.crit, w.dmgC, atk.norm, w.dmgN, b.name, effSave(b), !!what.cover);
       if (await repeticionDeMando(a.team, atk.dice, exitoAtk, die, T.repeticion.ataque, a.name, ctxAtk, false, fijos))
         Object.assign(atk, clasificarAtaque(atk.dice, hit, w.rules));
       if (aplicarSellos(a, atk.dice, hit, w.rules)) Object.assign(atk, clasificarAtaque(atk.dice, hit, w.rules));   // Sellos de pureza
@@ -318,7 +322,7 @@ export async function doShoot() {
       const siCritico = r.dev + bloquear(r.atkN, r.atkC, r.dfn.norm, r.dfn.crit + 1, w.dmgN, w.dmgC).dmg;
       const ctxDfn = T.repeticion.ctxDefensa(a.name, r.atkC, w.dmgC, r.atkN, w.dmgN, r.dev, r.dmg, siNormal, siCritico);
       const dfn = [...r.dfn.dice];
-      if (dfn.length && await repeticionDeMando(b.team, dfn, v => v === 6 || (v !== 1 && v >= b.save), die, T.repeticion.defensa, b.name, ctxDfn, siCritico === r.dmg))
+      if (dfn.length && await repeticionDeMando(b.team, dfn, v => v === 6 || (v !== 1 && v >= effSave(b)), die, T.repeticion.defensa, b.name, ctxDfn, siCritico === r.dmg))
         r = resolverDisparo(what, w, hit, atk, b, die, dfn, r.hotDado);
       // Fisiología transhumana: tras la defensa, un éxito normal se guarda como crítico
       if ((await ventanaArdides('trasDefensa', { a, b, w, r, what })).length) r = resolverDisparo(what, w, hit, atk, b, die, [...r.dfn.dice], r.hotDado);
@@ -332,8 +336,9 @@ export async function doShoot() {
       await ventanaArdides('recibirDano', { a, b, w, r, normales: resto.n, criticos: resto.c });
     }
     showRoll(r.atk.dice, r.hit, a.team, T.disparo.tiradaAtq(a.name));
-    showRoll(r.dfn.dice, b.save, b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
+    showRoll(r.dfn.dice, effSave(b), b.team, T.disparo.tiradaDef(b.name, r.dfn.cover));
     b.wounds = Math.max(0, b.wounds - r.dmg);
+    if (r.semilla) b.semillaUsada = true;         // Semilla de renacimiento (r.dmg ya la cuenta)
     if (r.aura) gastarHabilidad(b, "aura");       // Aura de hierro: ya la gastó
     a.ap -= costeAccion(a, "shoot", what.w); a.used.push("shoot");
     a.psiPI = [...(a.psiPI || []), what.w];   // armas ya usadas en este punto de inflexión (Cábala psíquica)
@@ -347,11 +352,13 @@ export async function doShoot() {
       line += T.disparo.sobrecalentado(a.name, r.selfDmg);
       if (a.wounds === 0) { a.alive = false; line += T.heridas.incapacitado; }
     }
-    line += efectosDisparo(a, b, r);     // Devastadora con distancia, Aturdidora
+    line += textoSemilla(b, r.semilla) + efectosDisparo(a, b, r, die);     // Devastadora con distancia, Aturdidora
     logLine(line + fairNote(n), r.dmg > 0, true);   // también en un aviso en pantalla
     rolled(n, done);
     if (secundarios.length) await disparosSecundarios(a, what, secundarios);
     if (!esDeLaIA(a.team) && mayControl(a)) await acechadora(a);   // Formación Acechadora (Saurios de Lustria)
+    // Ardides al terminar el Disparo (Escurridizos): solo fuera de línea
+    if (!online() && a.alive && b.alive) { await ventanaArdides('trasAtaque', { a, b, w: r.w, r, what }); renderAll(); }
     terminar();
   });
   if (why) { hint(T.disparo.aunNo(why)); terminar(); }
@@ -364,22 +371,26 @@ function rolled(n, done) {
   cancelMode(); renderAll();
   control.alComprobarFin();        // ¿un bando se quedó sin agentes?
 }
-export function doFight() {
-  if (!state.sel || !state.target) return;
-  const gap = opGap(state.sel, state.target);
+// opts (Saurios de Lustria: Barrido del martillo, Ejemplo depredador): { by, at, gratis } lucha gratis (0 PA, sin
+// gastar la acción de Combatir) un agente cualquiera contra otro, en vez del agente y el blanco elegidos.
+export function doFight(opts = {}) {
+  const A = opts.by ? OPS.find(o => o.id === opts.by) : state.sel, B = opts.at ? OPS.find(o => o.id === opts.at) : state.target;
+  const gratis = !!opts.gratis;
+  if (!A || !B) return;
+  const gap = opGap(A, B);
   if (gap > CTRL) { explicar(T.combate.fueraDeZona(CTRL)); return; }
   // ya combatió todas las veces que puede (dos, si es Astartes) o no le quedan PA
-  const pr = puede(state.sel, "fight", OPS);
+  const pr = gratis ? { ok: true } : puede(A, "fight", OPS);
   if (!pr.ok && ["yaHecha", "sinPA", "sinPAExtra"].includes(pr.motivo)) {
     explicar(T.reglas.noPuede(T.reglas.accion.fight, T.reglas.motivo[pr.motivo])); return;
   }
-  const what = {k: "fight", by: state.sel.id, at: state.target.id, wa: meleeKey(state.sel),
-                wb: state.target.weapons.find(k => WPN[k].type === "M") || "knife"};
+  const what = {k: "fight", by: A.id, at: B.id, wa: meleeKey(A),
+                wb: B.weapons.find(k => WPN[k].type === "M") || "knife"};
   let terminar;
   const hecho = new Promise(r => { terminar = r; });
   const why = rollFor(what, async (die, done, n, cancel) => {
     const a = OPS.find(o => o.id === what.by), b = OPS.find(o => o.id === what.at);
-    if (!a || !b || !a.alive || !b.alive || a.ap < 1 || opGap(a, b) > CTRL) {
+    if (!a || !b || !a.alive || !b.alive || (!gratis && a.ap < 1) || opGap(a, b) > CTRL) {
       cancel();
       logLine(T.combate.yaNo(a ? a.name : what.by));
       renderAll(); terminar(); return;
@@ -437,13 +448,14 @@ export function doFight() {
         }
         aplicarCombate(est, op);
       }
+      cerrarCombate(est, die);     // lo que ocurre al terminar de luchar (Mordisco)
       r = { wa: est.wa, wb: est.wb, hitA: est.hitA, hitB: est.hitB, ra: est.ra, rb: est.rb, a: est.vida[0], b: est.vida[1], pasos: est.pasos };
     }
     showRoll(r.ra.dice, r.hitA, a.team, T.combate.tiradaAtq(a.name));
     showRoll(r.rb.dice, r.hitB, b.team, T.combate.tiradaDef(b.name));
     Object.assign(a, r.a); Object.assign(b, r.b);
     for (const p of r.pasos || []) if (p.aura) gastarHabilidad(p.quien === 0 ? b : a, "aura");   // Aura de hierro
-    a.ap -= 1; a.used.push("fight");
+    if (!gratis) { a.ap -= 1; a.used.push("fight"); }
     const aturdidos = [aturdir(b, r.wa.rules, r.ra.crit) && b, aturdir(a, r.wb.rules, r.rb.crit) && a].filter(Boolean);
     const envenenados = [terrotoxinas(a, b, r.wa.rules, critDanoCombate(r.pasos, 0)) && b,
       terrotoxinas(b, a, r.wb.rules, critDanoCombate(r.pasos, 1)) && a].filter(Boolean);
@@ -454,8 +466,10 @@ export function doFight() {
     if (!a.alive) line += T.combate.cae(a.name);
     for (const o of aturdidos) line += T.disparo.aturdido(o.name);
     for (const o of envenenados) line += T.disparo.terrotoxinas(o.name);
+    line += textoPasos(r.pasos, a, b);   // Mordisco y Semilla de renacimiento
     logLine(line + fairNote(n), true, true);
     rolled(n, done);
+    await trasLucha(a, b, { gratis });   // Barrido del martillo, Ejemplo depredador
     terminar();
   });
   if (why) { hint(T.combate.aunNo(why)); terminar(); }
