@@ -694,7 +694,7 @@ export function build3DScene() {
     addModels(g, MAP, three.renderer, BW, BH, () => gen === sceneGen);
     if (MAP.ground3d) {   // the mat of some maps doesn't reach every edge of the play area: dark floor under it
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(BW, BH), mat3d("floor3d", {color: 0x20242b, roughness: 1}));
-      floor.rotation.x = -Math.PI / 2; floor.position.set(BW / 2, -0.05, BH / 2);
+      floor.rotation.x = -Math.PI / 2; floor.position.set(BW / 2, -1.5, BH / 2);
       floor.receiveShadow = true;
       g.add(floor);
     }
