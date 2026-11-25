@@ -12,7 +12,7 @@ import { foesNear } from '../engine/engage.js';
 import { BH, BW, MAP, OPS } from '../engine/world.js';
 import { RULES, fmtIn, moveSpec } from '../rules/index.js';
 import { renderAll, renderOverlay } from './board.js';
-import { hint, logLine, svg } from './dom.js';
+import { HINT0, hint, logLine, svg } from './dom.js';
 import { T } from '../i18n/es.js';
 import { lienzo } from './dom.js';
 import { colocarEn, despliegueActivo } from './despliegue.js';
@@ -25,6 +25,44 @@ import { effMove } from '../engine/dice.js';
 import { tieneEfecto } from '../data/teams/index.js';
 import { puede } from '../game/acciones.js';
 import { accionesHooks } from './acciones.js';
+import { ganchos } from './saurios-plan.js';
+
+/* ---------- Recolocación libre (Formaciones Eterna y Acechadora de los Saurios de Lustria) ----------
+ * state.recolocar = { id, max, lejos }: el agente se arrastra hasta max pulgadas, sin gastar PA ni contar como
+ * acción, y si lejos, debe quedar a más de esas pulgadas de los enemigos. Se gasta al soltarlo; Esc la omite. */
+ganchos.recolocar = ({ op, max, lejos }) => {
+  state.recolocar = { id: op.id, max, lejos };
+  state.sel = op; state.target = null;
+  hint(T.saurios.pista(op.name, max, lejos));
+  renderAll();
+};
+function planLibre(d, gx, gy, gl) {
+  const op = d.op, R = opR(op), rc = state.recolocar;
+  d.libre = true;
+  const raw = planRoute(op, gx, gy, 0, -1, rc.max, false, gl);
+  if (!raw) { d.path = null; d.goal = [gx, gy]; d.total = 0; d.valid = false; d.why = "blocked"; d.foes = []; renderOverlay(); return; }
+  const c = clampPath(raw, rc.max), end = c.path[c.path.length - 1];
+  d.path = c.path; d.total = c.total; d.goal = [end[0], end[1]]; d.clamped = c.clamped; d.partial = !!raw.partial;
+  d.goalLayer = end[4] || 0; d.goalZ = layerZ(d.goalLayer);
+  d.p1 = {type: "reposition", allow: rc.max, climb: false}; d.p2 = null;
+  d.primAllow = rc.max; d.secondary = null; d.secAllow = 0; d.autoCharge = false;
+  d.foes = foesNear(end[0], end[1], op.team, op.id, R, d.goalZ);
+  const aqui = {...op, x: end[0], y: end[1]};
+  d.why = placeBlocked(end[0], end[1], op.id, d.goalLayer) ? "occupied"
+    : d.foes.length ? "libreEnZona"
+    : rc.lejos && OPS.some(o => o.alive && o.team !== op.team && o.deployed !== false && opGap(aqui, o) <= rc.lejos + 1e-9) ? "libreCerca"
+    : null;
+  d.valid = !d.why;
+  renderOverlay();
+}
+function aterrizarLibre(d) {
+  snapshot();
+  d.op.x = d.goal[0]; d.op.y = d.goal[1]; d.op.z = d.goalZ || 0;
+  state.recolocar = null;
+  logLine(T.saurios.recoloca(d.op.name, d.total));
+  hint(HINT0);
+  renderAll();
+}
 
 /* ---------- Vuelo inmaterial (don de Tzeentch) ----------
  * Una vez por punto de inflexión, al Reposicionarse o Cargar, el agente puede volar: en vez de
@@ -106,6 +144,7 @@ const measuring = () => T.mover.medida(RULES.increment);
 // pointerdown on a token: arm a drag (it activates once the pointer moves a little)
 export function armDrag(op, ev, from3d = false) {
   if (!op || !op.alive || state.mode === "ruler" || state.mode === "target" || despliegueActivo()) return false;
+  if (state.recolocar && state.recolocar.id !== op.id) state.recolocar = null;
   state.drag = {op, sx: op.x, sy: op.y, cx0: ev.clientX, cy0: ev.clientY, pid: ev.pointerId, from3d,
                 goal: null, path: null, total: 0, valid: false, active: false};
   return true;
@@ -172,6 +211,7 @@ function planDrag(x, y, hint, up) {
   const retroceso = state.moveType === "fallBack";
   const charging = !retroceso && (state.moveType === "charge" || (intoFoes && mayCharge(d.op)));
   d.autoCharge = charging && state.moveType !== "charge";
+  if (state.recolocar && state.recolocar.id === d.op.id) return planLibre(d, gx, gy, gl);   // Formación de los Saurios
   // Vuelo inmaterial: en línea recta, sin rodear el terreno (solo Reposicionarse o Cargar)
   if (state.volar === d.op.id && puedeVolar(d.op) && !retroceso && (charging || state.moveType !== "dash")) {
     return planVuelo(d, gx, gy, gl, charging);
@@ -239,6 +279,7 @@ function landDrag(d) {
       : T.mover.sinLlegadaBloqueado);
     renderAll(); return;
   }
+  if (d.libre) return aterrizarLibre(d);
   const chained = d.total > d.primAllow + 1e-9 && d.p2;
   const repeat = d.op.used.includes(d.p1.type) || (chained && d.op.used.includes(d.p2.type));
   const vert = chopIncrements(d.path).filter(st => st.climb);
@@ -340,7 +381,7 @@ export function wireInput() {
       if (!mayControl(d.op)) {     // online: not yours to move; letting go still counts as a tap
         hint(T.mover.deOtro(d.op.name)); return;
       }
-      const noActua = porQueNoActua(d.op);   // activaciones alternas: no es su turno, u otro está activándose
+      const noActua = state.recolocar && state.recolocar.id === d.op.id ? null : porQueNoActua(d.op);   // activaciones alternas: no es su turno, u otro está activándose
       if (noActua) { hint(noActua); return; }
       d.active = true;
       if (state.sel !== d.op) { state.sel = d.op; state.target = null; state.lastShot = null; state.moveType = defaultMoveType(d.op); }
@@ -399,6 +440,6 @@ export function wireInput() {
     opMenuAt(OPS.find(o => o.id === gEl.getAttribute("data-oid")), ev);
   });
   document.addEventListener("keydown", ev => {
-    if (ev.key === "Escape") { cancelMarker(); cancelMode(); renderAll(); }
+    if (ev.key === "Escape") { state.recolocar = null; cancelMarker(); cancelMode(); renderAll(); }
   });
 }

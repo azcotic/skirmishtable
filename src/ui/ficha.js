@@ -17,6 +17,7 @@ import { KINDS } from '../engine/world.js';
 import { state } from '../state.js';
 import { comandoPorId, opcionesDe } from '../data/teams/index.js';
 import { tacticasDe } from './ardides.js';
+import { asterismosActivos, formacion } from './saurios-plan.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
@@ -27,6 +28,13 @@ function tacticasLinea(op, perfil) {
   const t = tacticasDe(op);
   if (!t.length) return '';
   return `<p class="fregla"><b>${T.tacticas.ficha}</b> · ${t.map(id => esc(c.tacticas.find(x => x.id === id).nombre)).join(' · ')}</p>`;
+}
+// La Formación y los Asterismos activos de un agente de los Saurios de Lustria
+function planLinea(op, perfil) {
+  const f = perfil.comando === "3272457903" ? formacion(op.team) : null;
+  if (!f) return "";
+  const Z = T.saurios;
+  return `<p class="fregla"><b>${Z.ficha}</b> · ${esc(Z.formacion[f].nombre)} · ${esc(Z.fichaActivos(asterismosActivos(op.team).map(id => Z.asterismo[id].nombre)))}</p>`;
 }
 export function abrirFicha(op) {
   const dlg = document.getElementById("ficha");
@@ -56,6 +64,7 @@ export function abrirFicha(op) {
       <tbody>${armas}</tbody></table>
     ${opcionesDe(op).map(d => `<p class="fregla"><b>${esc(d.nombre)}</b> · ${T.faccion.desc[d.id] || ""}${d.pendiente ? ` <em>${T.faccion.pendiente}</em>` : ""}</p>`).join("")}
     ${tacticasLinea(op, perfil)}
+    ${planLinea(op, perfil)}
     ${(F.reglasAgente[perfil.comando + ':' + perfil.clave] || []).map(r => `<p class="fregla"><b>${esc(r[0])}</b> · ${esc(r[1])}${r[2] ? ` <em>${F.noImplementada}</em>` : ''}</p>`).join('')}
     ${perfil.astartes ? `<p class="fregla"><b>${F.astartes}</b> · ${perfil.astartesBolter ? F.astartesBolterDesc : F.astartesDesc}</p>` : ""}
     <p class="fnota">${perfil.comando ? F.oficial : F.provisional}</p>

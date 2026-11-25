@@ -12,6 +12,7 @@ import './unicas.js';
 import { UNICAS, objetivosUnica, ponerEfecto, puedeUnica, unicasDe } from '../game/unicas.js';
 import { elegirOpcion } from './tirada.js';
 import { aplicarSellos, auspexVale, automataSinHechicero, ven, quitarPrestadas, conectarRegistro, conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
+import { acechadora, garraSolar } from './saurios-plan.js';
 import { opGap, opR } from '../engine/geometry.js';
 import { nearestFree, opLayer, useBase } from '../engine/movement.js';
 import { SHOT_KINDS, cannotShoot, judgeShot, shotsFrom } from '../engine/shots.js';
@@ -349,6 +350,7 @@ export async function doShoot() {
     logLine(line + fairNote(n), r.dmg > 0, true);   // también en un aviso en pantalla
     rolled(n, done);
     if (secundarios.length) await disparosSecundarios(a, what, secundarios);
+    if (!esDeLaIA(a.team) && mayControl(a)) await acechadora(a);   // Formación Acechadora (Saurios de Lustria)
     terminar();
   });
   if (why) { hint(T.disparo.aunNo(why)); terminar(); }
@@ -838,6 +840,7 @@ function terminarActivacion(op) {
   // Aturdidora: termina su siguiente activación (una reacción no cuenta como activación)
   if (!op.reaccion && quitarAturdido(op)) logLine(T.disparo.recuperaLPA(op.name));
   if (!op.reaccion && quitarQuemarMente(op)) logLine(T.disparo.sinQuemarMente(op.name));
+  garraSolar(op);                    // Formación Garra Solar (Saurios de Lustria)
   op.ready = false; op.ap = op.apl; op.used = []; op.reaccion = false; op.disparadas = []; op.ecosActivo = false;
   if (state.sel === op) state.moveType = "reposition";
   logLine(T.activacion.termina(op.name)); cancelMode(); renderAll();

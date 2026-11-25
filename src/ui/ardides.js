@@ -37,6 +37,7 @@ import { KINDS, OPS, ajustarAgente } from '../engine/world.js';
 import { opGap } from '../engine/geometry.js';
 import { sightAnalysis } from '../engine/sight.js';
 import { camuflaje } from '../engine/shots.js';
+import { conectarLogPlan, conectarPlan } from './saurios-plan.js';
 
 export const ARDID = {
   proteccion: 'Protección etérea',
@@ -56,10 +57,10 @@ export const DOCTRINAS = ['devastadora', 'tactica', 'asalto'];
 
 // el marcador (panels.js lo presta al cargar: así no hay ciclo de módulos)
 let tray = null;
-export const conectarArdides = t => { tray = t; };
+export const conectarArdides = t => { tray = t; conectarPlan(t); };
 // el registro de la partida (panels.js lo presta, igual que el marcador)
 let registro = () => {};
-export const conectarRegistro = f => { registro = f; };
+export const conectarRegistro = f => { registro = f; conectarLogPlan(f); };
 const logLineAr = t => registro(t);
 
 const activo = (s, nombre) => !!(tray && tray.ardides && (tray.ardides[s] || []).includes(nombre));
