@@ -11,7 +11,7 @@
 import { T } from '../i18n/es.js';
 import { TEAMCOL, TEAMNAME } from '../config.js';
 import { BH, BW, DROPZONES, OPS } from '../engine/world.js';
-import { chocaConAgente, dentroDeZona, desplegar, enDespliegue, porDesplegar, retirarParaDesplegar, turnoDespliegue } from '../engine/deploy.js';
+import { chocaConAgente, dentroDeEmboscada, dentroDeZona, desplegar, enDespliegue, porDesplegar, retirarParaDesplegar, turnoDespliegue } from '../engine/deploy.js';
 import { nearestFree, useBase } from '../engine/movement.js';
 import { opR } from '../engine/geometry.js';
 import { mayControl, online } from '../net/sync.js';
@@ -34,6 +34,9 @@ export function queEs(op) {
   if (t && t.models.length) return t.models[modelIndex(op, t.models.length)].name;
   return T.tipos[op.kind] || op.kind;
 }
+
+// Emboscador (Eslizón Camaleón de los Saurios de Lustria): puede desplegarse fuera de su zona (src/engine/deploy.js)
+export const esEmboscador = op => { const k = KINDS[op.kind]; return !!k && k.comando === '3272457903' && k.clave === 'camaleon'; };
 
 // quién empieza a desplegar: el jugador con la iniciativa (por ahora, siempre el primer bando)
 export const INICIA = 0;
@@ -110,12 +113,14 @@ export function colocarEn(x, y) {
   useBase(opR(op));
   const spot = nearestFree(x, y, op.id, 0, 1);
   if (!spot) { hint(T.despliegue.noCabe); return true; }
-  if (!dentroDeZona(op, spot[0], spot[1], dz)) { hint(T.despliegue.fueraDeZona(nombreEquipo(t))); return true; }
+  const emboscada = !dentroDeZona(op, spot[0], spot[1], dz) && esEmboscador(op);
+  if (emboscada && !dentroDeEmboscada(op, spot[0], spot[1], DROPZONES.find(d => d.team !== t), BW, BH)) { hint(T.unicasSL.emboscador.lejos); return true; }
+  if (!emboscada && !dentroDeZona(op, spot[0], spot[1], dz)) { hint(T.despliegue.fueraDeZona(nombreEquipo(t))); return true; }
   if (chocaConAgente(op, spot[0], spot[1], OPS)) { hint(T.despliegue.ocupado); return true; }
   snapshot();
   desplegar(op, spot[0], spot[1]);
   elegido = null;
-  logLine(T.despliegue.log(op.name, op.id));
+  logLine(emboscada ? T.unicasSL.emboscador.log(op.name, op.id) : T.despliegue.log(op.name, op.id));
   renderAll();
   hint(pista());
   if (!despliegueActivo()) alTerminar(); else siLeTocaALaIA();

@@ -9,6 +9,7 @@ import { aplicarCombate, bloquear, certera, clasificarAtaque, critDesde, decisio
 import { elegirCombate, elegirDestino, elegirRepeticion, elegirSigilosos, ofrecerArdides, preguntarHabilidad } from './tirada.js';
 import { activar, candidatos, costeDe, silenciado, silenciar } from '../game/disparadores.js';
 import './unicas.js';
+import { conectarSacerdotes, darPresagio } from './sacerdotes-sl.js';
 import { UNICAS, objetivosUnica, ponerEfecto, puedeUnica, unicasDe } from '../game/unicas.js';
 import { elegirOpcion } from './tirada.js';
 import { aplicarSellos, auspexVale, automataSinHechicero, ven, quitarPrestadas, conectarRegistro, conectarArdides, dadosGuardados, gastarDestino, gastarHabilidad, habilidadDisponible, opcionesSigilosos } from './ardides.js';
@@ -105,7 +106,7 @@ let avisadoOrden = null;
 /* ---------- state / undo / log ---------- */
 // ini: bando con la iniciativa (null antes de decidirla); ardides: los usados en este PI
 export let tray = {tp:1, cp:[2,2], vp:[0,0], ini:null, ardides:[[],[]]};
-conectarArdides(tray); conectarRegistro(logLine);                // los ardides leen qué se usó en este punto de inflexión
+conectarArdides(tray); conectarRegistro(logLine); conectarSacerdotes(tray, logLine);                // los ardides leen qué se usó en este punto de inflexión
 export const undoStack = [];
 // other modules' state that undo restores too ({get, set}; the ops & score panel)
 export const undoExtras = [];
@@ -740,7 +741,7 @@ function filaUnicas(op) {
   const ids = unicasDe(op).filter(id => UNICAS[id]);
   if (!ids.length) return "";
   const botones = ids.map(id => {
-    const p = puedeUnica(op, id, OPS, tray), tx = T.unicas[id];
+    const p = puedeUnica(op, id, OPS, tray), tx = T.unicas[id] || T.unicasSL[id];
     const motivo = p.ok ? tx.desc : T.unicas.motivo[p.motivo] || "";
     return `<button data-unica="${id}" title="${motivo.replace(/"/g, "&quot;")}"${p.ok ? "" : " disabled"}>⚡ ${tx.nombre} ${UNICAS[id].pa} ${G.pa.abrev}</button>`;
   }).join("");
@@ -764,7 +765,7 @@ async function usarUnica(op, id) {
   usandoUnica = true;
   let elegido;
   try {
-    const tx = T.unicas[id];
+    const tx = T.unicas[id] || T.unicasSL[id];
     elegido = await elegirOpcion({ titulo: tx.nombre, quien: op.name, texto: tx.desc, porDefecto: null,
       opciones: objetivos.map(o => ({ id: o.id, etiqueta: `${o.id} ${o.name}`, detalle: `${o.wounds}/${o.maxW} H` })) });
   } finally { usandoUnica = false; }
@@ -784,8 +785,21 @@ async function usarUnica(op, id) {
     if (why) hint(why);
     return;
   }
-  ponerEfecto(op, id, t, OPS); gastar();
-  logLine(T.unicas.log[id](op.name, t.name));
+  if (id === "luzChotec") {     // 1D3 heridas recuperadas: dados repartidos como el Ritual
+    const what = { k: "luzChotec", by: op.id, at: t.id, tp: tray.tp, n: op.activaciones || 0 };
+    const why = rollFor(what, (die, done, n) => {
+      const total = Math.ceil(die() / 2), antes = t.wounds;
+      t.wounds = Math.min(t.maxW, t.wounds + total); gastar();
+      tray.luz = tray.luz || [null, null]; tray.luz[op.team] = tray.tp;
+      logLine(T.unicasSL.logLuz(op.name, t.name, total, t.wounds - antes) + fairNote(n), true, true);
+      rolled(n, done);
+    });
+    if (why) hint(why);
+    return;
+  }
+  if (id === "presagioCeleste") darPresagio(t); else ponerEfecto(op, id, t, OPS);
+  gastar();
+  logLine((T.unicas.log[id] || T.unicasSL.log[id])(op.name, t.name));
   renderAll();
 }
 let cerrando = false;

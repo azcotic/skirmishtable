@@ -36,6 +36,20 @@ export function dentroDeZona(op, x, y, dz) {
   return !!dz && x - R >= dz.x - 1e-9 && x + R <= dz.x + dz.w + 1e-9 && y - R >= dz.y - 1e-9 && y + R <= dz.y + dz.h + 1e-9;
 }
 
+// Distancia del punto (x, y) al rectángulo `dz` (0 si está dentro).
+export function distanciaAZona(x, y, dz) {
+  const dx = Math.max(dz.x - x, 0, x - (dz.x + dz.w)), dy = Math.max(dz.y - y, 0, y - (dz.y + dz.h));
+  return Math.hypot(dx, dy);
+}
+
+// Emboscador (Eslizón Camaleón): puede ir a cualquier punto de la zona de aniquilación (la mesa) a más de 6″ de la
+// zona de descenso enemiga: la peana completa debe quedar a esa distancia y dentro de la mesa (bw × bh).
+export function dentroDeEmboscada(op, x, y, dzEnemiga, bw, bh) {
+  const R = opR(op);
+  if (x - R < 0 || y - R < 0 || x + R > bw || y + R > bh) return false;
+  return !dzEnemiga || distanciaAZona(x, y, dzEnemiga) - R > 6 + 1e-9;
+}
+
 // Sin pisar a otro agente que ya esté en la mesa.
 export function chocaConAgente(op, x, y, ops) {
   return ops.some(o => o !== op && o.alive && dist(o.x, o.y, x, y) < opR(o) + opR(op) - 1e-6);

@@ -53,13 +53,13 @@ export default {
   // peana (mm): Eslizones 28, Saurios 32 y Kroxigor 40; manda sobre la que mide la app en la miniatura
   agentes: {
     saurioEscamadura:   { nombre: "Saurio Escamadura", lider: true, palabras: ["saurio"], peana: 32, apl: 3, move: 6, save: 4, wounds: 14, armas: ["jabalinaEstelar", "espadaCelestita"] },
-    sacerdoteEstelar:   { nombre: "Sacerdote Estelar Eslizón", lider: true, palabras: ["eslizon", "sacerdote"], peana: 28, apl: 3, move: 7, save: 5, wounds: 10, armas: ["rayoAstral", "dagaObsidiana"] },
+    sacerdoteEstelar:   { nombre: "Sacerdote Estelar Eslizón", lider: true, palabras: ["eslizon", "sacerdote"], unicas: ["luzChotec", "presagioCeleste"], peana: 28, apl: 3, move: 7, save: 5, wounds: 10, armas: ["rayoAstral", "dagaObsidiana"] },
     combatienteSaurio:  { nombre: "Combatiente Saurio", palabras: ["saurio"], peana: 32, apl: 2, move: 6, save: 4, wounds: 12, armas: ["lanzaCelestita"] },
     guardiaSaurio:      { nombre: "Guardia Saurio", palabras: ["saurio"], peana: 32, apl: 2, move: 6, save: 3, wounds: 12, armas: ["alabarda"] },
     kroxigor:           { nombre: "Kroxigor", palabras: ["kroxigor"], peana: 40, apl: 2, move: 6, save: 4, wounds: 18, armas: ["martilloLunar"] },
     combatienteEslizon: { nombre: "Combatiente Eslizón", palabras: ["eslizon"], peana: 28, apl: 2, move: 7, save: 5, wounds: 7, armas: ["escupedardos", "daga"] },
     camaleon:           { nombre: "Eslizón Camaleón", palabras: ["eslizon"], peana: 28, apl: 2, move: 7, save: 5, wounds: 8, armas: ["cerbatana", "dagaCamaleon"] },
-    sacerdoteEslizon:   { nombre: "Sacerdote Eslizón", palabras: ["eslizon", "sacerdote"], peana: 28, apl: 2, move: 7, save: 5, wounds: 8, armas: ["baculoDistancia", "baculoCuerpo"] },
+    sacerdoteEslizon:   { nombre: "Sacerdote Eslizón", palabras: ["eslizon", "sacerdote"], unicas: ["veloCeleste"], peana: 28, apl: 2, move: 7, save: 5, wounds: 8, armas: ["baculoDistancia", "baculoCuerpo"] },
   },
   // composición: 1 líder y 6 selecciones más (7 en total, contando al líder). Cada Eslizón cuenta
   // como media selección y cada Kroxigor como dos (como máximo 2). Hasta 10 Eslizones además del líder.

@@ -22,6 +22,7 @@ import { opGap } from '../engine/geometry.js';
 import { opcionesDe } from '../data/teams/index.js';
 import { KINDS } from '../engine/world.js';
 import { enZonaDeControl } from './acciones.js';
+import { asterismoActivo } from '../ui/saurios-plan.js';
 
 export const UNICAS = {
   proteccionDestino: { pa: 1, objetivo: 'amigo', alcance: null, duradera: true },
@@ -30,6 +31,11 @@ export const UNICAS = {
   prender: { pa: 1, objetivo: 'enemigo', alcance: null, duradera: true },
   cuerno: { pa: 0, objetivo: null, alcance: null, sinObjetivo: true, unaPorPI: true },
   flujoTemporal: { pa: 1, objetivo: 'amigo', alcance: 6, pendiente: true },
+  // Sacerdotes de los Saurios de Lustria: `sl` (textos en T.unicasSL), `sacerdote` (el Asterismo Tepok suma 3″ al
+  // alcance), `solo` (palabras de agente que puede recibirla), `herido` (solo a quien tenga heridas perdidas)
+  luzChotec: { pa: 1, objetivo: 'amigo', alcance: 6, sl: true, sacerdote: true, solo: ['saurio', 'kroxigor'], herido: true },
+  presagioCeleste: { pa: 1, objetivo: 'amigo', alcance: 6, sl: true, sacerdote: true, solo: ['eslizon'] },
+  veloCeleste: { pa: 1, objetivo: 'amigo', alcance: 6, sl: true, sacerdote: true, duradera: true, porAgente: true },
 };
 
 // Las acciones únicas de un agente: las de su ficha y las prestadas por Cábala psíquica
@@ -37,7 +43,10 @@ export const unicasDe = op => [...((KINDS[op.kind] || {}).unicas || []), ...(op.
 // el alcance de la acción: Maestro del Immaterium suma 3″ a los requisitos de distancia psíquicos
 export function alcanceUnica(op, id) {
   const base = UNICAS[id].alcance;
-  return base == null ? null : base + opcionesDe(op).reduce((s, o) => s + (o.distanciaPsiquica || 0), 0);
+  if (base == null) return null;
+  // Asterismo Tepok: las acciones de 1 PA de los Sacerdotes suben 3″
+  const tepok = UNICAS[id].sacerdote && asterismoActivo(op.team, 'tepok') ? 3 : 0;
+  return base + tepok + opcionesDe(op).reduce((s, o) => s + (o.distanciaPsiquica || 0), 0);
 }
 
 // Los agentes a los que se puede dirigir; `ven(a, b)` dice si a ve a b (lo presta la interfaz)
@@ -47,6 +56,8 @@ export function objetivosUnica(op, id, ops, ven) {
     && (u.objetivo === 'amigo' ? o.team === op.team && (KINDS[o.kind] || {}).comando === (KINDS[op.kind] || {}).comando : o.team !== op.team)
     && (r == null || opGap(op, o) <= r + 1e-9)
     && (id !== 'ritual' || o.wounds < o.maxW)
+    && (!u.herido || o.wounds < o.maxW)
+    && (!u.solo || u.solo.some(p => ((KINDS[o.kind] || {}).palabras || []).includes(p)))
     && ven(op, o));
 }
 
@@ -60,6 +71,7 @@ export function puedeUnica(op, id, ops, tray) {
   if (enZonaDeControl(op, ops).length) return no('enZonaDeControl');
   if ((op.vetadas || []).includes('u:' + id)) return no('vetada');
   if (id === 'ritual' && tray.ritual && tray.ritual[op.team] === tray.tp) return no('yaEsePI');
+  if (id === 'luzChotec' && tray.luz && tray.luz[op.team] === tray.tp) return no('yaEsePI');
   if (id === 'cuerno' && op.cuernoTP === tray.tp) return no('yaEsePI');
   return { ok: true };
 }
@@ -75,6 +87,8 @@ export function vigente(fx, ops) {
 export const efectoEn = (op, id, ops) => (op && op.fx || []).find(f => f.id === id && vigente(f, ops)) || null;
 // Pone el efecto en `objetivo`; el de un agente amigo anterior con la misma acción se acaba
 export function ponerEfecto(op, id, objetivo, ops) {
-  for (const o of ops) if (o.fx) o.fx = o.fx.filter(f => !(f.id === id && (ops.find(x => x.id === f.de) || {}).team === op.team));
+  // `porAgente`: solo se acaba el efecto que puso este mismo agente (varios Sacerdotes pueden tener el suyo)
+  const mismo = UNICAS[id] && UNICAS[id].porAgente;
+  for (const o of ops) if (o.fx) o.fx = o.fx.filter(f => !(f.id === id && (mismo ? f.de === op.id : (ops.find(x => x.id === f.de) || {}).team === op.team)));
   objetivo.fx = [...(objetivo.fx || []), { id, de: op.id, act: op.activaciones || 0 }];
 }

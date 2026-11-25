@@ -48,6 +48,7 @@ export function loadMap(keyOrMap) {
   undoStack.length = 0;
   restartRecording();             // a new table is a new game to record
   Object.assign(tray, {tp:1, cp:[PM_INICIALES, PM_INICIALES], vp:[0,0], ini:null, ardides:[[],[]]});
+  for (const k of ['luz', 'tambores', 'tamboresUsado', 'estrellasUsado']) delete tray[k];   // Sacerdotes y Tambores de los Saurios
   cancelMode();
   buildStatic();
   renderAll();
