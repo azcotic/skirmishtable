@@ -575,7 +575,15 @@ export const T = {
     rivalTitulo: 'Elige el comando rival',
     rivalSub: 'También los mueves tú.',
     rivalSubLinea: 'Tu amigo podrá cambiarlo desde la pestaña Partida.',
-    comandoDesc: n => `${n} modelos · se descargan de Steam a este navegador`,
+    // la descripción de cada comando (por su id) y cuántos agentes lleva
+    comandoTexto: {
+      '3352828814': 'Asesinos sigilosos de los Night Lords: siembran el miedo y golpean desde las sombras.',
+      '3348897103': 'Hechiceros de Tzeentch con Marines de Rúbrica y Tzaangor: poder psíquico y mucho aguante.',
+      '2272196183': 'Marines Espaciales versátiles: disparan o combaten dos veces y adaptan su doctrina.',
+      '3272457903': 'Comando casero de los Seraphon: Saurios y Kroxigor al frente, con Eslizones de apoyo.',
+    },
+    comandoAgentes: n => `${n} ${n === 1 ? 'agente' : 'agentes'}`,
+    comandoDesc: (id, n) => `${T.inicio.comandoTexto[id] || ''} · ${T.inicio.comandoAgentes(n)}`,
     fichasSimples: 'Fichas simples',
     fichasSimplesDesc: 'Sin modelos 3D: fichas de colores. Carga más rápido.',
     configTitulo: 'Elige la configuración de tu comando',

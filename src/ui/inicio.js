@@ -138,7 +138,7 @@ function notaPlan(lado) {
 function opcionesComando(lado) {
   const elegido = eleccion.comando[lado];
   return COMANDOS_PRUEBA.filter(id => TTS_TEAMS.some(t => t.id === id))
-    .map(id => opcion(id, esc(nombreComando(id)), T.inicio.comandoDesc(TTS_TEAMS.find(t => t.id === id).models.length), { activa: elegido === id }))
+    .map(id => opcion(id, esc(nombreComando(id)), T.inicio.comandoDesc(id, seleccionesMax(comandoPorId(id))), { activa: elegido === id }))
     .concat(opcion("", T.inicio.fichasSimples, T.inicio.fichasSimplesDesc, { activa: eleccion.comando[lado] === "" }))
     .join("");
 }
