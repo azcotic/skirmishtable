@@ -779,6 +779,36 @@ export const T = {
     },
     logRitual: (a, b, total, curadas) => `${a} hace el Ritual de reconstitución sobre ${b}: 2D3 = ${total}; recupera ${curadas} ${curadas === 1 ? 'herida' : 'heridas'}.`,
   },
+  // acciones únicas y habilidades de los Sacerdotes de los Saurios de Lustria (src/ui/sacerdotes-sl.js, panels.js)
+  unicasSL: {
+    luzChotec: { nombre: 'Luz de Chotec',
+      desc: 'Elige un Saurio o Kroxigor amigo visible a 6″ o menos: recupera 1D3 heridas perdidas. Una vez por punto de inflexión para todo tu comando.' },
+    presagioCeleste: { nombre: 'Presagio celeste',
+      desc: 'Elige un Eslizón amigo visible a 6″ o menos: sus armas a distancia tienen Equilibrada hasta el final de su siguiente activación.' },
+    veloCeleste: { nombre: 'Velo celeste',
+      desc: 'Elige un agente amigo visible a 6″ o menos. Hasta el inicio de la siguiente activación de este Sacerdote, cada vez que un enemigo le dispare, conserva un dado de defensa como éxito normal sin tirarlo (nunca más de 2 dados conservados en un disparo).' },
+    log: {
+      presagioCeleste: (a, b) => `${a} lee un presagio para ${b}: sus armas a distancia tienen Equilibrada hasta el final de su siguiente activación.`,
+      veloCeleste: (a, b) => `${a} cubre a ${b} con un velo celeste: conservará un dado de defensa al recibir disparos.`,
+    },
+    logLuz: (a, b, total, curadas) => `${a} invoca la Luz de Chotec sobre ${b}: 1D3 = ${total}; recupera ${curadas} ${curadas === 1 ? 'herida' : 'heridas'}.`,
+    estrellas: {
+      titulo: 'Escudriñar las estrellas',
+      texto: n => `${n} puede escudriñar las estrellas (una vez por batalla). ¿Lo haces ahora, al empezar este punto de inflexión?`,
+      si: 'Sí, tirar los dados', no: 'No, esperar a otro punto de inflexión',
+      tirada: (n, dados, exitos) => `${n} escudriña las estrellas: ${[].concat(dados).join(', ')} (4+ son éxito). ${exitos} ${exitos === 1 ? 'dado de defensa conservado' : 'dados de defensa conservados'}.`,
+      quien: (k, n) => `Éxito ${k} de ${n}`,
+      elige: 'Elige al agente amigo visible que conservará un dado de defensa como éxito normal la primera vez que le disparen en este punto de inflexión.',
+      log: (n, b) => `${n} guarda un dado de defensa para ${b} (la primera vez que le disparen en este punto de inflexión).`,
+    },
+    tambores: {
+      titulo: 'Tambores de guerra',
+      texto: 'Tu comando puede tocar los Tambores de guerra (una vez por batalla): las acciones de Cargar de tus agentes llegan 1″ más lejos hasta el final de este punto de inflexión. ¿Los usas ahora?',
+      si: 'Sí, tocar los tambores', no: 'No, esperar a otro punto de inflexión',
+      log: n => `${n} toca los Tambores de guerra: +1″ a la distancia de Cargar hasta el final de este punto de inflexión.`,
+    },
+    emboscador: { lejos: `El Emboscador debe quedar a más de 6″ de la ${G.zonaDescenso.es} enemiga (o dentro de la tuya).`, log: (n, id) => `<b>${n}</b> (${id}) se despliega como Emboscador, con orden de ocultarse.` },
+  },
   // ardides de tiroteo del Aquelarre Disforme (efectos en src/ui/ardides.js)
   ardidesAD: {
     tunicas: { log: n => `${n}: Túnicas arcanas cambia un daño crítico por daño normal.` },
@@ -910,7 +940,7 @@ export const T = {
     bajoNota: 'Suman menos de 9: al usar uno, el otro se descarta.',
     altoNota: 'Suman 9 o más: podrás usar los dos, uno por secuencia.',
     guarda: (equipo, x, y, bajo) => `<b>${equipo}</b> guarda ${x} y ${y} con El destino es mi arma${bajo ? ' (suman menos de 9: al usar uno se descarta el otro)' : ''}.`,
-    guardados: dados => dados.length ? `guardados: ${dados.join(' y ')}` : 'sin dados guardados',
+    guardados: dados => dados.length ? `guardados: ${[].concat(dados).join(' y ')}` : 'sin dados guardados',
     log: (equipo, antes, v, n) => `<b>${equipo}</b> usa El destino es mi arma: el ${antes} de ${n} pasa a ser un ${v}.`,
   },
 
@@ -1085,9 +1115,9 @@ export const T = {
       '3272457903:sacerdoteEstelar': [
         ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
         ['Lector de estrellas', 'Una vez por batalla, al inicio de un punto de inflexión, activa un Asterismo sin cumplir su condición.', 'pendiente'],
-        ['Escudriñar las estrellas', 'Una vez por batalla, al inicio de un punto de inflexión, tira tantos D6 como su número (máx. 4); por cada 4+, un aliado visible conserva un dado de defensa como normal.', 'pendiente'],
-        ['Luz de Chotec (1 PA)', 'Un Saurio o Kroxigor amigo visible a 6″ o menos recupera 1D3 heridas; una vez por punto de inflexión para el comando.', 'pendiente'],
-        ['Presagio celeste (1 PA)', 'Un Eslizón amigo visible a 6″ o menos tiene Equilibrada en sus armas a distancia hasta el final de su siguiente activación.', 'pendiente'],
+        ['Escudriñar las estrellas', 'Una vez por batalla, al inicio de un punto de inflexión, tira tantos D6 como su número (máx. 4); por cada 4+, un aliado visible conserva un dado de defensa como normal.'],
+        ['Luz de Chotec (1 PA)', 'Un Saurio o Kroxigor amigo visible a 6″ o menos recupera 1D3 heridas; una vez por punto de inflexión para el comando.'],
+        ['Presagio celeste (1 PA)', 'Un Eslizón amigo visible a 6″ o menos tiene Equilibrada en sus armas a distancia hasta el final de su siguiente activación.'],
       ],
       '3272457903:combatienteSaurio': [
         ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
@@ -1113,12 +1143,12 @@ export const T = {
       ],
       '3272457903:camaleon': [
         ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
-        ['Emboscador', 'En el despliegue, puede ir a cualquier punto de la zona de aniquilación a más de 6″ de la zona de despliegue enemiga, con orden de ocultarse.', 'pendiente'],
+        ['Emboscador', 'En el despliegue, puede ir a cualquier punto de la zona de aniquilación a más de 6″ de la zona de despliegue enemiga, con orden de ocultarse.'],
         ['Camuflaje cromático', 'Con orden de ocultarse cuenta como en cobertura frente a enemigos a más de 6″, aunque no haya terreno.'],
       ],
       '3272457903:sacerdoteEslizon': [
         ['Sangre fría', 'Ignora todos los efectos de estar lesionado: ni empeora Impactar ni baja su Movimiento.'],
-        ['Velo celeste (1 PA)', 'Un amigo visible a 6″ o menos conserva un dado de defensa como normal al recibir disparos, hasta su siguiente activación (nunca más de 2 conservados).', 'pendiente'],
+        ['Velo celeste (1 PA)', 'Un amigo visible a 6″ o menos conserva un dado de defensa como normal al recibir disparos, hasta su siguiente activación (nunca más de 2 conservados).'],
       ],
       '2272196183:capitan': [
         ['Líder heroico', `Una vez por punto de inflexión: usar un ardid de tiroteo gratis, o usar Doctrina de combate o Ajustar doctrina sin gastar PM, si está en la zona de aniquilación y fuera de la zona de control enemiga.`, 'pendiente'],

@@ -1,7 +1,7 @@
 /**
  * Kill Team (2024) core rules, as far as SkirmishTable models them.
  */
-import { effMove } from '../engine/dice.js';
+import { bonoCarga, effMove } from '../engine/dice.js';
 
 export default {
   id: 'killteam',
@@ -14,7 +14,7 @@ export default {
   moves: {
     primary:   { label: 'Reposition', verb: 'repositions', allow: op => effMove(op),     climb: true },
     secondary: { label: 'Dash',       verb: 'dashes',      allow: () => 3,               climb: false },
-    charge:    { label: 'Charge',     verb: 'charges',     allow: op => effMove(op) + 2, climb: true },
+    charge:    { label: 'Charge',     verb: 'charges',     allow: op => effMove(op) + 2 + bonoCarga.reduce((a, f) => a + (f(op) || 0), 0), climb: true },
   },
   climbUp: h => Math.max(2, h),          // each climb counts as at least 2″
   climbDown: h => Math.max(0, h - 2),    // the first 2″ of a drop are free

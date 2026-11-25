@@ -34,6 +34,7 @@ import { agenteDeMuestra, comandoPorId, eleccionesDe, modelosPara, pesoAgente, p
   validarComando } from '../data/teams/index.js';
 import { abrirFicha } from './ficha.js';
 import { ARDID, DOCTRINAS, idoloAncestrales, dadosGuardados, doctrina, elegirDoctrina, elegirFlexible, guardarDestino, guerraDoctrinas, quitarDestino, tacticasDeBando } from './ardides.js';
+import { ventanaInicioPI } from './sacerdotes-sl.js';
 import { d6 } from '../engine/dice.js';
 import { showRoll } from './dicetray.js';
 import { gradoActual, puntuarKillOp, reiniciarPuntos } from './ops.js';
@@ -483,8 +484,10 @@ export function abrirArdidesTiroteo() {
   el.hidden = false;
   render();
 }
-function aTiroteo() {
+async function aTiroteo() {
   cerrar();
+  await ventanaInicioPI({ esDeLaIA, mayControl: s => mayControl({ team: s }) });   // Escudriñar las estrellas y Tambores de guerra (Saurios)
+  renderAll();
   logLine(T.estrategia.logTiroteo(TEAMNAME[tray.ini]));
   hint(T.estrategia.tiroteo(TEAMNAME[tray.ini]));
   control.alEmpezarTiroteo();        // si la IA tiene la iniciativa, empieza ella (ia.js)

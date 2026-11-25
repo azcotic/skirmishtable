@@ -121,6 +121,8 @@ export function effMove(op) {
   return menos ? Math.max(4, base - menos) : base;
 }
 // Reglas que hacen ignorar los cambios por estar lesionado (p. ej. un ardid): (op) => true si lo ignora
+// Reglas que suman pulgadas a la distancia de Cargar (p. ej. Tambores de guerra): (op) => pulgadas más
+export const bonoCarga = [];
 export const ignoraLesion = [];
 export const penalizaLesion = op => isInjured(op) && !ignoraLesion.some(f => f(op));
 // Reglas que cambian la defensa ya tirada (p. ej. un ardid): (dfn, defensor, w) => dfn nueva o null

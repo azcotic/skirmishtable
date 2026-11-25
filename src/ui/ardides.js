@@ -500,7 +500,7 @@ const comandoDe = op => comandoPorId(perfil(op).comando);
  * Equipo de facción (tray.equipoFaccion[bando]): 'puntas' (Letal 5+ una vez por punto de inflexión al
  * disparar un Eslizón con Escupedardos o Jabalinas), 'escudosEstegadon' (Salvación 3+ la primera vez que
  * disparan a cada Saurio, salvo la Guardia), 'plumas' (el líder recupera 1D3 heridas al empezar cada punto
- * de inflexión) e 'idolo' (1 PM más, una vez por batalla). 'tambores' queda pendiente. */
+ * de inflexión) e 'idolo' (1 PM más, una vez por batalla). 'tambores': ver src/ui/sacerdotes-sl.js. */
 const SL = '3272457903';
 const saurios = op => perfil(op).comando === SL;
 const esSaurioOKroxigor = op => saurios(op) && (es(op, 'saurio') || es(op, 'kroxigor'));
