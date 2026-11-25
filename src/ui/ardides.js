@@ -37,6 +37,7 @@ import { KINDS, OPS, ajustarAgente } from '../engine/world.js';
 import { opGap } from '../engine/geometry.js';
 import { sightAnalysis } from '../engine/sight.js';
 import { camuflaje } from '../engine/shots.js';
+import './saurios-combate.js';   // Saurios de Lustria: semilla de renacimiento, mordisco, barrido, guardián, escurridizos...
 
 export const ARDID = {
   proteccion: 'Protección etérea',

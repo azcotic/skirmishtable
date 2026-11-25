@@ -6,7 +6,7 @@
 import { state } from '../state.js';
 import { CTRL, S } from '../config.js';
 import { dist, opGap, opR } from '../engine/geometry.js';
-import { chopIncrements, clampPath, nearestFree, opLayer, placeBlocked, planRoute, useBase } from '../engine/movement.js';
+import { escaladaExcede, chopIncrements, clampPath, nearestFree, opLayer, placeBlocked, planRoute, useBase } from '../engine/movement.js';
 import { C_WALL, G, GRES, LEVELS, layerZ, onLayer, ptFree } from '../engine/grid.js';
 import { foesNear } from '../engine/engage.js';
 import { BH, BW, MAP, OPS } from '../engine/world.js';
@@ -25,6 +25,7 @@ import { effMove } from '../engine/dice.js';
 import { tieneEfecto } from '../data/teams/index.js';
 import { puede } from '../game/acciones.js';
 import { accionesHooks } from './acciones.js';
+import { guardianTrasCarga } from './saurios-combate.js';
 
 /* ---------- Vuelo inmaterial (don de Tzeentch) ----------
  * Una vez por punto de inflexión, al Reposicionarse o Cargar, el agente puede volar: en vez de
@@ -202,6 +203,7 @@ function planDrag(x, y, hint, up) {
     d.secAllow = pl.p2 ? pl.p2.allow : 0;
     d.foes = foesNear(end[0], end[1], d.op.team, d.op.id, R, d.goalZ);
     d.why = placeBlocked(end[0], end[1], d.op.id, d.goalLayer) ? "occupied"
+      : escaladaExcede(d.op, c.path) ? "escaladaMax"      // Inmenso (Kroxigor): no escala más de 2″
       : charging && !d.foes.length ? "chargeNoFoe"
       : retroceso && (d.foes.length || intoFoes) ? "fallBackEnZona"
       : !charging && (d.foes.length || intoFoes) && RULES.moves.charge ? "engagedAfterMove"
@@ -282,6 +284,7 @@ function landDrag(d) {
     hint(TM.ambosUsados(d.op.name));
   }
   renderAll();
+  if (charged) guardianTrasCarga(d.op);      // Guardián inquebrantable (Saurios de Lustria): reacción de un amigo cercano
 }
 
 // a click (or tap) on a token: order flip on double-click, targeting, or selection
