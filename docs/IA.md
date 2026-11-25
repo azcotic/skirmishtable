@@ -92,6 +92,24 @@ Arquitectura de "utilidad" (utility AI), sencilla y fácil de depurar:
 | Cobertura | termina a cubierto / con orden de ocultarse sin poder hacer otra cosa | pequeño |
 | Azar | ruido aleatorio pequeño (solo en "fácil") | pequeño |
 
+#### Objetivos (ya implementado en `src/ai/facil.js`, con `src/engine/objetivos.js`)
+
+El control lo decide la suma de LPA de los agentes vivos en la zona de control de cada marcador; el empate lo deja
+disputado. Al terminar cada PI, cada bando gana 1 PV por objetivo que controla (`puntuarObjetivos` en `src/ui/ops.js`).
+La IA compara cada jugada con el control actual (parámetro `mover`) y usa estos pesos de `PESOS`:
+
+| Peso | Qué premia |
+|---|---|
+| `objetivo` (4) | por cada objetivo más que controlaría su bando (libre o disputado) |
+| `perder` (-6) | por cada objetivo que dejaría de controlar: no abandona el que sostiene solo |
+| `disputar` (3) | por cada objetivo que el enemigo dejaría de controlar (pasa a disputado o a mío) |
+| `presencia` (1) | por entrar en la zona de un objetivo que aún no controla |
+| `romper` (4) | por objetivo que cambia de manos si incapacita a un enemigo que lo sostiene, multiplicado por la probabilidad de incapacitarlo (disparar, combatir y cargar) |
+| `sostener` (2) | por quedarse oculto dentro de un objetivo que ya controla |
+
+El campo `razon.obj` (`ganan`, `pierden`, `disputa`), `razon.romper` y `razon.sostiene` de cada plan explican la
+decisión en el registro (`explicar` en `src/ui/ia.js`).
+
 4. **Explicación**: el plan elegido guarda sus 2–3 términos más grandes para escribir el porqué en el registro.
 
 ### Probabilidades de dados (sin simular)

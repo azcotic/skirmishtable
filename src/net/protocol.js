@@ -101,11 +101,12 @@ export function cleanMission(m, catalog) {
   const pair = (p, n) => [0, 1].map(i => idx(Array.isArray(p) ? p[i] : null, n));
   const vp = v => Number.isInteger(v) && v >= 0 && v <= 9 ? v : 0;
   const score = [0, 1].map(i => [0, 1, 2, 3].map(tp => [0, 1, 2].map(c => vp(m && m.score && m.score[i] && m.score[i][tp] && m.score[i][tp][c]))));
+  const pvObj = [0, 1].map(i => [0, 1, 2, 3].map(tp => vp(m && m.pvObj && m.pvObj[i] && m.pvObj[i][tp])));
   const markers = Array.isArray(m && m.markers) ? m.markers.slice(0, 60).filter(k => k && idx(k.k, catalog.tokens.length) !== null
     && Number.isFinite(k.x) && Number.isFinite(k.y) && Number.isInteger(k.id))
     .map(k => ({ id: k.id, k: k.k, x: k.x, y: k.y })) : [];
   return { set, crit: idx(m && m.crit, s.crit.length), tac: pair(m && m.tac, s.tac.length),
-           primary: pair(m && m.primary, 3), score, markers,
+           primary: pair(m && m.primary, 3), score, pvObj, markers,
            notes: [0, 1].map(i => cleanNotes(m && m.notes && m.notes[i])), noteEdit: m && m.noteEdit === "any" ? "any" : "own" };
 }
 // A side's status cards: up to 12, each three short lines of the players' own text.

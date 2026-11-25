@@ -5,12 +5,14 @@
  *
  * Planes por agente: disparar desde donde está · moverse y disparar · cargar y combatir ·
  * combatir si ya está trabado · ir a un objetivo · ponerse a cubierto.
- * Puntuación: daño esperado, probabilidad de incapacitar (y rematar a un lesionado), objetivos,
+ * Puntuación: daño esperado, probabilidad de incapacitar (y rematar a un lesionado), objetivos
+ * (cambio en cuántos controla cada bando, con src/engine/objetivos.js; ver docs/IA.md §3),
  * menos el riesgo de terminar donde le pueden cargar o disparar sin cobertura, más un poco de azar.
  */
 import { BH, BW, OBJECTIVES, OPS } from '../engine/world.js';
-import { CTRL, OBJ_R, WPN } from '../config.js';
+import { CTRL, WPN } from '../config.js';
 import { dist, opGap, opR } from '../engine/geometry.js';
+import { controlDeTodos, enObjetivo, objetivoControladoPor, objetivosControlados } from '../engine/objetivos.js';
 import { SHOT_KINDS, judgeShot } from '../engine/shots.js';
 import { clampPath, nearestFree, planRoute, useBase } from '../engine/movement.js';
 import { foesNear } from '../engine/engage.js';
@@ -26,7 +28,12 @@ export const PESOS = {
   recibido: 0.7,      // en combate, por punto de daño que recibiría
   riesgo: 2,          // por enemigo que podría cargarle donde termina
   expuesto: 0.8,      // por enemigo que podría dispararle sin cobertura donde termina
-  objetivo: 4,        // por controlar un objetivo (más que matar si hay misión: subir este peso)
+  objetivo: 4,        // por cada objetivo más que controlaría su bando si hace la jugada (libre o disputado)
+  perder: 6,          // por cada objetivo que dejaría de controlar (no abandonar el que sostiene solo)
+  disputar: 3,        // por cada objetivo que el enemigo dejaría de controlar por su jugada (queda disputado o mío)
+  presencia: 1,       // por entrar en la zona de un objetivo que su bando aún no controla
+  romper: 4,          // por objetivo que cambia de manos si incapacita a un enemigo que lo sostiene (x prob. de incapacitar)
+  sostener: 2,        // por quedarse oculto dentro de un objetivo que ya controla
   cubierto: 1.5,      // terminar oculto a cubierto cuando no hay nada mejor
   azar: 0.6,          // ruido para no ser idéntica cada partida
 };
@@ -49,8 +56,10 @@ export function mejorDisparo(op, x, y) {
       if (sh.sight && sh.sight.gap > alcance(w)) continue;
       const r = disparo(w, { save: e.save, heridas: e.wounds },
         { cubierto: !!sh.save, ofuscado: sh.kind === "obscured" && !w.sinOfuscar, certera: sh.accurate || 0, lesionado: isInjured(op) });
-      const puntos = PESOS.dano * r.esperado + PESOS.incapacitar * r.incapacitar + (isInjured(e) ? PESOS.rematar * r.incapacitar : 0);
-      if (!mejor || puntos > mejor.puntos) mejor = { blanco: e, arma: k, r, puntos };
+      const romper = valorRomper(op, e, x, y);
+      const puntos = PESOS.dano * r.esperado + PESOS.incapacitar * r.incapacitar + (isInjured(e) ? PESOS.rematar * r.incapacitar : 0)
+        + PESOS.romper * romper * r.incapacitar;
+      if (!mejor || puntos > mejor.puntos) mejor = { blanco: e, arma: k, r, puntos, romper };
     }
   }
   return mejor;
@@ -88,7 +97,32 @@ function riesgo(mapa, x, y) {
   const t = threatsAt(mapa, x, y);
   return { puntos: PESOS.riesgo * t.charge.length + PESOS.expuesto * t.close.length, carga: t.charge.length, expuesto: t.close.length };
 }
-const controla = (op, x, y) => OBJECTIVES.find(o => dist(x, y, o.x, o.y) - opR(op) - OBJ_R <= CTRL + 1e-9) || null;
+
+// Valor de objetivos de poner a `op` en (x, y): cuántos objetivos más/menos controlaría cada bando
+// (src/engine/objetivos.js, parámetro `mover`). Devuelve { puntos, ganan, pierden, disputa, obj, sostiene }.
+export function valorObjetivos(op, x, y) {
+  const cero = { puntos: 0, ganan: 0, pierden: 0, disputa: 0, obj: null, sostiene: false };
+  if (!OBJECTIVES.length) return cero;
+  const mover = { id: op.id, x, y }, otro = 1 - op.team;
+  const mios = objetivosControlados(op.team), suyos = objetivosControlados(otro);
+  const des = controlDeTodos(OPS, OBJECTIVES, mover);
+  const mios2 = des.filter(c => c.controla === op.team).length, suyos2 = des.filter(c => c.controla === otro).length;
+  const ganan = Math.max(0, mios2 - mios), pierden = Math.max(0, mios - mios2), disputa = Math.max(0, suyos - suyos2);
+  const aqui = enObjetivo({ ...op, x, y });
+  const c = aqui ? des.find(d => d.obj === aqui) : null;
+  const sostiene = !!c && c.controla === op.team;
+  const presencia = c && !sostiene ? 1 : 0;
+  return { ganan, pierden, disputa, obj: aqui, sostiene,
+    puntos: PESOS.objetivo * ganan - PESOS.perder * pierden + PESOS.disputar * disputa + PESOS.presencia * presencia };
+}
+// Cuántos objetivos cambian de manos a favor de `op` si el enemigo `e` sale del juego (0 si no sostiene ninguno)
+export function valorRomper(op, e, x = op.x, y = op.y) {
+  if (!OBJECTIVES.length || !enObjetivo(e)) return 0;
+  const mover = { id: op.id, x, y }, cuenta = (l, t) => l.filter(c => c.controla === t).length;
+  const antes = controlDeTodos(OPS, OBJECTIVES, mover), despues = controlDeTodos(OPS.filter(o => o.id !== e.id), OBJECTIVES, mover);
+  const neto = cuenta(despues, op.team) - cuenta(antes, op.team) + cuenta(antes, e.team) - cuenta(despues, e.team);
+  return Math.max(0, neto);
+}
 
 // Los planes de un agente, cada uno con sus puntos y razones
 export function planesDe(op, rng = Math.random) {
@@ -106,9 +140,10 @@ export function planesDe(op, rng = Math.random) {
       const r = combate(WPN[ARMAS_CC(op)[0]], wB ? WPN[wB] : null, { heridas: op.wounds }, { heridas: e.wounds },
         { atacanteLesionado: isInjured(op), blancoLesionado: isInjured(e) });
       const puntos = PESOS.dano * r.alBlanco.esperado + PESOS.incapacitar * r.alBlanco.incapacitar
-        - PESOS.recibido * r.alAtacante.esperado - PESOS.incapacitar * 0.5 * r.alAtacante.incapacitar + ruido();
+        - PESOS.recibido * r.alAtacante.esperado - PESOS.incapacitar * 0.5 * r.alAtacante.incapacitar
+        + PESOS.romper * valorRomper(op, e) * r.alBlanco.incapacitar + ruido();
       planes.push({ op, tipo: "combatir", orden: "engage", pasos: [{ accion: "fight", blanco: e }], puntos,
-        razon: { blanco: e, esperado: r.alBlanco.esperado, incapacitar: r.alBlanco.incapacitar, recibido: r.alAtacante.esperado } });
+        razon: { blanco: e, romper: valorRomper(op, e), esperado: r.alBlanco.esperado, incapacitar: r.alBlanco.incapacitar, recibido: r.alAtacante.esperado } });
     }
   }
 
@@ -116,22 +151,22 @@ export function planesDe(op, rng = Math.random) {
   if (!cerca.length && puede(comoTrabado, "shoot", OPS).ok) {
     const d = mejorDisparo(op, op.x, op.y);
     if (d) planes.push({ op, tipo: "disparar", orden: "engage", pasos: [{ accion: "shoot", blanco: d.blanco, arma: d.arma }],
-      puntos: d.puntos - riesgo(mapa, op.x, op.y).puntos * 0.5 + ruido(), razon: { blanco: d.blanco, arma: d.arma, ...d.r } });
+      puntos: d.puntos - riesgo(mapa, op.x, op.y).puntos * 0.5 + ruido(), razon: { blanco: d.blanco, arma: d.arma, romper: d.romper, ...d.r } });
   }
 
   // 3. moverse (y disparar si puede), ir a un objetivo o ponerse a cubierto
   if (!cerca.length && op.apl >= 1) {
     const vistos = new Set();
     for (const p of destinos(op, "reposition", vistos)) {
-      const rg = riesgo(mapa, p.x, p.y), obj = controla(op, p.x, p.y);
+      const rg = riesgo(mapa, p.x, p.y), vo = valorObjetivos(op, p.x, p.y), obj = vo.obj;
       const d = op.apl >= 2 ? mejorDisparo(op, p.x, p.y) : null;
       if (d) planes.push({ op, tipo: "moverYDisparar", orden: "engage",
         pasos: [{ accion: "reposition", x: p.x, y: p.y }, { accion: "shoot", blanco: d.blanco, arma: d.arma }],
-        puntos: d.puntos - rg.puntos + (obj ? PESOS.objetivo : 0) + ruido(), razon: { blanco: d.blanco, arma: d.arma, ...d.r, riesgo: rg, objetivo: obj } });
+        puntos: d.puntos - rg.puntos + vo.puntos + ruido(), razon: { blanco: d.blanco, arma: d.arma, romper: d.romper, ...d.r, riesgo: rg, objetivo: obj, obj: vo } });
       if (obj) planes.push({ op, tipo: "objetivo", orden: "conceal", pasos: [{ accion: "reposition", x: p.x, y: p.y }],
-        puntos: PESOS.objetivo - rg.puntos + ruido(), razon: { objetivo: obj, riesgo: rg } });
+        puntos: vo.puntos + (vo.sostiene ? PESOS.sostener : 0) - rg.puntos + ruido(), razon: { objetivo: obj, riesgo: rg, obj: vo } });
       planes.push({ op, tipo: "cubrirse", orden: "conceal", pasos: [{ accion: "reposition", x: p.x, y: p.y }],
-        puntos: PESOS.cubierto - rg.puntos + ruido(), razon: { riesgo: rg } });
+        puntos: PESOS.cubierto + vo.puntos - rg.puntos + ruido(), razon: { riesgo: rg, obj: vo } });
     }
   }
 
@@ -149,14 +184,19 @@ export function planesDe(op, rng = Math.random) {
       const wB = ARMAS_CC(e)[0];
       const r = combate(WPN[ARMAS_CC(op)[0]], wB ? WPN[wB] : null, { heridas: op.wounds }, { heridas: e.wounds },
         { atacanteLesionado: isInjured(op), blancoLesionado: isInjured(e) });
+      const vo = valorObjetivos(op, p[0], p[1]), romper = valorRomper(op, e, p[0], p[1]);
       planes.push({ op, tipo: "cargar", orden: "engage", pasos: [{ accion: "charge", x: p[0], y: p[1], blanco: e }, { accion: "fight", blanco: e }],
-        puntos: PESOS.dano * r.alBlanco.esperado + PESOS.incapacitar * r.alBlanco.incapacitar - PESOS.recibido * r.alAtacante.esperado + ruido(),
-        razon: { blanco: e, esperado: r.alBlanco.esperado, incapacitar: r.alBlanco.incapacitar, recibido: r.alAtacante.esperado } });
+        puntos: PESOS.dano * r.alBlanco.esperado + PESOS.incapacitar * r.alBlanco.incapacitar - PESOS.recibido * r.alAtacante.esperado
+          + vo.puntos + PESOS.romper * romper * r.alBlanco.incapacitar + ruido(),
+        razon: { blanco: e, romper, obj: vo, esperado: r.alBlanco.esperado, incapacitar: r.alBlanco.incapacitar, recibido: r.alAtacante.esperado } });
     }
   }
 
   // 5. no hacer nada útil: quedarse oculto donde está
-  planes.push({ op, tipo: "esperar", orden: "conceal", pasos: [], puntos: PESOS.cubierto * 0.5 - riesgo(mapa, op.x, op.y).puntos + ruido(), razon: {} });
+  // (si ya sostiene un objetivo, quedarse oculto dentro de él vale más)
+  const sostiene = !!objetivoControladoPor(op);
+  planes.push({ op, tipo: "esperar", orden: "conceal", pasos: [],
+    puntos: PESOS.cubierto * 0.5 + (sostiene ? PESOS.sostener : 0) - riesgo(mapa, op.x, op.y).puntos + ruido(), razon: { sostiene } });
   return planes;
 }
 

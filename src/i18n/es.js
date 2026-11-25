@@ -1025,6 +1025,21 @@ export const T = {
     riesgo: (carga, expuesto) => carga || expuesto ? ` Allí ${carga} ${carga === 1 ? 'enemigo podría' : 'enemigos podrían'} cargarle y ${expuesto} dispararle sin cobertura.` : ' Allí no corre peligro inmediato.',
   },
 
+  // PV por controlar objetivos al terminar cada PI (src/ui/ops.js) y su razón en la IA (src/ai/facil.js)
+  puntosObjetivos: {
+    log: (bando, pi, objetivos) => objetivos.length
+      ? `Fin del PI ${pi}: <b>${bando}</b> gana ${objetivos.length} ${G.pv.abrev} por controlar ${objetivos.length === 1 ? 'el objetivo' : 'los objetivos'} ${objetivos.join(', ')}.`
+      : `Fin del PI ${pi}: <b>${bando}</b> no controla ningún objetivo (no gana ${G.pv.abrev}).`,
+    resumen: (a, pa, b, pb) => `${G.pv.abrev} por controlar objetivos (ya incluidos en el total): ${a} ${pa} · ${b} ${pb}. Se apuntan solos al terminar cada PI; un objetivo disputado no puntúa.`,
+    ia: {
+      ganar: n => ` Pasaría a controlar ${n} ${n === 1 ? 'objetivo' : 'objetivos'} más.`,
+      perder: n => ` Dejaría de controlar ${n} ${n === 1 ? 'objetivo' : 'objetivos'}.`,
+      disputar: ' Disputa un objetivo que controla el enemigo.',
+      sostener: ' Se queda oculto sosteniendo el objetivo.',
+      romper: ' El blanco sostiene un objetivo: sacarlo de allí lo deja sin control.',
+    },
+  },
+
   // por qué una acción no está permitida (src/game/acciones.js)
   reglas: {
     accion: { reposition: G.reposicionarse.es, dash: G.correr.es, fallBack: G.retroceder.es, charge: G.cargar.es,

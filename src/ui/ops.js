@@ -19,18 +19,20 @@ import { renderAll } from './board.js';
 import { snapshot, tray, undoExtras } from './panels.js';
 import { OPS } from '../engine/world.js';
 import { bonoFinal, gradoDeBajas } from '../game/killop.js';
+import { controlDeTodos } from '../engine/objetivos.js';
 
 const COLS = T.operaciones.cols;
 const blankScore = () => [0, 1].map(() => [0, 1, 2, 3].map(() => [0, 0, 0]));
 // notes: each side's status cards on the board edges ({h header, m main, s small text,
 // by: the side that last changed it, when not its own}); noteEdit: "own" or "any" side may edit them
 export const opsState = { set: 0, crit: null, tac: [null, null], primary: [null, null], score: blankScore(), markers: [],
-                          notes: [[], []], noteEdit: "own" };
+                          notes: [[], []], noteEdit: "own",
+                          pvObj: [[0, 0, 0, 0], [0, 0, 0, 0]] };   // PV por controlar objetivos, por bando y PI (automáticos)
 const listeners = [];
 export const onOpsChange = fn => listeners.push(fn);
 function changed(render = true) {
   // once the score sheet is in use it keeps the Battle tray's VP (until then, VP stay manual)
-  if (opsState.score.flat(2).some(v => v > 0) || opsState.primary.some(p => p !== null))
+  if (opsState.score.flat(2).some(v => v > 0) || pvObjetivos(0) + pvObjetivos(1) > 0 || opsState.primary.some(p => p !== null))
     for (const s of [0, 1]) tray.vp[s] = scoreTotal(s);
   if (render) renderOps();
   renderAll();
@@ -40,8 +42,10 @@ function changed(render = true) {
 export function scoreTotal(side) {
   const rows = opsState.score[side], sum = c => rows.reduce((a, r) => a + r[c], 0);
   const base = sum(0) + sum(1) + sum(2), p = opsState.primary[side];
-  return base + (p === null ? 0 : Math.ceil(sum(p) / 2));
+  return base + (p === null ? 0 : Math.ceil(sum(p) / 2)) + pvObjetivos(side);
 }
+// PV ganados por controlar objetivos (suma de todos los PI); van aparte de la hoja para que ella no los pise
+export const pvObjetivos = side => ((opsState.pvObj && opsState.pvObj[side]) || []).reduce((a, v) => a + (v | 0), 0);
 export const currentSet = () => TTS_OPS.sets[opsState.set] || TTS_OPS.sets[0];
 // replace from the network (already cleaned)
 export function setOpsState(o) { Object.assign(opsState, o); renderOps(); }
@@ -146,6 +150,7 @@ export function renderOps() {
       <div class="tokrow">${TTS_OPS.tokens.map((t, i) => `<button class="tok${markerPick === i ? " active" : ""}" data-k="${i}" title="${T.operaciones.marcadorTitulo(t.name)}"${dis(mine(0) || mine(1))}><img src="${t.img}" alt="${t.name}" crossorigin="anonymous"></button>`).join("")}</div>
       ${opsState.markers.length ? `<div class="toklist">${opsState.markers.map(m => `<span>${TTS_OPS.tokens[m.k] ? TTS_OPS.tokens[m.k].name : "?"} <button class="mini" data-rm="${m.id}" title="${T.operaciones.quitar}"${dis(mine(0) || mine(1))}>×</button></span>`).join(" ")}</div>` : ""}
     </details>
+    <div class="hint">${T.puntosObjetivos.resumen(TEAMNAME[0], pvObjetivos(0), TEAMNAME[1], pvObjetivos(1))}</div>
     <div class="hint">${T.operaciones.nota}</div>`;
   fillImages(box);
   box.querySelectorAll("img[data-card]").forEach(im => im.onclick = () => showCard(im.dataset.card));
@@ -217,9 +222,23 @@ export function puntuarKillOp(conBono) {
   }
   changed();
 }
+/* ---------- PV por controlar objetivos: 1 por cada marcador que controla cada bando, al terminar cada PI ---------- */
+// `tp` es el PI que termina (1–4). Se asigna (no se suma) por PI, así que repetirlo no duplica los PV.
+export function puntuarObjetivos(tp) {
+  const i = Math.max(0, Math.min(3, (tp | 0) - 1));
+  const ctl = controlDeTodos();
+  if (!ctl.length) return;
+  if (!opsState.pvObj) opsState.pvObj = [[0, 0, 0, 0], [0, 0, 0, 0]];
+  for (const s of [0, 1]) {
+    const suyos = ctl.filter(c => c.controla === s).map(c => c.obj.id);
+    opsState.pvObj[s][i] = suyos.length;
+    logLine(T.puntosObjetivos.log(TEAMNAME[s], tp, suyos), suyos.length > 0);
+  }
+  changed();
+}
 // Partida nueva: hoja de puntos en blanco
 export function reiniciarPuntos() {
-  Object.assign(opsState, { score: blankScore(), killop: false });
+  Object.assign(opsState, { score: blankScore(), killop: false, pvObj: [[0, 0, 0, 0], [0, 0, 0, 0]] });
   tray.vp = [0, 0];
   changed();
 }

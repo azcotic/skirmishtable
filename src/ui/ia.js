@@ -38,6 +38,15 @@ export function explicar(plan) {
     default: t = P.esperar(op);
   }
   if (r.riesgo) t += T.ia.riesgo(r.riesgo.carga, r.riesgo.expuesto);
+  const O = T.puntosObjetivos.ia, v = r.obj;
+  if (v) {
+    if (v.ganan) t += O.ganar(v.ganan);
+    if (v.pierden) t += O.perder(v.pierden);
+    if (v.disputa) t += O.disputar;
+  }
+  if (r.romper) t += O.romper;
+  if (plan.tipo === "esperar" && r.sostiene) t += O.sostener;
+  else if (plan.tipo === "objetivo" && v && v.sostiene) t += O.sostener;
   return t;
 }
 
